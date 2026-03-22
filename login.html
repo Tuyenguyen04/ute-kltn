@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Đăng nhập - HCM·UTE</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;}
+.header{text-align:center;margin-bottom:24px}
+.school-brand{font-size:16px;font-weight:800;color:#1a4fad;letter-spacing:3px;margin-bottom:8px;margin-top:4px}
+.school-name{font-size:16px;font-weight:700;color:#1a3a7a;line-height:1.45;text-transform:uppercase;letter-spacing:.3px}
+.card{background:#fff;border-radius:4px;padding:36px 36px 32px;width:100%;max-width:480px;box-shadow:0 2px 16px rgba(0,0,0,.10)}
+.card-title{font-size:26px;font-weight:800;color:#1a4fad;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.card-sub{font-size:13.5px;color:#6b7280;margin-bottom:26px}
+.field{margin-bottom:16px}
+.field input{width:100%;padding:14px 16px;border:1.5px solid #d1d5db;border-radius:4px;font-family:inherit;font-size:14px;color:#111;outline:none;transition:.2s;background:#fff}
+.field input::placeholder{color:#9ca3af}
+.field input:focus{border-color:#1a4fad;box-shadow:0 0 0 3px rgba(26,79,173,.1)}
+.field-error{font-size:12px;color:#e53e3e;margin-top:5px;display:none}
+.field.has-error .field-error{display:block}
+.field.has-error input{border-color:#e53e3e}
+.btn-login{width:100%;padding:14px;background:#1a4fad;color:#fff;border:none;border-radius:4px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:.18s;margin-bottom:12px;letter-spacing:.3px}
+.btn-login:hover{background:#15408f}
+.btn-google{width:100%;padding:13px 16px;background:#fff;border:1.5px solid #d1d5db;border-radius:4px;font-family:inherit;font-size:14px;font-weight:600;color:#1a4fad;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:.18s}
+.btn-google:hover{background:#f5f8ff;border-color:#1a4fad}
+.divider{display:flex;align-items:center;gap:12px;margin:4px 0 12px;font-size:12px;color:#9ca3af}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e5e7eb}
+
+/* Overlay thông báo toàn màn hình */
+.overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;animation:fadeIn .3s ease}
+.overlay.show{display:flex}
+.overlay.success{background:rgba(6,95,70,.92)}
+.overlay.error{background:rgba(153,27,27,.92)}
+.overlay-icon{font-size:64px;margin-bottom:16px;animation:popIn .4s ease}
+.overlay-msg{font-size:22px;font-weight:700;color:#fff;text-align:center;padding:0 24px;line-height:1.5}
+.overlay-sub{font-size:14px;color:rgba(255,255,255,.8);margin-top:8px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* Loading spinner */
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- Overlay thông báo -->
+<div class="overlay" id="overlay">
+  <div class="overlay-icon" id="ov-icon"></div>
+  <div class="overlay-msg" id="ov-msg"></div>
+  <div class="overlay-sub" id="ov-sub"></div>
+</div>
+
+<!-- Header -->
+<div class="header">
+  <div class="school-brand">HCM·UTE</div>
+  <div class="school-name">Trường Đại Học Công Nghệ Kỹ Thuật<br>TP.HCM</div>
+</div>
+
+<!-- Card -->
+<div class="card">
+  <div class="card-title">Đăng nhập</div>
+  <div class="card-sub">Đăng ký đề tài KLTN</div>
+
+  <div class="field" id="fu">
+    <input type="text" id="username" placeholder="Tên đăng nhập (Admin)" oninput="ce('fu')"/>
+    <div class="field-error">Tên đăng nhập là bắt buộc</div>
+  </div>
+  <div class="field" id="fp">
+    <input type="password" id="password" placeholder="Mật khẩu" oninput="ce('fp')" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <div class="field-error">Mật khẩu là bắt buộc</div>
+  </div>
+  <button class="btn-login" onclick="doLogin()">Đăng nhập</button>
+
+  <div class="divider"><span>hoặc</span></div>
+
+  <button class="btn-google" id="btn-gg" onclick="doGoogle()">
+    <svg width="18" height="18" viewBox="0 0 24 24">
+      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    </svg>
+    Đăng nhập với Google
+  </button>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxVF4xJ-4BnRcc79qGcEdIq5GaApnf6ZiYbOZXTGXbzNfBksliVo80dDPcXvztS30Li/exec';
+const ADMIN_USER = 'admin', ADMIN_PASS = 'ute2025';
+
+function ce(id){ document.getElementById(id).classList.remove('has-error'); }
+
+function showOverlay(type, icon, msg, sub){
+  const ov = document.getElementById('overlay');
+  document.getElementById('ov-icon').textContent = icon;
+  document.getElementById('ov-msg').textContent = msg;
+  document.getElementById('ov-sub').textContent = sub || '';
+  ov.className = 'overlay show ' + type;
+}
+
+function doLogin(){
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  let ok = true;
+  if(!u){ document.getElementById('fu').classList.add('has-error'); ok=false; }
+  if(!p){ document.getElementById('fp').classList.add('has-error'); ok=false; }
+  if(!ok) return;
+  if(u===ADMIN_USER && p===ADMIN_PASS){
+    showOverlay('success','✅','Đăng nhập thành công!','Đang chuyển hướng...');
+    setTimeout(()=>{ window.location.href='giangvien.html'; }, 3000);
+  } else {
+    showOverlay('error','❌','Tên đăng nhập hoặc mật khẩu không đúng.','');
+    setTimeout(()=>{ document.getElementById('overlay').className='overlay'; }, 3000);
+  }
+}
+
+async function doGoogle(){
+  const email = prompt('Nhập Email Google của bạn:');
+  if(!email) return;
+  const btn = document.getElementById('btn-gg');
+  btn.innerHTML = '<span class="spinner"></span> Đang kiểm tra...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API}?action=checkEmail&email=${encodeURIComponent(email.trim())}`);
+    const data = await res.json();
+
+    if(data.role === 'sinhvien'){
+      sessionStorage.setItem('ute_email', email.trim().toLowerCase());
+      sessionStorage.setItem('ute_role', 'sinhvien');
+      showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href='sinhvien.html'; }, 3000);
+    } else if(data.role === 'giangvien'){
+      sessionStorage.setItem('ute_email', email.trim().toLowerCase());
+      sessionStorage.setItem('ute_role', 'giangvien');
+      showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href='giangvien.html'; }, 3000);
+    } else {
+      showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
+      setTimeout(()=>{ document.getElementById('overlay').className='overlay'; }, 3000);
+    }
+  } catch(err){
+    showOverlay('error','⚠️','Lỗi kết nối. Vui lòng thử lại.','');
+    setTimeout(()=>{ document.getElementById('overlay').className='overlay'; }, 3000);
+  }
+
+  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> Đăng nhập với Google';
+  btn.disabled = false;
+}
+</script>
+</body>
+</html>

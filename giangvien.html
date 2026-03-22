@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Quản lý KLTN - HCM·UTE</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh;}
+.topbar{background:#1a4fad;color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.topbar-brand{font-size:16px;font-weight:800;letter-spacing:1px}
+.topbar-sub{font-size:12px;opacity:.75}
+.topbar-right{display:flex;align-items:center;gap:12px;font-size:13px}
+.user-chip{background:rgba(255,255,255,.15);padding:5px 12px;border-radius:20px;font-size:12.5px}
+.btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:4px;font-family:inherit;font-size:13px;cursor:pointer;transition:.18s}
+.btn-logout:hover{background:rgba(255,255,255,.25)}
+
+.main{padding:24px}
+.page-title{font-size:20px;font-weight:800;color:#1a3a7a;margin-bottom:4px}
+.page-sub{font-size:13px;color:#6b7280;margin-bottom:20px}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:#fff;border-radius:4px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
+.stat-label{font-size:12px;color:#6b7280;margin-bottom:4px}
+.stat-val{font-size:26px;font-weight:800;color:#1a4fad}
+.stat-card.green .stat-val{color:#1a7a4a}
+.stat-card.red .stat-val{color:#c0392b}
+.stat-card.orange .stat-val{color:#d97706}
+
+.table-wrap{background:#fff;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:auto}
+.toolbar{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;gap:10px}
+.toolbar-title{font-size:15px;font-weight:700;color:#1a3a7a}
+.search-inp{padding:8px 14px;border:1.5px solid #d1d5db;border-radius:4px;font-family:inherit;font-size:13.5px;outline:none;width:240px}
+.search-inp:focus{border-color:#1a4fad}
+.btn-refresh{padding:8px 16px;background:#e8f0fe;color:#1a4fad;border:none;border-radius:4px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn-refresh:hover{background:#d0e2fc}
+
+table{width:100%;border-collapse:collapse;min-width:700px}
+thead tr{background:#f8f9fb}
+th{padding:11px 14px;text-align:left;font-size:12.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;border-bottom:1.5px solid #e5e7eb;white-space:nowrap}
+td{padding:12px 14px;font-size:13.5px;color:#1a2340;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8f9fb}
+
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge.wait{background:#fef3c7;color:#92400e}
+.badge.yes{background:#d1fae5;color:#065f46}
+.badge.no{background:#fee2e2;color:#991b1b}
+
+.btn-accept{padding:6px 14px;background:#1a7a4a;color:#fff;border:none;border-radius:4px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;margin-right:6px;transition:.15s}
+.btn-accept:hover{background:#145e39}
+.btn-reject{padding:6px 14px;background:#c0392b;color:#fff;border:none;border-radius:4px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
+.btn-reject:hover{background:#992d22}
+.btn-accept:disabled,.btn-reject:disabled{opacity:.45;cursor:not-allowed}
+
+.loading{text-align:center;padding:48px;color:#9ca3af;font-size:14px}
+.empty{text-align:center;padding:48px;color:#9ca3af;font-size:14px}
+
+.overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;animation:fadeIn .3s ease}
+.overlay.show{display:flex}
+.overlay.success{background:rgba(6,95,70,.92)}
+.overlay.error{background:rgba(153,27,27,.92)}
+.overlay-icon{font-size:54px;margin-bottom:14px;animation:popIn .4s ease}
+.overlay-msg{font-size:20px;font-weight:700;color:#fff;text-align:center}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-icon" id="ov-icon"></div>
+  <div class="overlay-msg" id="ov-msg"></div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div>
+      <div class="topbar-brand">HCM·UTE</div>
+      <div class="topbar-sub">Quản lý đăng ký KLTN</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="user-chip" id="user-chip">...</div>
+    <button class="btn-logout" onclick="logout()">Đăng xuất</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="page-title">Danh sách đăng ký khóa luận</div>
+  <div class="page-sub">Xem và xác nhận đăng ký của sinh viên</div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-label">Tổng đăng ký</div><div class="stat-val" id="st-total">–</div></div>
+    <div class="stat-card orange"><div class="stat-label">Chờ xác nhận</div><div class="stat-val" id="st-wait">–</div></div>
+    <div class="stat-card green"><div class="stat-label">Đã nhận</div><div class="stat-val" id="st-yes">–</div></div>
+    <div class="stat-card red"><div class="stat-label">Từ chối</div><div class="stat-val" id="st-no">–</div></div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="toolbar">
+      <div class="toolbar-title">Danh sách sinh viên</div>
+      <div style="display:flex;gap:8px">
+        <input class="search-inp" id="search" placeholder="Tìm tên, MSSV, đề tài..." oninput="filterTable()"/>
+        <button class="btn-refresh" onclick="loadData()">↻ Tải lại</button>
+      </div>
+    </div>
+    <div id="table-container"><div class="loading">⏳ Đang tải dữ liệu...</div></div>
+  </div>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxVF4xJ-4BnRcc79qGcEdIq5GaApnf6ZiYbOZXTGXbzNfBksliVo80dDPcXvztS30Li/exec';
+
+// Kiểm tra đăng nhập
+const email = sessionStorage.getItem('ute_email');
+const role  = sessionStorage.getItem('ute_role');
+if(!email){ window.location.href='login.html'; }
+document.getElementById('user-chip').textContent = email || 'Admin';
+
+let allData = [];
+
+async function loadData(){
+  document.getElementById('table-container').innerHTML='<div class="loading">⏳ Đang tải dữ liệu...</div>';
+  try{
+    const res = await fetch(`${API}?action=getRegistrations`);
+    const json = await res.json();
+    allData = json.data || [];
+    renderStats(allData);
+    renderTable(allData);
+  } catch(e){
+    document.getElementById('table-container').innerHTML='<div class="empty">⚠️ Không thể tải dữ liệu. Vui lòng thử lại.</div>';
+  }
+}
+
+function renderStats(data){
+  document.getElementById('st-total').textContent = data.length;
+  document.getElementById('st-wait').textContent  = data.filter(r=>r['Xác nhận']==='Chờ xác nhận').length;
+  document.getElementById('st-yes').textContent   = data.filter(r=>r['Xác nhận']==='Đã nhận').length;
+  document.getElementById('st-no').textContent    = data.filter(r=>r['Xác nhận']==='Từ chối').length;
+}
+
+function renderTable(data){
+  if(!data.length){
+    document.getElementById('table-container').innerHTML='<div class="empty">📭 Chưa có sinh viên đăng ký nào.</div>';
+    return;
+  }
+  let rows = data.map((r,i)=>{
+    const status = r['Xác nhận']||'Chờ xác nhận';
+    let badge='', btnHtml='';
+    if(status==='Đã nhận'){
+      badge=`<span class="badge yes">✅ Đã nhận</span>`;
+      btnHtml=`<span style="font-size:12px;color:#6b7280">Đã xử lý</span>`;
+    } else if(status==='Từ chối'){
+      badge=`<span class="badge no">❌ Từ chối</span>`;
+      btnHtml=`<span style="font-size:12px;color:#6b7280">Đã xử lý</span>`;
+    } else {
+      badge=`<span class="badge wait">⏳ Chờ xác nhận</span>`;
+      btnHtml=`<button class="btn-accept" onclick="confirm_row(${r._row},'Đã nhận',this)">Nhận lời mời</button><button class="btn-reject" onclick="confirm_row(${r._row},'Từ chối',this)">Từ chối</button>`;
+    }
+    return `<tr>
+      <td>${r['STT']||i+1}</td>
+      <td><strong>${r['Họ tên']||''}</strong></td>
+      <td>${r['MSSV']||''}</td>
+      <td style="font-size:12.5px;color:#6b7280">${r['Gmail']||''}</td>
+      <td>${r['Đề tài']||''}</td>
+      <td>${r['GVHD']||''}</td>
+      <td>${badge}</td>
+      <td>${btnHtml}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('table-container').innerHTML=`
+    <table>
+      <thead><tr>
+        <th>STT</th><th>Họ và tên</th><th>MSSV</th><th>Gmail</th>
+        <th>Đề tài đăng ký</th><th>GVHD</th><th>Trạng thái</th><th>Hành động</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function filterTable(){
+  const q = document.getElementById('search').value.toLowerCase();
+  if(!q){ renderTable(allData); return; }
+  const filtered = allData.filter(r=>
+    (r['Họ tên']||'').toLowerCase().includes(q)||
+    (r['MSSV']||'').toLowerCase().includes(q)||
+    (r['Đề tài']||'').toLowerCase().includes(q)||
+    (r['Gmail']||'').toLowerCase().includes(q)
+  );
+  renderTable(filtered);
+}
+
+async function confirm_row(row, status, btn){
+  const btns = btn.closest('td').querySelectorAll('button');
+  btns.forEach(b=>b.disabled=true);
+  try{
+    await fetch(API,{method:'POST',body:JSON.stringify({action:'confirm',row,status})});
+    showOverlay(status==='Đã nhận'?'success':'error',
+      status==='Đã nhận'?'✅':'❌',
+      status==='Đã nhận'?'Đã nhận lời mời!':'Đã từ chối lời mời.');
+    setTimeout(()=>{
+      document.getElementById('overlay').className='overlay';
+      loadData();
+    },2000);
+  } catch(e){
+    btns.forEach(b=>b.disabled=false);
+  }
+}
+
+function showOverlay(type,icon,msg){
+  const ov=document.getElementById('overlay');
+  document.getElementById('ov-icon').textContent=icon;
+  document.getElementById('ov-msg').textContent=msg;
+  ov.className='overlay show '+type;
+}
+
+function logout(){
+  sessionStorage.clear();
+  window.location.href='login.html';
+}
+
+loadData();
+</script>
+</body>
+</html>

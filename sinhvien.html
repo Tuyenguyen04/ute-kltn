@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Đăng ký KLTN - HCM·UTE</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px;}
+.header{text-align:center;margin-bottom:20px}
+.school-brand{font-size:15px;font-weight:800;color:#1a4fad;letter-spacing:3px;margin-bottom:6px}
+.school-name{font-size:14px;font-weight:700;color:#1a3a7a;text-transform:uppercase}
+.card{background:#fff;border-radius:4px;padding:36px 36px 32px;width:100%;max-width:540px;box-shadow:0 2px 16px rgba(0,0,0,.10)}
+.card-title{font-size:22px;font-weight:800;color:#1a4fad;text-transform:uppercase;margin-bottom:4px}
+.card-sub{font-size:13px;color:#6b7280;margin-bottom:24px}
+.user-badge{display:inline-flex;align-items:center;gap:8px;background:#e8f0fe;padding:7px 14px;border-radius:20px;font-size:13px;color:#1a4fad;font-weight:600;margin-bottom:20px}
+.label{font-size:13px;font-weight:600;color:#374151;margin-bottom:6px;display:block}
+.field{margin-bottom:16px}
+.field input,.field select,.field textarea{width:100%;padding:12px 14px;border:1.5px solid #d1d5db;border-radius:4px;font-family:inherit;font-size:14px;color:#111;outline:none;transition:.2s;background:#fff}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#1a4fad;box-shadow:0 0 0 3px rgba(26,79,173,.1)}
+.field input[readonly]{background:#f9fafb;color:#6b7280}
+.field textarea{resize:vertical;min-height:80px}
+.field-error{font-size:12px;color:#e53e3e;margin-top:4px;display:none}
+.field.has-error .field-error{display:block}
+.field.has-error input,.field.has-error select,.field.has-error textarea{border-color:#e53e3e}
+.btn-submit{width:100%;padding:14px;background:#1a4fad;color:#fff;border:none;border-radius:4px;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;transition:.18s;margin-top:4px}
+.btn-submit:hover{background:#15408f}
+.btn-submit:disabled{opacity:.6;cursor:not-allowed}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;animation:fadeIn .3s ease}
+.overlay.show{display:flex}
+.overlay.success{background:rgba(6,95,70,.92)}
+.overlay.error{background:rgba(153,27,27,.92)}
+.overlay-icon{font-size:64px;margin-bottom:16px;animation:popIn .4s ease}
+.overlay-msg{font-size:22px;font-weight:700;color:#fff;text-align:center;padding:0 24px;line-height:1.5}
+.overlay-sub{font-size:14px;color:rgba(255,255,255,.8);margin-top:8px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+.spinner{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.logout{position:fixed;top:14px;right:16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;padding:7px 14px;font-family:inherit;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer}
+.logout:hover{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-icon" id="ov-icon"></div>
+  <div class="overlay-msg" id="ov-msg"></div>
+  <div class="overlay-sub" id="ov-sub"></div>
+</div>
+
+<button class="logout" onclick="logout()">Đăng xuất</button>
+
+<div class="header">
+  <div class="school-brand">HCM·UTE</div>
+  <div class="school-name">Đăng ký đề tài khóa luận tốt nghiệp</div>
+</div>
+
+<div class="card">
+  <div class="card-title">Phiếu đăng ký KLTN</div>
+  <div class="card-sub">Vui lòng điền đầy đủ thông tin bên dưới</div>
+  <div class="user-badge">👤 <span id="email-display">...</span></div>
+
+  <div class="row2">
+    <div class="field" id="f-hoten">
+      <label class="label">Họ và tên *</label>
+      <input type="text" id="hoTen" placeholder="Nguyễn Văn A"/>
+      <div class="field-error">Vui lòng nhập họ tên</div>
+    </div>
+    <div class="field" id="f-mssv">
+      <label class="label">MSSV *</label>
+      <input type="text" id="mssv" placeholder="23124153"/>
+      <div class="field-error">Vui lòng nhập MSSV</div>
+    </div>
+  </div>
+
+  <div class="field">
+    <label class="label">Gmail sinh viên</label>
+    <input type="text" id="gmail" readonly/>
+  </div>
+
+  <div class="field" id="f-detai">
+    <label class="label">Tên đề tài KLTN *</label>
+    <input type="text" id="deTai" placeholder="Nhập tên đề tài của bạn"/>
+    <div class="field-error">Vui lòng nhập tên đề tài</div>
+  </div>
+
+  <div class="field" id="f-gvhd">
+    <label class="label">Giảng viên hướng dẫn *</label>
+    <input type="text" id="gvhd" placeholder="Họ tên giảng viên hướng dẫn"/>
+    <div class="field-error">Vui lòng nhập tên giảng viên</div>
+  </div>
+
+  <button class="btn-submit" id="btn-sub" onclick="submitForm()">Gửi đăng ký</button>
+</div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbxVF4xJ-4BnRcc79qGcEdIq5GaApnf6ZiYbOZXTGXbzNfBksliVo80dDPcXvztS30Li/exec';
+
+// Kiểm tra đăng nhập
+const email = sessionStorage.getItem('ute_email');
+const role  = sessionStorage.getItem('ute_role');
+if(!email || role !== 'sinhvien'){ window.location.href='login.html'; }
+document.getElementById('email-display').textContent = email;
+document.getElementById('gmail').value = email;
+
+function ce(id){ document.getElementById(id).classList.remove('has-error'); }
+['f-hoten','f-mssv','f-detai','f-gvhd'].forEach(id=>{
+  const inp = document.getElementById(id).querySelector('input,textarea');
+  if(inp) inp.addEventListener('input',()=>ce(id));
+});
+
+function showOverlay(type,icon,msg,sub){
+  const ov=document.getElementById('overlay');
+  document.getElementById('ov-icon').textContent=icon;
+  document.getElementById('ov-msg').textContent=msg;
+  document.getElementById('ov-sub').textContent=sub||'';
+  ov.className='overlay show '+type;
+}
+
+async function submitForm(){
+  const fields=[
+    {id:'hoTen',fid:'f-hoten'},
+    {id:'mssv',fid:'f-mssv'},
+    {id:'deTai',fid:'f-detai'},
+    {id:'gvhd',fid:'f-gvhd'}
+  ];
+  let ok=true;
+  fields.forEach(f=>{
+    if(!document.getElementById(f.id).value.trim()){
+      document.getElementById(f.fid).classList.add('has-error'); ok=false;
+    }
+  });
+  if(!ok) return;
+
+  const btn=document.getElementById('btn-sub');
+  btn.innerHTML='<span class="spinner"></span> Đang gửi...';
+  btn.disabled=true;
+
+  const payload={
+    action:'register',
+    hoTen: document.getElementById('hoTen').value.trim(),
+    mssv:  document.getElementById('mssv').value.trim(),
+    gmail: email,
+    deTai: document.getElementById('deTai').value.trim(),
+    gvhd:  document.getElementById('gvhd').value.trim()
+  };
+
+  try{
+    await fetch(API,{method:'POST',body:JSON.stringify(payload)});
+    showOverlay('success','✅','Đăng ký thành công!','Thông tin của bạn đã được ghi nhận');
+    setTimeout(()=>{ document.getElementById('overlay').className='overlay'; btn.innerHTML='Gửi đăng ký'; btn.disabled=false; },3000);
+  } catch(e){
+    showOverlay('error','⚠️','Lỗi kết nối. Vui lòng thử lại.','');
+    setTimeout(()=>{ document.getElementById('overlay').className='overlay'; btn.innerHTML='Gửi đăng ký'; btn.disabled=false; },3000);
+  }
+}
+
+function logout(){
+  sessionStorage.clear();
+  window.location.href='login.html';
+}
+</script>
+</body>
+</html>
