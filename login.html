@@ -123,7 +123,7 @@ function doLogin(){
     sessionStorage.setItem('ute_email', 'admin');
     sessionStorage.setItem('ute_role', 'admin');
     showOverlay('success','✅','Đăng nhập thành công!','Đang chuyển hướng...');
-    setTimeout(()=>{ window.location.href='giangvien.html'; }, 3000);
+    setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
   } else {
     showOverlay('error','🚫','Tên đăng nhập hoặc mật khẩu không đúng.','');
     setTimeout(hideOverlay, 3000);
@@ -146,13 +146,13 @@ async function handleGoogleLogin(response){
       sessionStorage.setItem('ute_email', email);
       sessionStorage.setItem('ute_role', 'sinhvien');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href='sinhvien.html'; }, 3000);
+      setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
 
     } else if(data.role === 'giangvien'){
       sessionStorage.setItem('ute_email', email);
       sessionStorage.setItem('ute_role', 'giangvien');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href='giangvien.html'; }, 3000);
+      setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
 
     } else {
       showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
