@@ -62,26 +62,19 @@
             color: #4f46e5;
         }
         
-        .sidebar-user {
-            background: #f0f4ff;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 24px;
-        }
-        
-        .user-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 20px;
-            margin-bottom: 12px;
-        }
+.sidebar-logo img {
+    border-radius: 4px;
+}
+
+.sidebar-user {
+    background: #f0f4ff;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.user-avatar {
+    flex-shrink: 0;
+}
         
         .user-name {
             font-size: 14px;
@@ -721,18 +714,21 @@
 </head>
 <body>
     <!-- SIDEBAR -->
-    <div class="sidebar">
-        <div class="sidebar-logo">
-            <div class="sidebar-logo-icon">U</div>
-            <div class="sidebar-logo-text">USTE</div>
+<div class="sidebar">
+    <div class="sidebar-logo">
+        <img id="school-logo" src="https://drive.google.com/uc?export=view&id=174jQ16v-9F-yYEzeJzO-UuIj4zYYM1kn" alt="HCMUTE" style="width: 40px; height: 40px; object-fit: contain;">
+        <div class="sidebar-logo-text" style="font-size: 16px;">HCMUTE</div>
+    </div>
+    
+    <div class="sidebar-user" style="display: flex; align-items: center; gap: 12px; padding: 12px;">
+        <div class="user-avatar" id="avatar" style="background: #9ca3af; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+            <i class="fas fa-user" style="color: white;"></i>
         </div>
-        
-        <div class="sidebar-user">
-            <div class="user-avatar" id="avatar">A</div>
-            <div class="user-name" id="user-name">Alex Rivers</div>
-            <div class="user-id" id="user-id">ID: 2024-8892</div>
-            <span class="user-role">SINH VIÊN</span>
+        <div style="flex: 1;">
+            <div class="user-name" id="user-name">Đang tải...</div>
+            <div class="user-id" id="user-id">ID: --</div>
         </div>
+    </div>
         
         <ul class="sidebar-menu">
             <li><a href="#" class="active" onclick="scrollToTop()"><i class="fas fa-chart-line"></i> Dashboard</a></li>
@@ -937,145 +933,179 @@
         <div class="notification-message" id="noti-message">Thông tin của bạn đã được ghi nhận</div>
     </div>
 
-    <script>
-        const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
+<script>
+    const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
 
-        // CHECK LOGIN
-        const email = sessionStorage.getItem('ute_email');
-        const role = sessionStorage.getItem('ute_role');
-        if(!email){ 
-            window.location.href='login.html'; 
-        }
+    // CHECK LOGIN
+    const email = sessionStorage.getItem('ute_email');
+    const role = sessionStorage.getItem('ute_role');
+    const userName = sessionStorage.getItem('ute_name');
+    const userMSSV = sessionStorage.getItem('ute_maSo');
+    
+    if(!email){ 
+        window.location.href='login.html'; 
+    }
 
-        // SET USER INFO
-        const userName = email.split('@')[0];
-        document.getElementById('user-name').textContent = email;
-        document.getElementById('user-id').textContent = `ID: ${email}`;
-        document.getElementById('greeting-name').textContent = userName;
-        document.getElementById('avatar').textContent = email[0].toUpperCase();
-        document.getElementById('m-gmail').value = email;
+    // HIỂN THỊ THÔNG TIN THEO ROLE
+    if (userName && userName !== 'null') {
+        document.getElementById('user-name').textContent = userName;
+    } else {
+        document.getElementById('user-name').textContent = email.split('@')[0];
+    }
+    
+    // Hiển thị MSSV hoặc Mã số giảng viên
+    let idText = '';
+    let roleText = '';
+    if (role === 'sinhvien') {
+        idText = userMSSV && userMSSV !== 'null' ? `MSSV: ${userMSSV}` : `MSSV: ${email.split('@')[0]}`;
+        roleText = 'SINH VIÊN';
+        document.getElementById('greeting-name').textContent = userName || email.split('@')[0];
+    } else if (role === 'giangvien') {
+        idText = userMSSV && userMSSV !== 'null' ? `Mã GV: ${userMSSV}` : `Mã GV: ${email.split('@')[0]}`;
+        roleText = 'GIẢNG VIÊN';
+        document.getElementById('greeting-name').textContent = `Thầy/Cô ${userName || email.split('@')[0]}`;
+    } else {
+        idText = `ID: ${email}`;
+        roleText = 'USER';
+    }
+    document.getElementById('user-id').textContent = idText;
+    document.querySelector('.user-role').textContent = roleText;
+    
+    // Gán email vào modal
+    document.getElementById('m-gmail').value = email;
+    
+    let gvData = [];
 
-        let gvData = [];
-
-        // LOAD DATA
-        async function loadData(){
-            try {
-                const res = await fetch(`${API}?action=getRegistrations`);
-                const json = await res.json();
-                const data = json.data || [];
-                console.log('Registrations:', data);
-            } catch(e){ 
-                console.log('Error loading data:', e); 
-            }
-        }
-
-        // LOAD GIẢNG VIÊN
-        async function loadGV(){
-            try {
-                const res = await fetch(`${API}?action=getGiangVien`);
-                const json = await res.json();
-                gvData = json.data || [];
-                console.log('Advisors:', gvData);
-                
-                const sel = document.getElementById('m-gvhd');
-                gvData.forEach(g=>{
-                    const opt = document.createElement('option');
-                    opt.value = g['Họ và Tên']||g['ho_ten']||'';
-                    opt.textContent = g['Họ và Tên']||g['ho_ten']||'';
-                    sel.appendChild(opt);
-                });
-            } catch(e){
-                console.log('Error loading GV:', e);
-            }
-        }
-
-        // MODAL FUNCTIONS
-        function openModal(){
-            document.getElementById('modal-overlay').classList.add('show');
-        }
-
-        function closeModal(){
-            document.getElementById('modal-overlay').classList.remove('show');
-            document.getElementById('m-hoten').value = '';
-            document.getElementById('m-mssv').value = '';
-            document.getElementById('m-detai').value = '';
-            document.getElementById('m-gvhd').value = '';
-        }
-
-        async function submitForm(){
-            const hoTen = document.getElementById('m-hoten').value.trim();
-            const mssv = document.getElementById('m-mssv').value.trim();
-            const deTai = document.getElementById('m-detai').value.trim();
-            const gvhd = document.getElementById('m-gvhd').value.trim();
+    // LOAD GIẢNG VIÊN
+    async function loadGV(){
+        try {
+            const res = await fetch(`${API}?action=getGiangVien`);
+            const json = await res.json();
+            gvData = json.data || [];
+            console.log('Advisors:', gvData);
             
-            if(!hoTen||!mssv||!deTai||!gvhd){ 
-                alert('Vui lòng điền đầy đủ thông tin!'); 
-                return; 
+            const sel = document.getElementById('m-gvhd');
+            sel.innerHTML = '<option value="">-- Chọn giảng viên --</option>';
+            gvData.forEach(g=>{
+                const opt = document.createElement('option');
+                opt.value = g['Họ và Tên'] || g['ho_ten'] || '';
+                opt.textContent = g['Họ và Tên'] || g['ho_ten'] || '';
+                sel.appendChild(opt);
+            });
+        } catch(e){
+            console.log('Error loading GV:', e);
+        }
+    }
+
+    // LOAD DỮ LIỆU ĐĂNG KÝ CỦA USER
+    async function loadUserRegistrations(){
+        try {
+            const res = await fetch(`${API}?action=getRegistrations&email=${encodeURIComponent(email)}`);
+            const json = await res.json();
+            const data = json.data || [];
+            console.log('User registrations:', data);
+            
+            if (data.length > 0) {
+                const lastReg = data[data.length - 1];
+                document.getElementById('advisor-card').style.display = 'block';
+                document.getElementById('advisor-name').textContent = lastReg.gvhd || '-';
+                document.getElementById('advisor-code').textContent = lastReg.gvCode || '-';
+                document.getElementById('advisor-email').textContent = lastReg.gvEmail || '-';
+                document.getElementById('advisor-batch').textContent = lastReg.batch || 'K48';
             }
+        } catch(e){ 
+            console.log('Error loading registrations:', e); 
+        }
+    }
 
-            const btn = document.getElementById('btn-submit');
-            btn.textContent = 'Đang gửi...';
-            btn.disabled = true;
+    // MODAL FUNCTIONS
+    function openModal(){
+        document.getElementById('modal-overlay').classList.add('show');
+    }
 
-            try {
-                const response = await fetch(API, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'register',
-                        hoTen,
-                        mssv,
-                        gmail: email,
-                        deTai,
-                        gvhd
-                    })
-                });
-                
-                // TÌM THÔNG TIN GIẢNG VIÊN ĐÃ CHỌN
-                const selectedAdvisor = gvData.find(g => (g['Họ và Tên'] || g['ho_ten']) === gvhd);
-                
-                if(selectedAdvisor) {
-                    // HIỂN THỊ THÔNG TIN GIẢNG VIÊN
-                    document.getElementById('advisor-card').style.display = 'block';
-                    document.getElementById('advisor-name').textContent = selectedAdvisor['Họ và Tên'] || selectedAdvisor['ho_ten'] || '-';
-                    document.getElementById('advisor-code').textContent = selectedAdvisor['MSSV'] || selectedAdvisor['ma_gv'] || '-';
-                    document.getElementById('advisor-email').textContent = selectedAdvisor['Gmail'] || selectedAdvisor['gmail'] || '-';
-                    document.getElementById('advisor-batch').textContent = selectedAdvisor['Đợt'] || selectedAdvisor['dot'] || 'K48';
-                }
-                
-                closeModal();
-                showNotification('✅', 'Đăng ký thành công!', 'Thông tin của bạn đã được ghi nhận');
-                setTimeout(() => {
-                    document.getElementById('notification').classList.remove('show');
-                    loadData();
-                }, 3000);
-            } catch(e){
-                showNotification('❌', 'Lỗi kết nối', 'Vui lòng thử lại');
-                console.log('Error:', e);
+    function closeModal(){
+        document.getElementById('modal-overlay').classList.remove('show');
+        document.getElementById('m-hoten').value = '';
+        document.getElementById('m-mssv').value = '';
+        document.getElementById('m-detai').value = '';
+        document.getElementById('m-gvhd').value = '';
+    }
+
+    async function submitForm(){
+        const hoTen = document.getElementById('m-hoten').value.trim();
+        const mssv = document.getElementById('m-mssv').value.trim();
+        const deTai = document.getElementById('m-detai').value.trim();
+        const gvhd = document.getElementById('m-gvhd').value.trim();
+        
+        if(!hoTen||!mssv||!deTai||!gvhd){ 
+            alert('Vui lòng điền đầy đủ thông tin!'); 
+            return; 
+        }
+
+        const btn = document.getElementById('btn-submit');
+        btn.textContent = 'Đang gửi...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(API, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'register',
+                    hoTen,
+                    mssv,
+                    gmail: email,
+                    deTai,
+                    gvhd
+                })
+            });
+            
+            const selectedAdvisor = gvData.find(g => (g['Họ và Tên'] || g['ho_ten']) === gvhd);
+            
+            if(selectedAdvisor) {
+                document.getElementById('advisor-card').style.display = 'block';
+                document.getElementById('advisor-name').textContent = selectedAdvisor['Họ và Tên'] || selectedAdvisor['ho_ten'] || '-';
+                document.getElementById('advisor-code').textContent = selectedAdvisor['MSSV'] || selectedAdvisor['ma_gv'] || '-';
+                document.getElementById('advisor-email').textContent = selectedAdvisor['Gmail'] || selectedAdvisor['gmail'] || '-';
+                document.getElementById('advisor-batch').textContent = selectedAdvisor['Đợt'] || selectedAdvisor['dot'] || 'K48';
             }
             
-            btn.textContent = 'Gửi đăng ký';
-            btn.disabled = false;
+            closeModal();
+            showNotification('✅', 'Đăng ký thành công!', 'Thông tin của bạn đã được ghi nhận');
+            setTimeout(() => {
+                document.getElementById('notification').classList.remove('show');
+                loadUserRegistrations();
+            }, 3000);
+        } catch(e){
+            showNotification('❌', 'Lỗi kết nối', 'Vui lòng thử lại');
+            console.log('Error:', e);
         }
+        
+        btn.textContent = 'Gửi đăng ký';
+        btn.disabled = false;
+    }
 
-        function showNotification(icon, title, message){
-            document.getElementById('noti-icon').textContent = icon;
-            document.getElementById('noti-title').textContent = title;
-            document.getElementById('noti-message').textContent = message;
-            document.getElementById('notification').classList.add('show');
-        }
+    function showNotification(icon, title, message){
+        document.getElementById('noti-icon').textContent = icon;
+        document.getElementById('noti-title').textContent = title;
+        document.getElementById('noti-message').textContent = message;
+        document.getElementById('notification').classList.add('show');
+        setTimeout(() => {
+            document.getElementById('notification').classList.remove('show');
+        }, 3000);
+    }
 
-        // NAVIGATION
-        function scrollToTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
-        function scrollToReports(){ document.querySelector('.reports-section').scrollIntoView({behavior:'smooth'}); }
-        function openSettings(){ alert('Profile Settings - Coming soon!'); }
-        function logout(){ 
-            sessionStorage.clear(); 
-            window.location.href='login.html'; 
-        }
+    // NAVIGATION
+    function scrollToTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
+    function scrollToReports(){ document.querySelector('.reports-section').scrollIntoView({behavior:'smooth'}); }
+    function openSettings(){ alert('Profile Settings - Coming soon!'); }
+    function logout(){ 
+        sessionStorage.clear(); 
+        window.location.href='login.html'; 
+    }
 
-        // INIT
-        loadData();
-        loadGV();
-    </script>
+    // INIT
+    loadGV();
+    loadUserRegistrations();
+</script>
 </body>
 </html>
