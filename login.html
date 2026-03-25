@@ -74,7 +74,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh
 
   <div class="divider"><span>hoặc</span></div>
 
-  <!-- Nút Google Sign-In thật -->
+  <!-- Nút Google Sign-In -->
   <div class="google-btn-wrap">
     <div id="g_id_onload"
          data-client_id="182980370571-okdedhnh98qnf86rg5n7kq508ljr4fne.apps.googleusercontent.com"
@@ -132,7 +132,7 @@ function doLogin(){
   }
 }
 
-// Callback từ Google Sign-In thật
+// Callback từ Google Sign-In
 async function handleGoogleLogin(response){
   // Giải mã JWT token để lấy email
   const payload = JSON.parse(atob(response.credential.split('.')[1]));
@@ -143,20 +143,25 @@ async function handleGoogleLogin(response){
   try {
     const res = await fetch(`${API}?action=checkEmail&email=${encodeURIComponent(email)}`);
     const data = await res.json();
+    
+    // Log để kiểm tra dữ liệu nhận được
+    console.log('Dữ liệu từ API:', data);
 
-    if(data.role === 'sinhvien'){
-    sessionStorage.setItem('ute_email', email);
-    sessionStorage.setItem('ute_role', 'sinhvien');
-    sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
-    sessionStorage.setItem('ute_maSo', data.maSo || '');
-    // ...
-} else if(data.role === 'giangvien'){
-    sessionStorage.setItem('ute_email', email);
-    sessionStorage.setItem('ute_role', 'giangvien');
-    sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
-    sessionStorage.setItem('ute_maSo', data.maSo || '');
-    // ...
-}
+    if(data.success === true && data.role === 'sinhvien'){
+      sessionStorage.setItem('ute_email', email);
+      sessionStorage.setItem('ute_role', 'sinhvien');
+      sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
+      sessionStorage.setItem('ute_maSo', data.maSo || '');
+      showOverlay('success', '👏', 'Chúc mừng bạn đã đăng nhập thành công!', 'Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
+      
+    } else if(data.success === true && data.role === 'giangvien'){
+      sessionStorage.setItem('ute_email', email);
+      sessionStorage.setItem('ute_role', 'giangvien');
+      sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
+      sessionStorage.setItem('ute_maSo', data.maSo || '');
+      showOverlay('success', '👏', 'Chúc mừng bạn đã đăng nhập thành công!', 'Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
       
     } else {
       showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
