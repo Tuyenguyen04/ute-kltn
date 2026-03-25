@@ -378,6 +378,48 @@
             color: #ff9800;
         }
         
+        .advisor-card {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #d4deff;
+        }
+        
+        .advisor-card-title {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        
+        .advisor-card-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+        
+        .advisor-card-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .advisor-info-item {
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .advisor-info-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+        
+        .advisor-info-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
         /* REPORTS SECTION */
         .reports-section {
             background: white;
@@ -489,32 +531,6 @@
             padding: 8px;
         }
         
-        @media (max-width: 1200px) {
-            .progress-section {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 250px;
-                padding: 16px;
-            }
-            
-            .main {
-                margin-left: 250px;
-                padding: 16px;
-            }
-            
-            .hero {
-                flex-direction: column;
-            }
-            
-            .progress-steps {
-                flex-wrap: wrap;
-            }
-        }
-
         /* MODAL */
         .modal-overlay {
             display: none;
@@ -675,6 +691,32 @@
                 transform: translate(-50%, -50%);
             }
         }
+
+        @media (max-width: 1200px) {
+            .progress-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+                padding: 16px;
+            }
+            
+            .main {
+                margin-left: 250px;
+                padding: 16px;
+            }
+            
+            .hero {
+                flex-direction: column;
+            }
+            
+            .progress-steps {
+                flex-wrap: wrap;
+            }
+        }
     </style>
 </head>
 <body>
@@ -689,13 +731,13 @@
             <div class="user-avatar" id="avatar">A</div>
             <div class="user-name" id="user-name">Alex Rivers</div>
             <div class="user-id" id="user-id">ID: 2024-8892</div>
-            <span class="user-role">UX RESEARCH INTERN</span>
+            <span class="user-role">SINH VIÊN</span>
         </div>
         
         <ul class="sidebar-menu">
             <li><a href="#" class="active" onclick="scrollToTop()"><i class="fas fa-chart-line"></i> Dashboard</a></li>
             <li><a href="#" onclick="scrollToReports()"><i class="fas fa-file-pdf"></i> My Reports</a></li>
-            <li><a href="#" onclick="openModal()"><i class="fas fa-briefcase"></i> Internships</a></li>
+            <li><a href="#" onclick="openModal()"><i class="fas fa-briefcase"></i> Đăng ký đề tài</a></li>
             <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Profile Settings</a></li>
         </ul>
         
@@ -720,12 +762,12 @@
                 <div class="hero-greeting">Chào buổi sáng, <span id="greeting-name">Alex</span>!</div>
                 <div class="hero-sub">Hôm nay là một ngày tuyệt vời để tiếp tục kỳ thực tập của bạn.</div>
                 <button class="hero-btn" onclick="openModal()">
-                    <i class="fas fa-plus-circle"></i> Tạo báo cáo mới
+                    <i class="fas fa-plus-circle"></i> Đăng ký đề tài
                 </button>
             </div>
         </div>
         
-        <!-- PROGRESS & DEADLINE -->
+        <!-- PROGRESS & DEADLINE & ADVISOR -->
         <div class="progress-section">
             <div class="progress-card">
                 <div class="progress-title">
@@ -760,11 +802,42 @@
                 </div>
             </div>
             
-            <div class="deadline-card">
-                <div class="deadline-icon">⏱️</div>
-                <div class="deadline-title">Hạn nộp tiếp theo</div>
-                <div class="deadline-sub">Báo cáo tuần 8</div>
-                <div class="deadline-days">Còn 2 ngày</div>
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- DEADLINE CARD -->
+                <div class="deadline-card">
+                    <div class="deadline-icon">⏱️</div>
+                    <div class="deadline-title">Hạn nộp tiếp theo</div>
+                    <div class="deadline-sub">Báo cáo tuần 8</div>
+                    <div class="deadline-days">Còn 2 ngày</div>
+                </div>
+                
+                <!-- ADVISOR CARD (Hidden by default) -->
+                <div class="advisor-card" id="advisor-card" style="display: none;">
+                    <div class="advisor-card-title">
+                        <div class="advisor-card-icon">👨‍🏫</div>
+                        <div class="advisor-card-label">Giảng viên hướng dẫn</div>
+                    </div>
+                    
+                    <div class="advisor-info-item">
+                        <div class="advisor-info-label">Họ và tên</div>
+                        <div class="advisor-info-value" id="advisor-name">-</div>
+                    </div>
+                    
+                    <div class="advisor-info-item">
+                        <div class="advisor-info-label">Mã GV</div>
+                        <div class="advisor-info-value" id="advisor-code">-</div>
+                    </div>
+                    
+                    <div class="advisor-info-item">
+                        <div class="advisor-info-label">Email</div>
+                        <div class="advisor-info-value" id="advisor-email">-</div>
+                    </div>
+                    
+                    <div class="advisor-info-item">
+                        <div class="advisor-info-label">Đợt</div>
+                        <div class="advisor-info-value" id="advisor-batch">-</div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -890,9 +963,9 @@
                 const res = await fetch(`${API}?action=getRegistrations`);
                 const json = await res.json();
                 const data = json.data || [];
-                console.log('Data:', data);
+                console.log('Registrations:', data);
             } catch(e){ 
-                console.log('Error:', e); 
+                console.log('Error loading data:', e); 
             }
         }
 
@@ -902,6 +975,7 @@
                 const res = await fetch(`${API}?action=getGiangVien`);
                 const json = await res.json();
                 gvData = json.data || [];
+                console.log('Advisors:', gvData);
                 
                 const sel = document.getElementById('m-gvhd');
                 gvData.forEach(g=>{
@@ -911,7 +985,7 @@
                     sel.appendChild(opt);
                 });
             } catch(e){
-                console.log('Error:', e);
+                console.log('Error loading GV:', e);
             }
         }
 
@@ -956,6 +1030,18 @@
                     })
                 });
                 
+                // TÌM THÔNG TIN GIẢNG VIÊN ĐÃ CHỌN
+                const selectedAdvisor = gvData.find(g => (g['Họ và Tên'] || g['ho_ten']) === gvhd);
+                
+                if(selectedAdvisor) {
+                    // HIỂN THỊ THÔNG TIN GIẢNG VIÊN
+                    document.getElementById('advisor-card').style.display = 'block';
+                    document.getElementById('advisor-name').textContent = selectedAdvisor['Họ và Tên'] || selectedAdvisor['ho_ten'] || '-';
+                    document.getElementById('advisor-code').textContent = selectedAdvisor['MSSV'] || selectedAdvisor['ma_gv'] || '-';
+                    document.getElementById('advisor-email').textContent = selectedAdvisor['Gmail'] || selectedAdvisor['gmail'] || '-';
+                    document.getElementById('advisor-batch').textContent = selectedAdvisor['Đợt'] || selectedAdvisor['dot'] || 'K48';
+                }
+                
                 closeModal();
                 showNotification('✅', 'Đăng ký thành công!', 'Thông tin của bạn đã được ghi nhận');
                 setTimeout(() => {
@@ -964,6 +1050,7 @@
                 }, 3000);
             } catch(e){
                 showNotification('❌', 'Lỗi kết nối', 'Vui lòng thử lại');
+                console.log('Error:', e);
             }
             
             btn.textContent = 'Gửi đăng ký';
