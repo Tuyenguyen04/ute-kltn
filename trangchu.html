@@ -1,372 +1,344 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html class="light" lang="vi">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Trang chủ - Đăng ký KLTN HCM·UTE</title>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<title>Trường Đại học Công nghệ Kỹ thuật - Student Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#005bbf",
+        "primary-container": "#1a73e8",
+        "on-primary": "#ffffff",
+        "on-surface": "#191c1d",
+        "on-surface-variant": "#414754",
+        "surface": "#f8f9fa",
+        "surface-container": "#edeeef",
+        "outline-variant": "#c1c6d6"
+      },
+      fontFamily: {
+        "headline": ["Manrope"],
+        "body": ["Inter"],
+        "label": ["Inter"]
+      }
+    }
+  }
+}
+</script>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
- --blue:#1a4fad;--blue-dark:#0f3480;--blue-light:#e8f0fe;
- --red:#c0392b;--green:#1a7a4a;--orange:#d97706;
- --gray-bg:#f0f2f7;--gray-border:#dde1ea;--gray-text:#5a6478;
- --white:#fff;--shadow:0 2px 12px rgba(20,50,120,.08);
-}
-body{font-family:'Be Vietnam Pro',sans-serif;background:var(--gray-bg);min-height:100vh;color:#1a2340}
-
-/* ── TOPBAR ── */
-.topbar{background:var(--blue-dark);color:#fff;padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2)}
-.topbar-left{display:flex;align-items:center;gap:14px}
-.topbar-brand{font-size:17px;font-weight:800;letter-spacing:1.5px}
-.topbar-divider{width:1px;height:28px;background:rgba(255,255,255,.25)}
-.topbar-title{font-size:13px;font-weight:500;opacity:.85}
-.topbar-right{display:flex;align-items:center;gap:12px}
-.user-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);padding:6px 14px;border-radius:20px;font-size:12.5px;display:flex;align-items:center;gap:6px}
-.user-role{background:rgba(255,255,255,.2);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.5px}
-.btn-logout{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 16px;border-radius:4px;font-family:inherit;font-size:13px;cursor:pointer;transition:.15s}
-.btn-logout:hover{background:rgba(255,255,255,.1)}
-
-/* ── HERO BANNER ── */
-.hero{background:linear-gradient(135deg,var(--blue-dark) 0%,var(--blue) 100%);color:#fff;padding:36px 32px 32px;position:relative;overflow:hidden}
-.hero::after{content:'';position:absolute;right:-60px;top:-60px;width:280px;height:280px;border-radius:50%;background:rgba(255,255,255,.05)}
-.hero::before{content:'';position:absolute;right:80px;bottom:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.04)}
-.hero-content{position:relative;z-index:1;max-width:1100px;margin:0 auto}
-.hero-greeting{font-size:13.5px;opacity:.8;margin-bottom:6px}
-.hero-name{font-size:24px;font-weight:800;margin-bottom:4px}
-.hero-sub{font-size:13.5px;opacity:.75}
-.hero-stats{display:flex;gap:24px;margin-top:20px;flex-wrap:wrap}
-.hero-stat{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);padding:12px 20px;border-radius:8px;text-align:center;min-width:110px}
-.hero-stat-val{font-size:22px;font-weight:800}
-.hero-stat-label{font-size:11.5px;opacity:.8;margin-top:2px}
-
-/* ── MAIN LAYOUT ── */
-.main{max-width:1100px;margin:0 auto;padding:28px 32px}
-
-/* ── SECTION TITLE ── */
-.sec-title{font-size:15px;font-weight:700;color:var(--blue-dark);margin-bottom:14px;display:flex;align-items:center;gap:8px;padding-bottom:8px;border-bottom:2px solid var(--blue-light)}
-.sec-title::before{content:'';width:4px;height:18px;background:var(--blue);border-radius:2px;display:inline-block}
-
-/* ── QUICK ACTIONS ── */
-.actions-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:32px}
-.action-card{background:var(--white);border-radius:8px;padding:20px;box-shadow:var(--shadow);border:1px solid var(--gray-border);cursor:pointer;transition:.2s;text-decoration:none;display:flex;flex-direction:column;align-items:flex-start;gap:10px;border-left:4px solid transparent}
-.action-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(26,79,173,.12);border-left-color:var(--blue)}
-.action-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
-.action-icon.blue{background:var(--blue-light)}
-.action-icon.green{background:#d1fae5}
-.action-icon.orange{background:#fef3c7}
-.action-icon.red{background:#fee2e2}
-.action-title{font-size:14px;font-weight:700;color:#1a2340}
-.action-sub{font-size:12px;color:var(--gray-text);line-height:1.5}
-
-/* ── STATUS CARD ── */
-.status-section{margin-bottom:32px;display:none}
-.status-card{background:var(--white);border-radius:8px;box-shadow:var(--shadow);border:1px solid var(--gray-border);overflow:hidden}
-.status-header{padding:16px 20px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between}
-.status-header-title{font-size:14px;font-weight:700;color:#1a2340}
-.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
-.badge.wait{background:#fef3c7;color:#92400e}
-.badge.yes{background:#d1fae5;color:#065f46}
-.badge.no{background:#fee2e2;color:#991b1b}
-.badge.none{background:#f3f4f6;color:#6b7280}
-.status-body{padding:20px}
-.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
-.info-item label{font-size:11.5px;color:var(--gray-text);font-weight:600;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
-.info-item p{font-size:14px;color:#1a2340;font-weight:500}
-.no-data{text-align:center;padding:32px;color:var(--gray-text)}
-.no-data-icon{font-size:40px;margin-bottom:10px}
-.no-data p{font-size:14px}
-.btn-register{margin-top:16px;padding:10px 24px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
-.btn-register:hover{background:var(--blue-dark)}
-
-/* ── GIẢNG VIÊN TABLE ── */
-.gv-list-section{display:none;margin-bottom:32px}
-.gv-table-wrap{background:var(--white);border-radius:8px;box-shadow:var(--shadow);border:1px solid var(--gray-border);overflow:auto;margin-bottom:32px}
-.gv-toolbar{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--gray-border)}
-.search-inp{padding:8px 14px;border:1.5px solid var(--gray-border);border-radius:6px;font-family:inherit;font-size:13.5px;outline:none;width:220px;transition:.2s}
-.search-inp:focus{border-color:var(--blue)}
-table{width:100%;border-collapse:collapse;min-width:500px}
-thead tr{background:#f8f9fb}
-th{padding:11px 16px;text-align:left;font-size:12px;font-weight:700;color:var(--gray-text);text-transform:uppercase;letter-spacing:.4px;border-bottom:1.5px solid var(--gray-border)}
-td{padding:12px 16px;font-size:13.5px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#f8f9fb}
-.gv-avatar{width:34px;height:34px;border-radius:50%;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--blue);flex-shrink:0}
-.gv-info{display:flex;align-items:center;gap:10px}
-
-/* ── THÔNG BÁO ── */
-.notice-section{margin-bottom:32px}
-.notice-card{background:var(--white);border-radius:8px;box-shadow:var(--shadow);border:1px solid var(--gray-border);overflow:hidden}
-.notice-item{padding:14px 20px;border-bottom:1px solid #f0f0f0;display:flex;gap:12px;align-items:flex-start}
-.notice-item:last-child{border-bottom:none}
-.notice-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0;margin-top:6px}
-.notice-dot.red{background:var(--red)}
-.notice-dot.orange{background:var(--orange)}
-.notice-content p{font-size:13.5px;color:#1a2340;font-weight:500}
-.notice-content span{font-size:12px;color:var(--gray-text)}
-
-/* ── OVERLAY ── */
-.overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;background:rgba(6,95,70,.92)}
-.overlay.show{display:flex}
-.overlay.error{background:rgba(153,27,27,.92)}
-.overlay-icon{font-size:64px;margin-bottom:16px}
-.overlay-msg{font-size:22px;font-weight:700;color:#fff;text-align:center;padding:0 24px}
-.overlay-sub{font-size:14px;color:rgba(255,255,255,.8);margin-top:8px}
-
-/* ── MODAL ĐĂNG KÝ ── */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:500;min-height:100vh}
-.modal-bg.show{display:flex}
-.modal{background:#fff;border-radius:10px;padding:32px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-.modal-title{font-size:18px;font-weight:800;color:var(--blue-dark);margin-bottom:4px}
-.modal-sub{font-size:13px;color:var(--gray-text);margin-bottom:20px}
-.field{margin-bottom:14px}
-.field label{font-size:12.5px;font-weight:600;color:#374151;display:block;margin-bottom:5px}
-.field input,.field select{width:100%;padding:11px 14px;border:1.5px solid var(--gray-border);border-radius:6px;font-family:inherit;font-size:13.5px;color:#111;outline:none;transition:.2s}
-.field input:focus,.field select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,79,173,.1)}
-.field input[readonly]{background:#f9fafb;color:var(--gray-text)}
-.modal-btns{display:flex;gap:10px;margin-top:20px}
-.btn-cancel{flex:1;padding:11px;background:#fff;border:1.5px solid var(--gray-border);border-radius:6px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;color:var(--gray-text)}
-.btn-submit{flex:2;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:6px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
-.btn-submit:hover{background:var(--blue-dark)}
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-.role-sv{color:var(--blue);background:var(--blue-light);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
-.role-gv{color:#065f46;background:#d1fae5;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
-
-@media(max-width:600px){
- .main{padding:16px}
- .hero{padding:24px 16px}
- .topbar{padding:0 16px}
- .hero-stats{gap:12px}
-}
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8f9fa;
+    color: #191c1d;
+    min-height: max(884px, 100dvh);
+  }
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+  }
+  .modal-bg.show {
+    display: flex;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    background: rgba(6,95,70,.92);
+  }
+  .overlay.show {
+    display: flex;
+  }
 </style>
 </head>
-<body>
-
-<!-- Overlay -->
-<div class="overlay" id="overlay">
-  <div class="overlay-icon" id="ov-icon"></div>
-  <div class="overlay-msg" id="ov-msg"></div>
-  <div class="overlay-sub" id="ov-sub"></div>
-</div>
+<body class="flex min-h-screen">
 
 <!-- Modal Đăng ký -->
 <div class="modal-bg" id="modal-bg">
-  <div class="modal">
-    <div class="modal-title">📝 Đăng ký đề tài KLTN</div>
-    <div class="modal-sub">Điền đầy đủ thông tin bên dưới</div>
-    <div class="field"><label>Họ và tên *</label><input type="text" id="m-hoten" placeholder="Nguyễn Văn A"/></div>
-    <div class="field"><label>MSSV *</label><input type="text" id="m-mssv" placeholder="23124153"/></div>
-    <div class="field"><label>Gmail sinh viên</label><input type="text" id="m-gmail" readonly/></div>
-    <div class="field"><label>Tên đề tài KLTN *</label><input type="text" id="m-detai" placeholder="Nhập tên đề tài của bạn"/></div>
-    <div class="field"><label>Giảng viên hướng dẫn *</label>
-      <select id="m-gvhd">
-        <option value="">-- Chọn giảng viên --</option>
-      </select>
+  <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
+    <h2 class="text-2xl font-bold text-on-surface mb-2">📝 Đăng ký đề tài KLTN</h2>
+    <p class="text-sm text-on-surface-variant mb-6">Điền đầy đủ thông tin bên dưới</p>
+    
+    <div class="space-y-4">
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Họ và tên *</label>
+        <input type="text" id="m-hoten" placeholder="Nguyễn Văn A" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"/>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">MSSV *</label>
+        <input type="text" id="m-mssv" placeholder="23124153" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"/>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Gmail sinh viên</label>
+        <input type="text" id="m-gmail" readonly class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"/>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Tên đề tài KLTN *</label>
+        <input type="text" id="m-detai" placeholder="Nhập tên đề tài của bạn" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"/>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-semibold text-gray-700 mb-1">Giảng viên hướng dẫn *</label>
+        <select id="m-gvhd" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
+          <option value="">-- Chọn giảng viên --</option>
+        </select>
+      </div>
     </div>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closeModal()">Hủy</button>
-      <button class="btn-submit" id="btn-submit" onclick="submitForm()">Gửi đăng ký</button>
-    </div>
-  </div>
-</div>
-
-<!-- Topbar -->
-<div class="topbar">
-  <div class="topbar-left">
-    <div class="topbar-brand">HCM·UTE</div>
-    <div class="topbar-divider"></div>
-    <div class="topbar-title">Cổng Đăng ký Khóa Luận Tốt Nghiệp</div>
-  </div>
-  <div class="topbar-right">
-    <div class="user-chip">
-      👤 <span id="chip-email">...</span>
-      <span class="user-role" id="chip-role">...</span>
-    </div>
-    <button class="btn-logout" onclick="logout()">Đăng xuất</button>
-  </div>
-</div>
-
-<!-- Hero -->
-<div class="hero">
-  <div class="hero-content">
-    <div class="hero-greeting">Xin chào,</div>
-    <div class="hero-name" id="hero-name">...</div>
-    <div class="hero-sub">Hệ thống đăng ký và quản lý đề tài Khóa Luận Tốt Nghiệp — HCM·UTE</div>
-    <div class="hero-stats">
-      <div class="hero-stat"><div class="hero-stat-val" id="stat-total">–</div><div class="hero-stat-label">Tổng đăng ký</div></div>
-      <div class="hero-stat"><div class="hero-stat-val" id="stat-wait">–</div><div class="hero-stat-label">Chờ xác nhận</div></div>
-      <div class="hero-stat"><div class="hero-stat-val" id="stat-yes">–</div><div class="hero-stat-label">Đã nhận</div></div>
-      <div class="hero-stat"><div class="hero-stat-val" id="stat-no">–</div><div class="hero-stat-label">Từ chối</div></div>
+    
+    <div class="flex gap-3 mt-6">
+      <button onclick="closeModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition">Hủy</button>
+      <button id="btn-submit" onclick="submitForm()" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-container transition">Gửi đăng ký</button>
     </div>
   </div>
 </div>
 
-<!-- Main -->
-<div class="main">
+<!-- Overlay -->
+<div class="overlay" id="overlay">
+  <div class="text-6xl mb-4" id="ov-icon"></div>
+  <div class="text-2xl font-bold text-white text-center px-6" id="ov-msg"></div>
+  <div class="text-sm text-white text-center mt-2 px-6" id="ov-sub"></div>
+</div>
 
-  <!-- Quick Actions -->
-  <div class="sec-title">Công cụ nhanh</div>
-  <div class="actions-grid" id="actions-grid">
-    <!-- Render by JS -->
+<!-- Sidebar -->
+<aside class="w-72 fixed left-0 top-0 h-screen bg-white border-r border-outline-variant/20 flex flex-col z-40">
+  <div class="p-6 flex items-center gap-3">
+    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+    </div>
+    <span class="font-bold text-xl text-primary uppercase">HCM·UTE</span>
   </div>
-
-  <!-- Trạng thái đề tài (sinh viên) -->
-  <div class="status-section" id="sv-status">
-    <div class="sec-title">Thông tin đề tài của bạn</div>
-    <div class="status-card" id="status-card">
-      <div class="status-header">
-        <div class="status-header-title">Đề tài đã đăng ký</div>
-        <span class="badge none" id="status-badge">Chưa đăng ký</span>
+  
+  <div class="px-6 py-4 mb-4">
+    <div class="bg-blue-50 rounded-2xl p-4 border border-blue-200">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white text-lg font-bold" id="avatar">A</div>
+        <div class="overflow-hidden">
+          <p class="font-bold text-on-surface" id="user-name">...</p>
+          <p class="text-xs text-on-surface-variant" id="user-id">ID: ...</p>
+        </div>
       </div>
-      <div class="status-body" id="status-body">
-        <div class="no-data">
-          <div class="no-data-icon">📋</div>
-          <p>Bạn chưa đăng ký đề tài nào.</p>
-          <button class="btn-register" onclick="openModal()">Đăng ký ngay</button>
+      <div class="px-3 py-1.5 bg-primary text-white text-xs rounded-lg font-bold inline-flex gap-1" id="role-badge">
+        <span class="material-symbols-outlined text-sm">badge</span>
+        <span id="role-text">SINH VIÊN</span>
+      </div>
+    </div>
+  </div>
+  
+  <nav class="flex-1 px-4 space-y-1">
+    <a onclick="scrollToTop()" class="flex items-center gap-3 px-4 py-3 text-primary bg-blue-50 rounded-lg font-semibold cursor-pointer group">
+      <span class="material-symbols-outlined">dashboard</span>
+      <span>Dashboard</span>
+    </a>
+    <a onclick="scrollToGV()" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium cursor-pointer transition">
+      <span class="material-symbols-outlined">people</span>
+      <span>Danh sách GV</span>
+    </a>
+    <a onclick="scrollToStatus()" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium cursor-pointer transition">
+      <span class="material-symbols-outlined">assignment</span>
+      <span>Trạng thái đề tài</span>
+    </a>
+    <a onclick="openModal()" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium cursor-pointer transition">
+      <span class="material-symbols-outlined">add_circle</span>
+      <span>Đăng ký đề tài</span>
+    </a>
+  </nav>
+  
+  <div class="p-6 border-t">
+    <button onclick="logout()" class="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg font-semibold hover:bg-red-100 transition flex items-center gap-2">
+      <span class="material-symbols-outlined">logout</span>
+      <span>Đăng xuất</span>
+    </button>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="ml-72 flex-1 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white border-b sticky top-0 z-30">
+    <div class="px-10 py-4 flex justify-between items-center">
+      <h1 class="text-xl font-bold text-primary">Trường Đại học Công nghệ Kỹ thuật</h1>
+      <div class="flex items-center gap-4">
+        <button class="p-2 hover:bg-gray-100 rounded-full transition">
+          <span class="material-symbols-outlined">notifications</span>
+        </button>
+        <button onclick="logout()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-50 transition">Đăng xuất</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <div class="px-10 py-8">
+    <div class="mb-8">
+      <h2 class="text-4xl font-bold text-on-surface mb-2">Xin chào, <span id="hero-name">...</span>!</h2>
+      <p class="text-on-surface-variant">Hệ thống đăng ký và quản lý đề tài Khóa Luận Tốt Nghiệp — HCM·UTE</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-4 gap-4 mb-8">
+      <div class="bg-white rounded-lg p-6 border border-outline-variant/20">
+        <p class="text-sm text-on-surface-variant font-semibold mb-2">Tổng đăng ký</p>
+        <p class="text-3xl font-bold text-primary" id="stat-total">–</p>
+      </div>
+      <div class="bg-white rounded-lg p-6 border border-outline-variant/20">
+        <p class="text-sm text-on-surface-variant font-semibold mb-2">Chờ xác nhận</p>
+        <p class="text-3xl font-bold text-yellow-600" id="stat-wait">–</p>
+      </div>
+      <div class="bg-white rounded-lg p-6 border border-outline-variant/20">
+        <p class="text-sm text-on-surface-variant font-semibold mb-2">Đã nhận</p>
+        <p class="text-3xl font-bold text-green-600" id="stat-yes">–</p>
+      </div>
+      <div class="bg-white rounded-lg p-6 border border-outline-variant/20">
+        <p class="text-sm text-on-surface-variant font-semibold mb-2">Từ chối</p>
+        <p class="text-3xl font-bold text-red-600" id="stat-no">–</p>
+      </div>
+    </div>
+
+    <!-- Status Section -->
+    <div class="bg-white rounded-2xl p-8 mb-8 border border-outline-variant/20" id="sv-status" style="display:none">
+      <h3 class="text-xl font-bold text-on-surface mb-4 flex items-center gap-2">
+        <span class="material-symbols-outlined">assignment</span>
+        Thông tin đề tài của bạn
+      </h3>
+      <div id="status-body">
+        <div class="text-center py-12 text-on-surface-variant">
+          <p class="text-lg mb-4">📋 Bạn chưa đăng ký đề tài nào</p>
+          <button onclick="openModal()" class="px-6 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-container transition">Đăng ký ngay</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GV List Section -->
+    <div class="bg-white rounded-2xl p-8 mb-8 border border-outline-variant/20" id="gv-list-section" style="display:block">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
+          <span class="material-symbols-outlined">people</span>
+          Danh sách giảng viên hướng dẫn
+        </h3>
+        <input type="text" id="gv-search" placeholder="Tìm giảng viên..." oninput="filterGV()" class="px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition w-64"/>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="border-b-2 border-outline-variant/20">
+            <tr class="text-on-surface-variant text-xs font-bold uppercase">
+              <th class="text-left py-3 px-4">STT</th>
+              <th class="text-left py-3 px-4">Họ và tên</th>
+              <th class="text-left py-3 px-4">MSSV/Mã GV</th>
+              <th class="text-left py-3 px-4">Gmail</th>
+              <th class="text-left py-3 px-4">Vai trò</th>
+            </tr>
+          </thead>
+          <tbody id="gv-tbody" class="divide-y divide-outline-variant/10">
+            <tr><td colspan="5" class="text-center py-8 text-on-surface-variant">Đang tải dữ liệu...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="bg-white rounded-2xl p-8 border border-outline-variant/20">
+      <h3 class="text-xl font-bold text-on-surface mb-4 flex items-center gap-2">
+        <span class="material-symbols-outlined">notifications</span>
+        Thông báo & Hướng dẫn
+      </h3>
+      <div class="space-y-4">
+        <div class="flex gap-4 p-4 bg-red-50 rounded-lg border border-red-200">
+          <span class="text-2xl">📌</span>
+          <div>
+            <p class="font-semibold text-on-surface">Hạn đăng ký đề tài KLTN: <strong>30/04/2025</strong></p>
+            <p class="text-sm text-on-surface-variant">Sinh viên cần hoàn tất đăng ký trước ngày trên</p>
+          </div>
+        </div>
+        <div class="flex gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+          <span class="text-2xl">⚠️</span>
+          <div>
+            <p class="font-semibold text-on-surface">Mỗi sinh viên chỉ được đăng ký <strong>1 đề tài</strong></p>
+            <p class="text-sm text-on-surface-variant">Liên hệ giảng viên cố vấn nếu cần thay đổi đề tài</p>
+          </div>
+        </div>
+        <div class="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <span class="text-2xl">⏱️</span>
+          <div>
+            <p class="font-semibold text-on-surface">Giảng viên sẽ xác nhận trong vòng <strong>3–5 ngày làm việc</strong></p>
+            <p class="text-sm text-on-surface-variant">Kiểm tra trạng thái đề tài tại trang này</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Danh sách giảng viên -->
-  <div class="gv-list-section" id="gv-list-section">
-    <div class="sec-title">Danh sách giảng viên hướng dẫn</div>
-    <div class="gv-table-wrap">
-      <div class="gv-toolbar">
-        <span style="font-size:14px;font-weight:700;color:#1a3a7a">Giảng viên phụ trách</span>
-        <input class="search-inp" id="gv-search" placeholder="Tìm giảng viên..." oninput="filterGV()"/>
-      </div>
-      <table>
-        <thead><tr><th>STT</th><th>Họ và tên</th><th>MSSV/Mã GV</th><th>Gmail</th><th>Vai trò</th></tr></thead>
-        <tbody id="gv-tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- Thông báo -->
-  <div class="notice-section">
-    <div class="sec-title">Thông báo & Hướng dẫn</div>
-    <div class="notice-card">
-      <div class="notice-item">
-        <div class="notice-dot red"></div>
-        <div class="notice-content">
-          <p>Hạn đăng ký đề tài KLTN: <strong>30/04/2025</strong></p>
-          <span>Sinh viên cần hoàn tất đăng ký trước ngày trên</span>
-        </div>
-      </div>
-      <div class="notice-item">
-        <div class="notice-dot orange"></div>
-        <div class="notice-content">
-          <p>Mỗi sinh viên chỉ được đăng ký <strong>1 đề tài</strong></p>
-          <span>Liên hệ giảng viên cố vấn nếu cần thay đổi đề tài</span>
-        </div>
-      </div>
-      <div class="notice-item">
-        <div class="notice-dot"></div>
-        <div class="notice-content">
-          <p>Giảng viên sẽ xác nhận trong vòng <strong>3–5 ngày làm việc</strong></p>
-          <span>Kiểm tra trạng thái đề tài tại trang này</span>
-        </div>
-      </div>
-      <div class="notice-item">
-        <div class="notice-dot"></div>
-        <div class="notice-content">
-          <p>Mọi thắc mắc liên hệ: <strong>phongdaotao@hcmute.edu.vn</strong></p>
-          <span>Giờ làm việc: Thứ 2 – Thứ 6, 8:00 – 17:00</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</div><!-- end main -->
+</main>
 
 <script>
 const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
 
-// Kiểm tra đăng nhập
 const email = sessionStorage.getItem('ute_email');
 const role = sessionStorage.getItem('ute_role');
 if(!email){ window.location.href='login.html'; }
 
-// Hiển thị thông tin user
-document.getElementById('chip-email').textContent = email;
-document.getElementById('chip-role').textContent = role === 'sinhvien' ? 'SINH VIÊN' : role === 'giangvien' ? 'GIẢNG VIÊN' : 'ADMIN';
-document.getElementById('hero-name').textContent = email;
+document.getElementById('hero-name').textContent = email.split('@')[0];
+document.getElementById('user-name').textContent = email;
+document.getElementById('user-id').textContent = 'ID: ' + email;
+document.getElementById('role-text').textContent = role === 'sinhvien' ? 'SINH VIÊN' : 'GIẢNG VIÊN';
+document.getElementById('avatar').textContent = email[0].toUpperCase();
 
-// Quick Actions theo role
-const svActions = [
- {icon:'📝',cls:'blue',title:'Đăng ký đề tài',sub:'Điền thông tin và gửi đề tài KLTN',onclick:'openModal()'},
- {icon:'📊',cls:'green',title:'Xem trạng thái',sub:'Kiểm tra tình trạng đề tài đã nộp',onclick:'scrollToStatus()'},
- {icon:'👨‍🏫',cls:'orange',title:'Danh sách giảng viên',sub:'Xem GV hướng dẫn có thể chọn',onclick:'scrollToGV()'},
- {icon:'📋',cls:'red',title:'Hướng dẫn đăng ký',sub:'Xem quy trình và yêu cầu KLTN',onclick:'showGuide()'},
-];
-const gvActions = [
- {icon:'📋',cls:'blue',title:'Danh sách đăng ký',sub:'Xem toàn bộ đề tài sinh viên đã nộp',onclick:"window.location.href='giangvien.html'"},
- {icon:'✅',cls:'green',title:'Xác nhận đề tài',sub:'Nhận hoặc từ chối lời mời hướng dẫn',onclick:"window.location.href='giangvien.html'"},
- {icon:'👨‍🎓',cls:'orange',title:'Danh sách sinh viên',sub:'Xem sinh viên thuộc diện đăng ký',onclick:'scrollToGV()'},
- {icon:'📊',cls:'red',title:'Thống kê',sub:'Xem thống kê đăng ký theo đợt',onclick:'scrollToHero()'},
-];
+let gvData = [];
 
-function renderActions(){
- const actions = (role === 'sinhvien') ? svActions : gvActions;
- document.getElementById('actions-grid').innerHTML = actions.map(a=>`
-   <div class="action-card" onclick="${a.onclick}">
-     <div class="action-icon ${a.cls}">${a.icon}</div>
-     <div>
-       <div class="action-title">${a.title}</div>
-       <div class="action-sub">${a.sub}</div>
-     </div>
-   </div>`).join('');
-}
-
-// Load data
 async function loadData(){
- try {
-   const res = await fetch(`${API}?action=getRegistrations`);
-   const json = await res.json();
-   const data = json.data || [];
+  try {
+    const res = await fetch(`${API}?action=getRegistrations`);
+    const json = await res.json();
+    const data = json.data || [];
 
-   // Stats
     document.getElementById('stat-total').textContent = data.length;
-   document.getElementById('stat-wait').textContent  = data.filter(r=>r['Xác nhận']==='Chờ xác nhận').length;
-   document.getElementById('stat-yes').textContent   = data.filter(r=>r['Xác nhận']==='Đã nhận').length;
-   document.getElementById('stat-no').textContent    = data.filter(r=>r['Xác nhận']==='Từ chối').length;
+    document.getElementById('stat-wait').textContent = data.filter(r=>r['Xác nhận']==='Chờ xác nhận').length;
+    document.getElementById('stat-yes').textContent = data.filter(r=>r['Xác nhận']==='Đã nhận').length;
+    document.getElementById('stat-no').textContent = data.filter(r=>r['Xác nhận']==='Từ chối').length;
 
-// Sinh viên: xem đề tài của mình
     if(role === 'sinhvien'){
-     document.getElementById('sv-status').style.display = 'block';
-     const mine = data.find(r => (r['Gmail']||'').toLowerCase() === email.toLowerCase());
-     if(mine){
-       const status = mine['Xác nhận'] || 'Chờ xác nhận';
-       const badgeClass = status==='Đã nhận'?'yes':status==='Từ chối'?'no':'wait';
-       document.getElementById('status-badge').className = 'badge '+badgeClass;
-       document.getElementById('status-badge').textContent = status;
-       document.getElementById('status-body').innerHTML = `
-         <div class="info-grid">
-           <div class="info-item"><label>Họ và tên</label><p>${mine['Họ tên']||'–'}</p></div>
-           <div class="info-item"><label>MSSV</label><p>${mine['MSSV']||'–'}</p></div>
-           <div class="info-item"><label>Gmail</label><p>${mine['Gmail']||'–'}</p></div>
-           <div class="info-item"><label>GVHD</label><p>${mine['GVHD']||'–'}</p></div>
-           <div class="info-item" style="grid-column:1/-1"><label>Tên đề tài</label><p>${mine['Đề tài']||'–'}</p></div>
-           <div class="info-item"><label>Thời gian nộp</label><p>${mine['Thời gian']||'–'}</p></div>
-           <div class="info-item"><label>Trạng thái</label><p><span class="badge ${badgeClass}">${status}</span></p></div>
-         </div>`;
-       }
+      document.getElementById('sv-status').style.display = 'block';
+      const mine = data.find(r => (r['Gmail']||'').toLowerCase() === email.toLowerCase());
+      if(mine){
+        const status = mine['Xác nhận'] || 'Chờ xác nhận';
+        document.getElementById('status-body').innerHTML = `
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="text-xs text-on-surface-variant font-bold uppercase">Họ và tên</label><p class="text-lg font-semibold text-on-surface">${mine['Họ tên']||'–'}</p></div>
+            <div><label class="text-xs text-on-surface-variant font-bold uppercase">MSSV</label><p class="text-lg font-semibold text-on-surface">${mine['MSSV']||'–'}</p></div>
+            <div><label class="text-xs text-on-surface-variant font-bold uppercase">Gmail</label><p class="text-lg font-semibold text-on-surface">${mine['Gmail']||'–'}</p></div>
+            <div><label class="text-xs text-on-surface-variant font-bold uppercase">GVHD</label><p class="text-lg font-semibold text-on-surface">${mine['GVHD']||'–'}</p></div>
+            <div class="col-span-2"><label class="text-xs text-on-surface-variant font-bold uppercase">Tên đề tài</label><p class="text-lg font-semibold text-on-surface">${mine['Đề tài']||'–'}</p></div>
+            <div><label class="text-xs text-on-surface-variant font-bold uppercase">Thời gian nộp</label><p class="text-lg font-semibold text-on-surface">${mine['Thời gian']||'–'}</p></div>
+            <div><label class="text-xs text-on-surface-variant font-bold uppercase">Trạng thái</label><p class="text-lg font-semibold"><span class="px-3 py-1 rounded-full text-white ${status==='Đã nhận'?'bg-green-600':status==='Từ chối'?'bg-red-600':'bg-yellow-600'}">${status}</span></p></div>
+          </div>`;
+      }
     }
   } catch(e){ console.log(e); }
 }
 
-// Load giảng viên
-let gvData = [];
 async function loadGV(){
   try {
     const res = await fetch(`${API}?action=getGiangVien`);
     const json = await res.json();
     gvData = json.data || [];
     renderGV(gvData);
-    // Đổ vào select modal
     const sel = document.getElementById('m-gvhd');
     gvData.forEach(g=>{
       const opt = document.createElement('option');
@@ -375,7 +347,6 @@ async function loadGV(){
       sel.appendChild(opt);
     });
   } catch(e){
-    // Nếu chưa có API getGiangVien, dùng data mẫu
     gvData = [];
     renderGV(gvData);
   }
@@ -384,18 +355,17 @@ async function loadGV(){
 function renderGV(data){
   const tbody = document.getElementById('gv-tbody');
   if(!data.length){
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#9ca3af">Chưa có dữ liệu giảng viên</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-on-surface-variant">Chưa có dữ liệu giảng viên</td></tr>';
     return;
   }
   tbody.innerHTML = data.map((g,i)=>{
     const name = g['Họ và Tên']||g['ho_ten']||'';
-    const initials = name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
-    return `<tr>
-      <td>${i+1}</td>
-      <td><div class="gv-info"><div class="gv-avatar">${initials}</div><strong>${name}</strong></div></td>
-      <td>${g['MSSV']||g['ma_gv']||'–'}</td>
-      <td style="font-size:12.5px;color:#6b7280">${g['Gmail']||g['gmail']||'–'}</td>
-      <td><span class="role-gv">Giảng viên</span></td>
+    return `<tr class="hover:bg-blue-50 transition">
+      <td class="py-3 px-4">${i+1}</td>
+      <td class="py-3 px-4 font-semibold text-on-surface">${name}</td>
+      <td class="py-3 px-4">${g['MSSV']||g['ma_gv']||'–'}</td>
+      <td class="py-3 px-4 text-sm text-on-surface-variant">${g['Gmail']||g['gmail']||'–'}</td>
+      <td class="py-3 px-4"><span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Giảng viên</span></td>
     </tr>`;
   }).join('');
 }
@@ -406,61 +376,51 @@ function filterGV(){
   renderGV(gvData.filter(g=>(g['Họ và Tên']||'').toLowerCase().includes(q)||(g['Gmail']||'').toLowerCase().includes(q)));
 }
 
-// Modal
 function openModal(){
   document.getElementById('m-gmail').value = email;
-  document.getElementById('modal-bg').className = 'modal-bg show';
+  document.getElementById('modal-bg').classList.add('show');
 }
+
 function closeModal(){
-  document.getElementById('modal-bg').className = 'modal-bg';
+  document.getElementById('modal-bg').classList.remove('show');
 }
 
 async function submitForm(){
   const hoTen = document.getElementById('m-hoten').value.trim();
-  const mssv  = document.getElementById('m-mssv').value.trim();
+  const mssv = document.getElementById('m-mssv').value.trim();
   const deTai = document.getElementById('m-detai').value.trim();
-  const gvhd  = document.getElementById('m-gvhd').value.trim();
+  const gvhd = document.getElementById('m-gvhd').value.trim();
   if(!hoTen||!mssv||!deTai||!gvhd){ alert('Vui lòng điền đầy đủ thông tin!'); return; }
 
   const btn = document.getElementById('btn-submit');
-  btn.innerHTML = '<span class="spinner"></span> Đang gửi...';
+  btn.textContent = 'Đang gửi...';
   btn.disabled = true;
 
   try {
     await fetch(API,{method:'POST',body:JSON.stringify({action:'register',hoTen,mssv,gmail:email,deTai,gvhd})});
     closeModal();
     showOverlay('✅','Đăng ký thành công!','Thông tin của bạn đã được ghi nhận');
-    setTimeout(()=>{ document.getElementById('overlay').className='overlay'; loadData(); },3000);
+    setTimeout(()=>{ document.getElementById('overlay').classList.remove('show'); loadData(); },3000);
   } catch(e){
     showOverlay('⚠️','Lỗi kết nối. Vui lòng thử lại.','');
-    setTimeout(()=>{ document.getElementById('overlay').className='overlay'; },3000);
+    setTimeout(()=>{ document.getElementById('overlay').classList.remove('show'); },3000);
   }
-  btn.innerHTML = 'Gửi đăng ký';
+  btn.textContent = 'Gửi đăng ký';
   btn.disabled = false;
 }
 
 function showOverlay(icon,msg,sub){
-  document.getElementById('ov-icon').textContent=icon;
-  document.getElementById('ov-msg').textContent=msg;
-  document.getElementById('ov-sub').textContent=sub||'';
-  document.getElementById('overlay').className='overlay show';
+  document.getElementById('ov-icon').textContent = icon;
+  document.getElementById('ov-msg').textContent = msg;
+  document.getElementById('ov-sub').textContent = sub||'';
+  document.getElementById('overlay').classList.add('show');
 }
 
-function scrollToStatus(){ document.getElementById('sv-status').scrollIntoView({behavior:'smooth'}); }
+function scrollToTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
 function scrollToGV(){ document.getElementById('gv-list-section').scrollIntoView({behavior:'smooth'}); }
-function scrollToHero(){ window.scrollTo({top:0,behavior:'smooth'}); }
-function showGuide(){ alert('📋 Hướng dẫn đăng ký KLTN:\n\n1. Chọn "Đăng ký đề tài"\n2. Điền đầy đủ thông tin\n3. Chọn giảng viên hướng dẫn\n4. Chờ giảng viên xác nhận trong 3-5 ngày\n5. Kiểm tra trạng thái tại trang này'); }
+function scrollToStatus(){ document.getElementById('sv-status').scrollIntoView({behavior:'smooth'}); }
 function logout(){ sessionStorage.clear(); window.location.href='login.html'; }
 
-// Hiển thị section theo role
-function initRole(){
-  document.getElementById('sv-status').style.display = role==='sinhvien' ? 'block' : 'none';
-  document.getElementById('gv-list-section').style.display = 'block';
-}
-
-// Init
-renderActions();
-initRole();
 loadData();
 loadGV();
 </script>
