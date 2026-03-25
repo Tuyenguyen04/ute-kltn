@@ -3,846 +3,1062 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trang chủ - Student Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>UTE Hub - Trang chủ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --indigo: #4f46e5;
+            --indigo-dark: #3730a3;
+            --indigo-light: #eef2ff;
+            --blue: #3b82f6;
+            --emerald: #10b981;
+            --amber: #f59e0b;
+            --red: #ef4444;
+            --orange: #f97316;
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --white: #ffffff;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
         }
-        
+
         body {
-            font-family: 'Inter', sans-serif;
-            background: #f5f7fa;
-            color: #333;
-        }
-        
-        .container {
-            display: flex;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--slate-50);
+            color: var(--slate-800);
             min-height: 100vh;
         }
-        
-        /* SIDEBAR */
+
+        /* ===================== SIDEBAR ===================== */
         .sidebar {
-            width: 280px;
-            background: #fff;
-            border-right: 1px solid #e0e0e0;
-            padding: 24px 16px;
+            width: 272px;
+            background: var(--white);
+            border-right: 1px solid var(--slate-100);
             position: fixed;
+            top: 0; left: 0;
             height: 100vh;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
             overflow-y: auto;
         }
-        
+
         .sidebar-logo {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 30px;
-            cursor: pointer;
-        }
-        
-        .sidebar-logo img {
-            border-radius: 4px;
-        }
-        
-        .sidebar-logo-text {
-            font-size: 16px;
-            font-weight: 700;
-            color: #4f46e5;
-        }
-        
-        .sidebar-user {
-            background: #f0f4ff;
-            border-radius: 12px;
-            margin-bottom: 24px;
-            display: flex;
-            align-items: center;
             gap: 12px;
-            padding: 12px;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--slate-100);
         }
-        
-        .user-avatar {
-            flex-shrink: 0;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: #9ca3af;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-        
-        .user-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
-        }
-        
-        .user-id {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .user-role {
-            display: inline-block;
-            background: #4f46e5;
+
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: linear-gradient(135deg, var(--indigo), #6366f1);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
             color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            box-shadow: 0 4px 12px rgba(79,70,229,0.35);
+            flex-shrink: 0;
+        }
+
+        .logo-text { line-height: 1.2; }
+        .logo-text strong { display: block; font-size: 15px; font-weight: 800; color: var(--indigo); }
+        .logo-text span { font-size: 11px; color: var(--slate-400); font-weight: 500; }
+
+        .sidebar-profile {
+            margin: 16px 12px 8px;
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            border-radius: 16px;
+            padding: 14px;
+            border: 1px solid #c7d2fe;
+        }
+
+        .profile-top { display: flex; align-items: center; gap: 10px; }
+
+        .profile-avatar {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--indigo), var(--blue));
+            display: flex; align-items: center; justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 800;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(79,70,229,0.3);
+        }
+
+        .profile-info { min-width: 0; }
+        .profile-name { font-size: 13px; font-weight: 700; color: var(--slate-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .profile-id { font-size: 11px; color: var(--slate-500); margin-top: 2px; }
+        .profile-email { font-size: 11px; color: var(--slate-400); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .profile-badge {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 10px;
+            background: var(--indigo);
+            color: white;
             font-size: 11px;
-            font-weight: 600;
-            margin-top: 8px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
         }
-        
-        .sidebar-menu {
-            list-style: none;
+
+        .nav-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--slate-400);
+            padding: 16px 24px 6px;
         }
-        
-        .sidebar-menu li {
-            margin-bottom: 8px;
-        }
-        
-        .sidebar-menu a {
+
+        nav { padding: 0 10px; flex: 1; }
+
+        .nav-item {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 16px;
-            color: #666;
-            text-decoration: none;
-            border-radius: 8px;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        .sidebar-menu a:hover,
-        .sidebar-menu a.active {
-            background: #f0f4ff;
-            color: #4f46e5;
-        }
-        
-        .sidebar-menu i {
-            font-size: 18px;
-            width: 20px;
-        }
-        
-        .logout-btn {
-            width: calc(100% - 32px);
-            padding: 12px;
-            background: #fff;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            color: #666;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            margin-top: 24px;
-            transition: all 0.3s;
-        }
-        
-        .logout-btn:hover {
-            background: #f5f7fa;
-            color: #e74c3c;
-        }
-        
-        /* MAIN CONTENT */
-        .main {
-            flex: 1;
-            margin-left: 280px;
-            padding: 24px;
-        }
-        
-        /* HEADER */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 32px;
-            background: white;
-            padding: 16px 24px;
+            padding: 11px 14px;
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .header-title {
-            font-size: 18px;
+            cursor: pointer;
+            font-size: 13px;
             font-weight: 600;
-            color: #333;
-        }
-        
-        .header-actions {
-            display: flex;
-            gap: 16px;
-            align-items: center;
-        }
-        
-        .header-btn {
-            padding: 8px 16px;
-            background: transparent;
+            color: var(--slate-600);
+            transition: all 0.15s ease;
+            margin-bottom: 2px;
             border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            text-decoration: none;
+        }
+
+        .nav-item:hover { background: var(--slate-100); color: var(--slate-800); }
+
+        .nav-item.active {
+            background: var(--indigo-light);
+            color: var(--indigo);
+        }
+
+        .nav-item.active .nav-icon { color: var(--indigo); }
+
+        .nav-icon {
+            width: 20px; height: 20px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--slate-400);
+            font-size: 15px;
+            flex-shrink: 0;
+        }
+
+        .nav-item.active .nav-icon { color: var(--indigo); }
+
+        .nav-item.disabled { color: var(--slate-300); cursor: pointer; }
+        .nav-item.disabled .nav-icon { color: var(--slate-300); }
+
+        .lock-badge {
+            width: 18px; height: 18px;
+            background: #fee2e2;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin-left: auto;
+            font-size: 9px;
+            color: var(--red);
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--slate-100);
+            font-size: 11px;
+            color: var(--slate-300);
+            text-align: center;
+        }
+
+        /* ===================== HEADER ===================== */
+        .topbar {
+            position: fixed;
+            top: 0; left: 272px; right: 0;
+            height: 60px;
+            background: rgba(255,255,255,0.97);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--slate-100);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            z-index: 90;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .topbar-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--slate-700);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .topbar-subtitle {
+            font-size: 11px;
+            color: var(--slate-400);
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .topbar-actions { display: flex; align-items: center; gap: 8px; }
+
+        .tb-btn {
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
             cursor: pointer;
-            font-size: 16px;
-            color: #666;
-            transition: all 0.3s;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--slate-600);
+            font-size: 15px;
+            transition: background 0.15s;
+            position: relative;
         }
-        
-        .header-btn:hover {
-            color: #4f46e5;
+        .tb-btn:hover { background: var(--slate-100); }
+
+        .notif-badge {
+            position: absolute;
+            top: -2px; right: -2px;
+            width: 16px; height: 16px;
+            background: var(--red);
+            border-radius: 50%;
+            font-size: 9px;
+            font-weight: 700;
+            color: white;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid white;
         }
-        
-        /* HERO SECTION */
-        .hero {
-            background: white;
+
+        .lang-btn {
+            display: flex; align-items: center; gap: 5px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--slate-600);
+            transition: background 0.15s;
+        }
+        .lang-btn:hover { background: var(--slate-100); }
+
+        .user-tb-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 8px 4px 4px;
             border-radius: 12px;
-            padding: 32px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .user-tb-btn:hover { background: var(--slate-100); }
+
+        .user-tb-avatar {
+            width: 32px; height: 32px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--indigo), var(--blue));
+            display: flex; align-items: center; justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        .new-report-btn {
+            display: flex; align-items: center; gap: 7px;
+            padding: 8px 16px;
+            background: var(--indigo);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+        }
+        .new-report-btn:hover { background: var(--indigo-dark); transform: translateY(-1px); }
+        .new-report-btn:active { transform: translateY(0); }
+
+        /* Dropdown */
+        .dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--slate-100);
+            overflow: hidden;
+            min-width: 220px;
+            display: none;
+            z-index: 200;
+        }
+        .dropdown.show { display: block; animation: dropIn 0.18s ease; }
+        @keyframes dropIn { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+
+        .dropdown-header { padding: 14px 16px; border-bottom: 1px solid var(--slate-100); }
+        .dropdown-header strong { display: block; font-size: 13px; font-weight: 700; color: var(--slate-800); }
+        .dropdown-header span { font-size: 11px; color: var(--slate-400); }
+
+        .dropdown-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 12px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--slate-600);
+            cursor: pointer;
+            transition: background 0.12s;
+            border-bottom: 1px solid var(--slate-50);
+        }
+        .dropdown-item:hover { background: var(--slate-50); }
+        .dropdown-item.danger { color: var(--red); }
+        .dropdown-item.danger:hover { background: #fff5f5; }
+
+        .notif-item { padding: 12px 16px; border-bottom: 1px solid var(--slate-50); display: flex; gap: 10px; }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-item.unread { background: #f8faff; }
+
+        .notif-dot { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+        .notif-dot.approved { background: #d1fae5; color: var(--emerald); }
+        .notif-dot.rejected { background: #fee2e2; color: var(--red); }
+
+        .notif-text { font-size: 12px; color: var(--slate-700); line-height: 1.4; font-weight: 500; }
+        .notif-time { font-size: 11px; color: var(--slate-400); margin-top: 3px; }
+
+        .notif-unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--indigo); flex-shrink: 0; margin-top: 4px; margin-left: auto; }
+
+        .notif-actions { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-top: 1px solid var(--slate-100); }
+        .notif-actions span { font-size: 12px; color: var(--slate-600); font-weight: 600; }
+        .mark-read-btn { font-size: 11px; color: var(--indigo); font-weight: 700; cursor: pointer; border: none; background: none; font-family: inherit; }
+        .mark-read-btn:hover { text-decoration: underline; }
+
+        /* ===================== MAIN ===================== */
+        .main {
+            margin-left: 272px;
+            padding-top: 60px;
+            min-height: 100vh;
+        }
+
+        .page-content { padding: 28px 32px; max-width: 960px; }
+
+        /* Page sections */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* Greeting */
+        .greeting-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
             margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .greeting h1 { font-size: 24px; font-weight: 800; color: var(--slate-800); }
+        .greeting h1 span { color: var(--indigo); }
+        .greeting p { font-size: 14px; color: var(--slate-500); margin-top: 5px; }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: 18px;
+            padding: 18px;
+            border: 1px solid var(--slate-100);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stat-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 17px;
+            margin-bottom: 12px;
+        }
+
+        .stat-value { font-size: 26px; font-weight: 900; color: var(--slate-800); }
+        .stat-label { font-size: 12px; color: var(--slate-400); font-weight: 600; margin-top: 2px; }
+
+        /* Middle row */
+        .mid-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .progress-card {
+            background: var(--white);
+            border-radius: 18px;
+            padding: 22px;
+            border: 1px solid var(--slate-100);
+            box-shadow: var(--shadow-sm);
+            grid-column: span 2;
+        }
+
+        .progress-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            margin-bottom: 20px;
         }
-        
-        .hero-left {
-            flex: 1;
-        }
-        
-        .hero-greeting {
-            font-size: 28px;
+
+        .progress-header h3 { font-size: 15px; font-weight: 700; color: var(--slate-800); }
+        .progress-header small { font-size: 12px; color: var(--slate-400); display: block; margin-top: 2px; }
+
+        .week-badge {
+            padding: 6px 12px;
+            background: var(--indigo-light);
+            color: var(--indigo);
+            border-radius: 8px;
+            font-size: 12px;
             font-weight: 700;
-            color: #333;
+        }
+
+        .prog-label-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 700;
             margin-bottom: 8px;
         }
-        
-        .hero-sub {
-            font-size: 14px;
-            color: #999;
-        }
-        
-        .hero-btn {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 16px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s;
-        }
-        
-        .hero-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
-        }
-        
-        /* PROGRESS SECTION */
-        .progress-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 32px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .progress-card {
-            flex: 1;
-        }
-        
-        .progress-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .progress-info {
-            font-size: 12px;
-            color: #999;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #f0f0f0;
-            border-radius: 4px;
+        .prog-label-row .done { color: var(--indigo); }
+        .prog-label-row .remain { color: var(--slate-400); }
+
+        .progress-track {
+            height: 10px;
+            background: var(--slate-100);
+            border-radius: 99px;
             overflow: hidden;
             margin-bottom: 24px;
         }
-        
-        .progress-bar-fill {
+
+        .progress-fill {
             height: 100%;
-            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
-            width: 65%;
-            border-radius: 4px;
+            border-radius: 99px;
+            background: linear-gradient(90deg, var(--indigo), var(--blue));
+            transition: width 1s cubic-bezier(.4,0,.2,1);
         }
-        
-        .progress-steps {
+
+        /* Steps */
+        .steps-row {
             display: flex;
+            align-items: flex-start;
             justify-content: space-between;
-            align-items: center;
-            gap: 12px;
+            position: relative;
         }
-        
-        .progress-step {
+
+        .steps-row::before {
+            content: '';
+            position: absolute;
+            top: 18px;
+            left: 18px; right: 18px;
+            height: 2px;
+            background: var(--slate-200);
+            z-index: 0;
+        }
+
+        .step {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 8px;
-            flex: 1;
+            z-index: 1;
         }
-        
-        .step-icon {
-            width: 40px;
-            height: 40px;
+
+        .step-circle {
+            width: 36px; height: 36px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border: 2px solid var(--slate-200);
+            background: var(--white);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px;
+            color: var(--slate-300);
+            transition: all 0.3s;
+        }
+
+        .step.done .step-circle {
+            background: var(--indigo);
+            border-color: var(--indigo);
             color: white;
-            font-weight: bold;
-            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(79,70,229,0.3);
         }
-        
-        .step-icon.done {
-            background: #4f46e5;
+
+        .step.active .step-circle {
+            border-color: var(--indigo);
+            color: var(--indigo);
         }
-        
-        .step-icon.active {
-            background: #fff;
-            border: 2px solid #4f46e5;
-            color: #4f46e5;
-        }
-        
-        .step-icon.pending {
-            background: #f0f0f0;
-            color: #ccc;
-        }
-        
+
         .step-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #666;
-            text-align: center;
-        }
-        
-        .deadline-card {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffe8a8 100%);
-            border-radius: 12px;
-            padding: 24px;
-            text-align: center;
-        }
-        
-        .deadline-icon {
-            font-size: 36px;
-            margin-bottom: 12px;
-        }
-        
-        .deadline-title {
-            font-size: 14px;
-            color: #ff9800;
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .deadline-sub {
-            font-size: 12px;
-            color: #f57c00;
-            margin-bottom: 12px;
-        }
-        
-        .deadline-days {
-            font-size: 28px;
+            font-size: 10px;
             font-weight: 700;
-            color: #ff9800;
-        }
-        
-        .advisor-card {
-            background: linear-gradient(135deg, #f0f4ff 0%, #e8ecff 100%);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #d4deff;
-        }
-        
-        .advisor-card-title {
+            color: var(--slate-400);
             text-align: center;
-            margin-bottom: 16px;
         }
-        
-        .advisor-card-icon {
-            font-size: 32px;
-            margin-bottom: 8px;
+        .step.done .step-label, .step.active .step-label { color: var(--indigo); }
+
+        /* Deadline card */
+        .deadline-card {
+            background: linear-gradient(135deg, #f97316, #ef4444);
+            border-radius: 18px;
+            padding: 22px;
+            color: white;
+            box-shadow: 0 8px 24px rgba(239,68,68,0.3);
         }
-        
-        .advisor-card-label {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 4px;
+
+        .deadline-label { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+        .deadline-sub { font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 600; }
+        .deadline-days { font-size: 52px; font-weight: 900; line-height: 1; margin: 6px 0 2px; }
+        .deadline-unit { font-size: 16px; font-weight: 700; color: rgba(255,255,255,0.85); }
+
+        .deadline-btn {
+            width: 100%;
+            margin-top: 16px;
+            padding: 10px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
         }
-        
-        .advisor-info-item {
-            background: #f9f9f9;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-        
-        .advisor-info-label {
-            font-size: 12px;
-            color: #999;
-            margin-bottom: 4px;
-        }
-        
-        .advisor-info-value {
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        /* REPORTS SECTION */
-        .reports-section {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
-        
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .deadline-btn:hover { background: rgba(255,255,255,0.3); }
+
+        /* Reports table */
+        .reports-card {
+            background: var(--white);
+            border-radius: 18px;
+            border: 1px solid var(--slate-100);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
             margin-bottom: 20px;
         }
-        
-        .section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .see-all {
-            color: #4f46e5;
-            text-decoration: none;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        .reports-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .reports-table thead {
-            background: #f9f9f9;
-        }
-        
-        .reports-table th {
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            color: #999;
-            font-size: 12px;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        
-        .reports-table td {
-            padding: 16px 12px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 14px;
-        }
-        
-        .report-name {
+
+        .card-header {
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--slate-100);
         }
-        
-        .report-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-            font-weight: bold;
+
+        .card-header h3 { font-size: 15px; font-weight: 700; color: var(--slate-800); }
+        .view-all-btn { font-size: 13px; color: var(--indigo); font-weight: 700; cursor: pointer; background: none; border: none; display: flex; align-items: center; gap: 4px; font-family: inherit; }
+        .view-all-btn:hover { text-decoration: underline; }
+
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: var(--slate-50); }
+        thead th { padding: 10px 24px; font-size: 11px; font-weight: 700; color: var(--slate-400); text-align: left; text-transform: uppercase; letter-spacing: 0.06em; }
+
+        tbody tr { border-bottom: 1px solid var(--slate-50); transition: background 0.1s; }
+        tbody tr:hover { background: var(--slate-50); }
+        tbody tr:last-child { border-bottom: none; }
+        td { padding: 14px 24px; font-size: 13px; color: var(--slate-600); }
+
+        .report-row-name { display: flex; align-items: center; gap: 10px; }
+        .report-icon-wrap {
+            width: 34px; height: 34px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+            flex-shrink: 0;
         }
-        
-        .report-icon.pdf {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        
-        .report-file {
-            font-size: 12px;
-            color: #999;
-        }
-        
+        .report-icon-wrap.approved { background: #d1fae5; }
+        .report-icon-wrap.pending { background: #fef3c7; }
+        .report-icon-wrap.rejected { background: #fee2e2; }
+
+        .report-name-main { font-weight: 600; color: var(--slate-800); font-size: 13px; }
+        .report-file { font-size: 11px; color: var(--slate-400); margin-top: 2px; }
+
         .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .badge.approved {
-            background: #e8f5e9;
-            color: #2e7d32;
-        }
-        
-        .badge.pending {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-        
-        .badge.rejected {
-            background: #ffebee;
-            color: #c62828;
-        }
-        
-        .action-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #999;
-            font-size: 18px;
-            padding: 8px;
-        }
-        
-        /* MODAL */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay.show {
-            display: flex;
-        }
-
-        .modal {
-            background: white;
-            border-radius: 12px;
-            padding: 32px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .modal-subtitle {
-            font-size: 14px;
-            color: #999;
-            margin-bottom: 24px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid #ddd;
+            gap: 5px;
+            padding: 4px 10px;
             border-radius: 8px;
-            font-size: 14px;
-            font-family: 'Inter', sans-serif;
-            transition: all 0.3s;
+            font-size: 12px;
+            font-weight: 700;
         }
+        .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .badge.approved { background: #d1fae5; color: #065f46; }
+        .badge.approved .badge-dot { background: var(--emerald); }
+        .badge.pending { background: #fef3c7; color: #92400e; }
+        .badge.pending .badge-dot { background: var(--amber); }
+        .badge.rejected { background: #fee2e2; color: #991b1b; }
+        .badge.rejected .badge-dot { background: var(--red); }
 
-        .form-group input:focus,
-        .form-group select:focus {
+        .action-btn { background: none; border: none; cursor: pointer; color: var(--slate-400); padding: 4px 6px; border-radius: 6px; transition: background 0.12s; }
+        .action-btn:hover { background: var(--slate-100); color: var(--slate-600); }
+
+        /* Reports page stats */
+        .mini-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+        .mini-stat {
+            border-radius: 16px;
+            padding: 16px 20px;
+            border: 1px solid var(--slate-100);
+        }
+        .mini-stat.approved { background: #ecfdf5; }
+        .mini-stat.pending { background: #fffbeb; }
+        .mini-stat.rejected { background: #fff5f5; }
+        .mini-stat-val { font-size: 30px; font-weight: 900; }
+        .mini-stat.approved .mini-stat-val { color: #059669; }
+        .mini-stat.pending .mini-stat-val { color: #d97706; }
+        .mini-stat.rejected .mini-stat-val { color: var(--red); }
+        .mini-stat-label { font-size: 13px; font-weight: 600; color: var(--slate-600); margin-top: 2px; }
+
+        /* ===================== MODALS ===================== */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.5);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+            z-index: 500;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+
+        .modal-card {
+            background: var(--white);
+            border-radius: 24px;
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 480px;
+            overflow: hidden;
+            transform: translateY(20px);
+            transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+        }
+        .modal-overlay.show .modal-card { transform: translateY(0); }
+
+        .modal-head {
+            background: linear-gradient(135deg, var(--indigo), #6366f1);
+            padding: 24px 28px;
+            color: white;
+            position: relative;
+        }
+        .modal-head h2 { font-size: 17px; font-weight: 800; }
+        .modal-head p { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 4px; }
+
+        .modal-close {
+            position: absolute;
+            top: 16px; right: 16px;
+            width: 30px; height: 30px;
+            background: rgba(255,255,255,0.2);
+            border: none; border-radius: 8px;
+            color: white; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.3); }
+
+        .modal-body { padding: 24px 28px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 700; color: var(--slate-600); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            border: 1.5px solid var(--slate-200);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: var(--slate-800);
+            transition: border 0.15s, box-shadow 0.15s;
+            background: white;
             outline: none;
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            border-color: var(--indigo);
+            box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+        .form-textarea { resize: none; min-height: 80px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .upload-area {
+            border: 2px dashed #c7d2fe;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: #f8f9ff;
+        }
+        .upload-area:hover { border-color: var(--indigo); background: var(--indigo-light); }
+        .upload-area i { font-size: 22px; color: #a5b4fc; margin-bottom: 8px; display: block; }
+        .upload-area span { font-size: 13px; color: var(--slate-500); font-weight: 600; display: block; }
+        .upload-area small { font-size: 11px; color: var(--slate-400); }
+        .upload-area input[type=file] { display: none; }
+
+        .modal-footer {
+            display: flex; gap: 10px;
+            padding: 0 28px 24px;
         }
 
-        .form-group input[readonly] {
-            background: #f5f5f5;
-            color: #999;
+        .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            border: 1.5px solid var(--slate-200);
+            border-radius: 12px;
+            background: white;
+            color: var(--slate-600);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s;
         }
+        .btn-cancel:hover { background: var(--slate-50); }
 
-        .modal-actions {
-            display: flex;
-            gap: 12px;
-            margin-top: 24px;
-        }
-
-        .modal-btn {
+        .btn-submit {
             flex: 1;
             padding: 12px;
             border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-        }
-
-        .modal-btn.cancel {
-            background: #f5f5f5;
-            color: #333;
-        }
-
-        .modal-btn.cancel:hover {
-            background: #e0e0e0;
-        }
-
-        .modal-btn.submit {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-        }
-
-        .modal-btn.submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
-        }
-
-        /* NOTIFICATION */
-        .notification {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: white;
             border-radius: 12px;
-            padding: 32px;
-            text-align: center;
-            z-index: 2000;
-            display: none;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .notification.show {
-            display: block;
-            animation: popIn 0.3s ease;
-        }
-
-        .notification-icon {
-            font-size: 56px;
-            margin-bottom: 16px;
-        }
-
-        .notification-title {
-            font-size: 18px;
+            background: var(--indigo);
+            color: white;
+            font-size: 13px;
             font-weight: 700;
-            color: #333;
-            margin-bottom: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s;
+            box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+        }
+        .btn-submit:hover { background: var(--indigo-dark); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Lock modal */
+        .lock-modal-card {
+            background: white;
+            border-radius: 24px;
+            max-width: 400px;
+            width: 100%;
+            padding: 36px 32px;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            transform: translateY(20px);
+            transition: transform 0.22s cubic-bezier(.4,0,.2,1);
+            position: relative;
+        }
+        .modal-overlay.show .lock-modal-card { transform: translateY(0); }
+
+        .lock-icon-wrap {
+            width: 80px; height: 80px;
+            border-radius: 20px;
+            background: #fff5f5;
+            border: 2px solid #fecaca;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
         }
 
-        .notification-message {
-            font-size: 14px;
-            color: #999;
+        .lock-modal-card h2 { font-size: 20px; font-weight: 800; color: var(--slate-800); margin-bottom: 12px; }
+        .lock-modal-card p { font-size: 14px; color: var(--slate-500); line-height: 1.6; margin-bottom: 24px; }
+        .lock-modal-card p strong { color: var(--indigo); }
+
+        .lock-modal-close { position: absolute; top: 14px; right: 14px; width: 28px; height: 28px; border-radius: 8px; border: none; background: var(--slate-100); cursor: pointer; color: var(--slate-400); display: flex; align-items: center; justify-content: center; }
+
+        /* ===================== TOAST ===================== */
+        .toast {
+            position: fixed;
+            bottom: 28px; right: 28px;
+            display: flex; align-items: center; gap: 10px;
+            padding: 14px 20px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            font-size: 13px;
+            font-weight: 700;
+            z-index: 9999;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(.4,0,.2,1);
+            pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: #1e293b; color: white; }
+        .toast.error { background: var(--red); color: white; }
+
+        /* Advisor card */
+        .advisor-card {
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            border: 1px solid #c7d2fe;
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+        .advisor-card h4 { font-size: 13px; font-weight: 700; color: var(--indigo); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+        .advisor-info-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
+        .advisor-info-row span:first-child { font-size: 11px; font-weight: 700; color: var(--slate-500); width: 80px; flex-shrink: 0; }
+        .advisor-info-row span:last-child { font-size: 13px; font-weight: 600; color: var(--slate-800); }
+
+        /* KLTN form card in reports page */
+        .kltn-form-card {
+            background: var(--white);
+            border-radius: 18px;
+            border: 1px solid var(--slate-100);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 20px;
+            overflow: hidden;
         }
 
-        @keyframes popIn {
-            from {
-                opacity: 0;
-                transform: translate(-50%, -60%);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, -50%);
-            }
+        /* Responsive */
+        @media (max-width: 900px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .mid-row { grid-template-columns: 1fr; }
+            .progress-card { grid-column: span 1; }
         }
 
-        @media (max-width: 1200px) {
-            .progress-section {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 250px;
-                padding: 16px;
-            }
-            
-            .main {
-                margin-left: 250px;
-                padding: 16px;
-            }
-            
-            .hero {
-                flex-direction: column;
-            }
-            
-            .progress-steps {
-                flex-wrap: wrap;
-            }
-        }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--slate-200); border-radius: 3px; }
     </style>
 </head>
 <body>
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-        <div class="sidebar-logo">
-            <img id="school-logo" src="https://drive.google.com/uc?export=view&id=174jQ16v-9F-yYEzeJzO-UuIj4zYYM1kn" alt="HCMUTE" style="width: 40px; height: 40px; object-fit: contain;">
-            <div class="sidebar-logo-text">HCMUTE</div>
+
+<!-- ============================================================ SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon">UTE</div>
+        <div class="logo-text">
+            <strong>UTE Hub</strong>
+            <span>Cổng thực tập sinh viên</span>
         </div>
-        
-        <div class="sidebar-user">
-            <div class="user-avatar" id="avatar">
-                <i class="fas fa-user" style="color: white;"></i>
-            </div>
-            <div style="flex: 1;">
-                <div class="user-name" id="user-name">Đang tải...</div>
-                <div class="user-id" id="user-id">--</div>
-            </div>
-        </div>
-        
-        <ul class="sidebar-menu">
-            <li><a href="#" class="active" onclick="scrollToTop()"><i class="fas fa-chart-line"></i> Dashboard</a></li>
-            <li><a href="#" onclick="scrollToReports()"><i class="fas fa-file-pdf"></i> My Reports</a></li>
-            <li><a href="#" onclick="openModal()"><i class="fas fa-briefcase"></i> Đăng ký đề tài</a></li>
-            <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Profile Settings</a></li>
-        </ul>
-        
-        <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
     </div>
-    
-    <!-- MAIN CONTENT -->
-    <div class="main">
-        <!-- HEADER -->
-        <div class="header">
-            <div class="header-title">Trường Đại học Công nghệ Kỹ thuật</div>
-            <div class="header-actions">
-                <button class="header-btn"><i class="fas fa-flag"></i></button>
-                <button class="header-btn"><i class="fas fa-bell"></i></button>
-                <button class="header-btn"><i class="fas fa-search"></i></button>
+
+    <div class="sidebar-profile">
+        <div class="profile-top">
+            <div class="profile-avatar" id="sidebar-avatar">AR</div>
+            <div class="profile-info">
+                <div class="profile-name" id="user-name">Alex Rivers</div>
+                <div class="profile-id" id="user-id">ID: 2024-8892</div>
+                <div class="profile-email" id="user-email">alex@ute.edu.vn</div>
             </div>
         </div>
-        
-        <!-- HERO -->
-        <div class="hero">
-            <div class="hero-left">
-                <div class="hero-greeting">Chào buổi sáng, <span id="greeting-name">Alex</span>!</div>
-                <div class="hero-sub">Hôm nay là một ngày tuyệt vời để tiếp tục kỳ thực tập của bạn.</div>
-                <button class="hero-btn" onclick="openModal()">
-                    <i class="fas fa-plus-circle"></i> Đăng ký đề tài
-                </button>
+        <div class="profile-badge" id="user-role-badge">SINH VIÊN</div>
+    </div>
+
+    <p class="nav-label">Menu chính</p>
+    <nav>
+        <button class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+            <span class="nav-icon"><i class="fas fa-th-large"></i></span>
+            Bảng điều khiển
+        </button>
+        <button class="nav-item" id="nav-reports" onclick="showPage('reports')">
+            <span class="nav-icon"><i class="fas fa-file-edit"></i></span>
+            Đăng ký báo cáo thực tập
+        </button>
+        <button class="nav-item disabled" onclick="openLockModal()">
+            <span class="nav-icon"><i class="fas fa-book"></i></span>
+            Đăng ký khóa luận tốt nghiệp
+            <span class="lock-badge"><i class="fas fa-lock"></i></span>
+        </button>
+    </nav>
+
+    <div class="sidebar-footer">UTE Hub v2.0 • 2024</div>
+</aside>
+
+<!-- ============================================================ TOPBAR -->
+<header class="topbar">
+    <div class="topbar-subtitle">Trường Đại học Công nghệ Kỹ thuật</div>
+    <div class="topbar-title">TRƯỜNG ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</div>
+    <div class="topbar-actions">
+        <!-- Language -->
+        <button class="lang-btn">🇻🇳 VI</button>
+
+        <!-- Notifications -->
+        <div style="position:relative;">
+            <button class="tb-btn" onclick="toggleDropdown('notif-dropdown')">
+                <i class="fas fa-bell"></i>
+                <span class="notif-badge" id="notif-count">3</span>
+            </button>
+            <div class="dropdown" id="notif-dropdown" style="min-width:300px;">
+                <div class="notif-actions">
+                    <span>Thông báo</span>
+                    <button class="mark-read-btn" onclick="markAllRead()">Đánh dấu đã đọc</button>
+                </div>
+                <div id="notif-list">
+                    <div class="notif-item unread">
+                        <div class="notif-dot approved"><i class="fas fa-check" style="font-size:11px;"></i></div>
+                        <div style="flex:1;">
+                            <div class="notif-text">Giảng viên đã duyệt Báo cáo tuần 7 của bạn.</div>
+                            <div class="notif-time">2 giờ trước</div>
+                        </div>
+                        <div class="notif-unread-dot"></div>
+                    </div>
+                    <div class="notif-item unread">
+                        <div class="notif-dot rejected"><i class="fas fa-times" style="font-size:11px;"></i></div>
+                        <div style="flex:1;">
+                            <div class="notif-text">Báo cáo tuần 5 bị từ chối – cần chỉnh sửa.</div>
+                            <div class="notif-time">Hôm qua</div>
+                        </div>
+                        <div class="notif-unread-dot"></div>
+                    </div>
+                    <div class="notif-item">
+                        <div class="notif-dot approved"><i class="fas fa-check" style="font-size:11px;"></i></div>
+                        <div>
+                            <div class="notif-text">Hướng dẫn viên xác nhận giờ thực tập tuần 6.</div>
+                            <div class="notif-time">3 ngày trước</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <!-- PROGRESS & DEADLINE & ADVISOR -->
-        <div class="progress-section">
+
+        <!-- User menu -->
+        <div style="position:relative;">
+            <button class="user-tb-btn" onclick="toggleDropdown('user-dropdown')">
+                <div class="user-tb-avatar" id="topbar-avatar">AR</div>
+                <i class="fas fa-chevron-down" style="font-size:11px;color:var(--slate-400);"></i>
+            </button>
+            <div class="dropdown" id="user-dropdown">
+                <div class="dropdown-header">
+                    <strong id="topbar-name">Alex Rivers</strong>
+                    <span>Sinh viên</span>
+                </div>
+                <div class="dropdown-item danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                </div>
+            </div>
+        </div>
+
+        <!-- New report -->
+        <button class="new-report-btn" onclick="openReportModal()">
+            <i class="fas fa-plus"></i> Tạo báo cáo mới
+        </button>
+    </div>
+</header>
+
+<!-- ============================================================ MAIN -->
+<div class="main">
+<div class="page-content">
+
+    <!-- ==================== DASHBOARD PAGE ==================== -->
+    <div class="page active" id="page-dashboard">
+        <div class="greeting-row">
+            <div class="greeting">
+                <h1>Chào buổi sáng, <span id="greeting-name">Alex</span>! 👋</h1>
+                <p>Hôm nay là một ngày tuyệt vời để tiếp tục kỳ thực tập của bạn.</p>
+            </div>
+            <button class="new-report-btn" onclick="openReportModal()">
+                <i class="fas fa-plus"></i> Tạo báo cáo mới
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#eef2ff;"><i class="fas fa-calendar-alt" style="color:var(--indigo);"></i></div>
+                <div class="stat-value">8 / 12</div>
+                <div class="stat-label">Tuần hiện tại</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#ecfdf5;"><i class="fas fa-chart-line" style="color:var(--emerald);"></i></div>
+                <div class="stat-value" id="stat-progress">65%</div>
+                <div class="stat-label">Tiến độ hoàn thành</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#fff7ed;"><i class="fas fa-file-alt" style="color:var(--orange);"></i></div>
+                <div class="stat-value" id="stat-report-count">2</div>
+                <div class="stat-label">Báo cáo đã nộp</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background:#faf5ff;"><i class="fas fa-clock" style="color:#a855f7;"></i></div>
+                <div class="stat-value">25/12</div>
+                <div class="stat-label">Ngày kết thúc</div>
+            </div>
+        </div>
+
+        <!-- Mid row -->
+        <div class="mid-row">
+            <!-- Progress -->
             <div class="progress-card">
-                <div class="progress-title">
-                    <span>Tiến độ thực tập</span>
-                    <span style="font-size: 12px; color: #4f46e5; background: #f0f4ff; padding: 6px 12px; border-radius: 20px;">Tuần 8 / 12</span>
-                </div>
-                <div class="progress-info">
-                    <span style="background: #4f46e5; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px;">HOÀN THÀNH 65%</span>
-                    <span>Dự kiến kết thúc: 25/12/2024</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-bar-fill"></div>
-                </div>
-                
-                <div class="progress-steps">
-                    <div class="progress-step">
-                        <div class="step-icon done">✓</div>
-                        <div class="step-label">Bắt đầu</div>
+                <div class="progress-header">
+                    <div>
+                        <h3>Tiến độ thực tập</h3>
+                        <small>Dự kiến kết thúc: 25/12/2024</small>
                     </div>
-                    <div class="progress-step">
-                        <div class="step-icon done">✓</div>
-                        <div class="step-label">Phân tích</div>
+                    <span class="week-badge">Tuần 8 / 12</span>
+                </div>
+                <div class="prog-label-row">
+                    <span class="done" id="prog-label-done">HOÀN THÀNH 65%</span>
+                    <span class="remain" id="prog-label-remain">Còn lại 35%</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-fill" style="width:65%"></div>
+                </div>
+                <div class="steps-row">
+                    <div class="step done">
+                        <div class="step-circle"><i class="fas fa-check" style="font-size:12px;"></i></div>
+                        <div class="step-label">BẮT ĐẦU</div>
                     </div>
-                    <div class="progress-step">
-                        <div class="step-icon active">✎</div>
-                        <div class="step-label">Báo cáo</div>
+                    <div class="step done">
+                        <div class="step-circle"><i class="fas fa-check" style="font-size:12px;"></i></div>
+                        <div class="step-label">PHÂN TÍCH</div>
                     </div>
-                    <div class="progress-step">
-                        <div class="step-icon pending">✓</div>
-                        <div class="step-label">Kết thúc</div>
+                    <div class="step active">
+                        <div class="step-circle"><i class="fas fa-file-alt" style="font-size:12px;"></i></div>
+                        <div class="step-label">BÁO CÁO</div>
+                    </div>
+                    <div class="step">
+                        <div class="step-circle"><i class="fas fa-circle" style="font-size:10px;"></i></div>
+                        <div class="step-label">KẾT THÚC</div>
                     </div>
                 </div>
             </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <!-- DEADLINE CARD -->
-                <div class="deadline-card">
-                    <div class="deadline-icon">⏱️</div>
-                    <div class="deadline-title">Hạn nộp tiếp theo</div>
-                    <div class="deadline-sub">Báo cáo tuần 8</div>
-                    <div class="deadline-days">Còn 2 ngày</div>
-                </div>
-                
-                <!-- ADVISOR CARD (Hidden by default) -->
-                <div class="advisor-card" id="advisor-card" style="display: none;">
-                    <div class="advisor-card-title">
-                        <div class="advisor-card-icon">👨‍🏫</div>
-                        <div class="advisor-card-label">Giảng viên hướng dẫn</div>
-                    </div>
-                    
-                    <div class="advisor-info-item">
-                        <div class="advisor-info-label">Họ và tên</div>
-                        <div class="advisor-info-value" id="advisor-name">-</div>
-                    </div>
-                    
-                    <div class="advisor-info-item">
-                        <div class="advisor-info-label">Mã GV</div>
-                        <div class="advisor-info-value" id="advisor-code">-</div>
-                    </div>
-                    
-                    <div class="advisor-info-item">
-                        <div class="advisor-info-label">Email</div>
-                        <div class="advisor-info-value" id="advisor-email">-</div>
-                    </div>
-                    
-                    <div class="advisor-info-item">
-                        <div class="advisor-info-label">Đợt</div>
-                        <div class="advisor-info-value" id="advisor-batch">-</div>
-                    </div>
-                </div>
+
+            <!-- Deadline -->
+            <div class="deadline-card">
+                <div class="deadline-label"><i class="fas fa-clock"></i> Hạn nộp tiếp theo</div>
+                <div class="deadline-sub">Báo cáo tuần 8</div>
+                <div class="deadline-days">2</div>
+                <div class="deadline-unit">ngày nữa</div>
+                <button class="deadline-btn" onclick="openReportModal()">Nộp ngay</button>
             </div>
         </div>
-        
-        <!-- REPORTS TABLE -->
-        <div class="reports-section">
-            <div class="section-header">
-                <h3 class="section-title">Báo cáo gần đây</h3>
-                <a href="#" class="see-all">Xem tất cả →</a>
+
+        <!-- Recent Reports -->
+        <div class="reports-card">
+            <div class="card-header">
+                <h3>Báo cáo gần đây</h3>
+                <button class="view-all-btn" onclick="showPage('reports')">Xem tất cả <i class="fas fa-chevron-right" style="font-size:11px;"></i></button>
             </div>
-            <table class="reports-table">
+            <table>
                 <thead>
                     <tr>
                         <th>TÊN BÁO CÁO</th>
@@ -851,232 +1067,465 @@
                         <th>HÀNH ĐỘNG</th>
                     </tr>
                 </thead>
-                <tbody id="reports-tbody">
-                    <tr>
-                        <td>
-                            <div class="report-name">
-                                <div class="report-icon pdf">📄</div>
-                                <div>
-                                    <div>Báo cáo tuần 7: Phân tích UI người dùng</div>
-                                    <div class="report-file">File: BC_T7_Rivers.pdf</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>12 Tháng 10, 2024</td>
-                        <td><span class="badge approved">✓ Đã duyệt</span></td>
-                        <td><button class="action-btn"><i class="fas fa-ellipsis-v"></i></button></td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="report-name">
-                                <div class="report-icon pdf">📄</div>
-                                <div>
-                                    <div>Báo cáo tuần 6: Khảo sát thói quen sử dụng</div>
-                                    <div class="report-file">File: BC_T6_Rivers.pdf</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>05 Tháng 10, 2024</td>
-                        <td><span class="badge pending">⏱ Đang chờ</span></td>
-                        <td><button class="action-btn"><i class="fas fa-ellipsis-v"></i></button></td>
-                    </tr>
+                <tbody id="dashboard-reports-tbody">
+                    <!-- filled by JS -->
                 </tbody>
             </table>
         </div>
     </div>
-    
-    <!-- MODAL -->
-    <div class="modal-overlay" id="modal-overlay">
-        <div class="modal">
-            <div class="modal-title">📝 Đăng ký đề tài KLTN</div>
-            <div class="modal-subtitle">Điền đầy đủ thông tin bên dưới</div>
-            
-            <div class="form-group">
-                <label>Họ và tên *</label>
-                <input type="text" id="m-hoten" placeholder="Nguyễn Văn A">
+
+    <!-- ==================== REPORTS PAGE ==================== -->
+    <div class="page" id="page-reports">
+        <div class="greeting-row">
+            <div class="greeting">
+                <h1>Đăng ký <span>báo cáo thực tập</span></h1>
+                <p>Quản lý và nộp các báo cáo thực tập hàng tuần.</p>
             </div>
-            
-            <div class="form-group">
-                <label>MSSV *</label>
-                <input type="text" id="m-mssv" placeholder="23124153">
+            <button class="new-report-btn" onclick="openReportModal()">
+                <i class="fas fa-plus"></i> Nộp báo cáo mới
+            </button>
+        </div>
+
+        <div class="mini-stats">
+            <div class="mini-stat approved">
+                <div class="mini-stat-val" id="ms-approved">1</div>
+                <div class="mini-stat-label">Đã duyệt</div>
             </div>
-            
-            <div class="form-group">
-                <label>Gmail sinh viên</label>
-                <input type="text" id="m-gmail" readonly>
+            <div class="mini-stat pending">
+                <div class="mini-stat-val" id="ms-pending">1</div>
+                <div class="mini-stat-label">Đang chờ</div>
             </div>
-            
-            <div class="form-group">
-                <label>Tên đề tài KLTN *</label>
-                <input type="text" id="m-detai" placeholder="Nhập tên đề tài của bạn">
-            </div>
-            
-            <div class="form-group">
-                <label>Giảng viên hướng dẫn *</label>
-                <select id="m-gvhd">
-                    <option value="">-- Chọn giảng viên --</option>
-                </select>
-            </div>
-            
-            <div class="modal-actions">
-                <button class="modal-btn cancel" onclick="closeModal()">Hủy</button>
-                <button class="modal-btn submit" id="btn-submit" onclick="submitForm()">Gửi đăng ký</button>
+            <div class="mini-stat rejected">
+                <div class="mini-stat-val" id="ms-rejected">0</div>
+                <div class="mini-stat-label">Từ chối</div>
             </div>
         </div>
+
+        <div class="reports-card">
+            <div class="card-header">
+                <h3>Tất cả báo cáo</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>TÊN BÁO CÁO</th>
+                        <th>NGÀY NỘP</th>
+                        <th>TRẠNG THÁI</th>
+                        <th>HÀNH ĐỘNG</th>
+                    </tr>
+                </thead>
+                <tbody id="all-reports-tbody">
+                    <!-- filled by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- KLTN advisor card (existing logic) -->
+        <div class="advisor-card" id="advisor-card" style="display:none;">
+            <h4><i class="fas fa-user-tie"></i> Giảng viên hướng dẫn KLTN</h4>
+            <div class="advisor-info-row"><span>Họ và tên</span><span id="advisor-name">-</span></div>
+            <div class="advisor-info-row"><span>Mã GV</span><span id="advisor-code">-</span></div>
+            <div class="advisor-info-row"><span>Email</span><span id="advisor-email">-</span></div>
+            <div class="advisor-info-row"><span>Đợt</span><span id="advisor-batch">-</span></div>
+        </div>
     </div>
-    
-    <!-- NOTIFICATION -->
-    <div class="notification" id="notification">
-        <div class="notification-icon" id="noti-icon">✓</div>
-        <div class="notification-title" id="noti-title">Đăng ký thành công!</div>
-        <div class="notification-message" id="noti-message">Thông tin của bạn đã được ghi nhận</div>
+
+</div><!-- /page-content -->
+</div><!-- /main -->
+
+<!-- ============================================================ REPORT MODAL -->
+<div class="modal-overlay" id="report-modal-overlay">
+    <div class="modal-card">
+        <div class="modal-head">
+            <h2>📝 Nộp báo cáo thực tập</h2>
+            <p>Điền thông tin và tải lên file báo cáo của bạn</p>
+            <button class="modal-close" onclick="closeReportModal()"><i class="fas fa-times" style="font-size:12px;"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tuần số *</label>
+                    <input type="number" class="form-input" id="r-week" min="1" max="12" placeholder="VD: 8">
+                </div>
+                <div class="form-group">
+                    <label>Tiêu đề báo cáo *</label>
+                    <input type="text" class="form-input" id="r-title" placeholder="Tên báo cáo...">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Nội dung tóm tắt</label>
+                <textarea class="form-textarea" id="r-content" placeholder="Mô tả nội dung thực tập tuần này..."></textarea>
+            </div>
+            <div class="form-group">
+                <label>Tải lên file PDF</label>
+                <label class="upload-area" id="upload-area">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span id="upload-label">Kéo thả hoặc nhấn để chọn file</span>
+                    <small>PDF, tối đa 10MB</small>
+                    <input type="file" accept=".pdf" id="r-file" onchange="handleFileChange(this)">
+                </label>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeReportModal()">Hủy</button>
+            <button class="btn-submit" id="btn-submit-report" onclick="submitReport()">Nộp báo cáo</button>
+        </div>
     </div>
+</div>
 
-    <script>
-        const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
+<!-- ============================================================ LOCK MODAL -->
+<div class="modal-overlay" id="lock-modal-overlay">
+    <div class="lock-modal-card">
+        <button class="lock-modal-close" onclick="closeLockModal()"><i class="fas fa-times" style="font-size:11px;"></i></button>
+        <div class="lock-icon-wrap">🔒</div>
+        <h2>Tính năng bị khóa</h2>
+        <p>Tính năng này đã bị khóa vì bạn chưa làm <strong>Báo cáo thực tập</strong>. Hoàn thành báo cáo thực tập trước để mở khóa đăng ký khóa luận tốt nghiệp.</p>
+        <div style="display:flex;gap:10px;">
+            <button class="btn-cancel" onclick="closeLockModal()">Đóng</button>
+            <button class="btn-submit" onclick="closeLockModal();showPage('reports')">Làm báo cáo ngay</button>
+        </div>
+    </div>
+</div>
 
-        // CHECK LOGIN
-        const email = sessionStorage.getItem('ute_email');
-        const role = sessionStorage.getItem('ute_role');
-        const userName = sessionStorage.getItem('ute_name');
-        const userMSSV = sessionStorage.getItem('ute_maSo');
-        
-        if(!email){ 
-            window.location.href='login.html'; 
+<!-- ============================================================ TOAST -->
+<div class="toast" id="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toast-msg">Thành công!</span>
+</div>
+
+<!-- ============================================================ KLTN MODAL (from original) -->
+<div class="modal-overlay" id="kltn-modal-overlay">
+    <div class="modal-card">
+        <div class="modal-head" style="background:linear-gradient(135deg,#059669,#10b981);">
+            <h2>📋 Đăng ký đề tài KLTN</h2>
+            <p>Điền đầy đủ thông tin bên dưới</p>
+            <button class="modal-close" onclick="closeKltnModal()"><i class="fas fa-times" style="font-size:12px;"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group"><label>Họ và tên *</label><input type="text" class="form-input" id="m-hoten" placeholder="Nguyễn Văn A"></div>
+            <div class="form-group"><label>MSSV *</label><input type="text" class="form-input" id="m-mssv" placeholder="23124153"></div>
+            <div class="form-group"><label>Gmail sinh viên</label><input type="text" class="form-input" id="m-gmail" readonly></div>
+            <div class="form-group"><label>Tên đề tài KLTN *</label><input type="text" class="form-input" id="m-detai" placeholder="Nhập tên đề tài của bạn"></div>
+            <div class="form-group">
+                <label>Giảng viên hướng dẫn *</label>
+                <select class="form-select" id="m-gvhd"><option value="">-- Chọn giảng viên --</option></select>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" onclick="closeKltnModal()">Hủy</button>
+            <button class="btn-submit" id="btn-submit-kltn" onclick="submitKltnForm()">Gửi đăng ký</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
+
+    // ===================== CHECK LOGIN =====================
+    const email = sessionStorage.getItem('ute_email');
+    const role = sessionStorage.getItem('ute_role');
+    const userName = sessionStorage.getItem('ute_name');
+    const userMSSV = sessionStorage.getItem('ute_maSo');
+
+    if (!email) { window.location.href = 'login.html'; }
+
+    // ===================== FILL USER INFO =====================
+    let displayName = (userName && userName !== 'null') ? userName : email.split('@')[0];
+    let displayId = '';
+    let roleText = 'SINH VIÊN';
+    let greetingName = displayName.split(' ').pop() || displayName;
+
+    if (role === 'sinhvien') {
+        const mssv = (userMSSV && userMSSV !== 'null') ? userMSSV : email.split('@')[0];
+        displayId = `SV/HV/NCS - ${mssv}`;
+        roleText = 'SINH VIÊN';
+    } else if (role === 'giangvien') {
+        const maGV = (userMSSV && userMSSV !== 'null') ? userMSSV : email.split('@')[0];
+        displayId = `Giảng viên - ${maGV}`;
+        roleText = 'GIẢNG VIÊN';
+        greetingName = `Thầy/Cô ${greetingName}`;
+    } else {
+        displayId = `ID: ${email}`;
+    }
+
+    const initials = displayName.split(' ').filter(Boolean).map(w => w[0]).slice(-2).join('').toUpperCase() || 'AR';
+
+    document.getElementById('user-name').textContent = displayName;
+    document.getElementById('user-id').textContent = displayId;
+    document.getElementById('user-email').textContent = email;
+    document.getElementById('user-role-badge').textContent = roleText;
+    document.getElementById('greeting-name').textContent = greetingName;
+    document.getElementById('topbar-name').textContent = displayName;
+    document.getElementById('sidebar-avatar').textContent = initials;
+    document.getElementById('topbar-avatar').textContent = initials;
+    document.getElementById('m-gmail').value = email;
+
+    // ===================== REPORTS DATA =====================
+    let reportsData = [
+        { id: 1, name: 'Báo cáo tuần 7: Phân tích UI người dùng', file: 'BC_T7_Rivers.pdf', date: '12 Tháng 10, 2024', status: 'approved' },
+        { id: 2, name: 'Báo cáo tuần 6: Khảo sát thói quen sử dụng', file: 'BC_T6_Rivers.pdf', date: '05 Tháng 10, 2024', status: 'pending' },
+    ];
+
+    let progressPct = 65;
+
+    function getStatusBadge(status) {
+        const map = {
+            approved: `<span class="badge approved"><span class="badge-dot"></span>Đã duyệt</span>`,
+            pending:  `<span class="badge pending"><span class="badge-dot"></span>Đang chờ</span>`,
+            rejected: `<span class="badge rejected"><span class="badge-dot"></span>Từ chối</span>`,
+        };
+        return map[status] || map.pending;
+    }
+
+    function getIconClass(status) {
+        return status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : 'pending';
+    }
+
+    function renderReportRow(r) {
+        return `<tr>
+            <td>
+                <div class="report-row-name">
+                    <div class="report-icon-wrap ${getIconClass(r.status)}">📄</div>
+                    <div>
+                        <div class="report-name-main">${r.name}</div>
+                        <div class="report-file">File: ${r.file}</div>
+                    </div>
+                </div>
+            </td>
+            <td>${r.date}</td>
+            <td>${getStatusBadge(r.status)}</td>
+            <td><button class="action-btn"><i class="fas fa-ellipsis-v"></i></button></td>
+        </tr>`;
+    }
+
+    function renderAllReports() {
+        const dashTbody = document.getElementById('dashboard-reports-tbody');
+        const allTbody = document.getElementById('all-reports-tbody');
+        dashTbody.innerHTML = reportsData.slice(0, 3).map(renderReportRow).join('');
+        allTbody.innerHTML = reportsData.map(renderReportRow).join('');
+
+        const approved = reportsData.filter(r => r.status === 'approved').length;
+        const pending  = reportsData.filter(r => r.status === 'pending').length;
+        const rejected = reportsData.filter(r => r.status === 'rejected').length;
+
+        document.getElementById('ms-approved').textContent = approved;
+        document.getElementById('ms-pending').textContent = pending;
+        document.getElementById('ms-rejected').textContent = rejected;
+        document.getElementById('stat-report-count').textContent = reportsData.length;
+    }
+
+    renderAllReports();
+
+    // ===================== PAGES =====================
+    function showPage(page) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item:not(.disabled)').forEach(n => n.classList.remove('active'));
+        document.getElementById('page-' + page).classList.add('active');
+        document.getElementById('nav-' + page).classList.add('active');
+        closeAllDropdowns();
+    }
+
+    // ===================== DROPDOWNS =====================
+    function toggleDropdown(id) {
+        const el = document.getElementById(id);
+        const isOpen = el.classList.contains('show');
+        closeAllDropdowns();
+        if (!isOpen) el.classList.add('show');
+    }
+
+    function closeAllDropdowns() {
+        document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('show'));
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('[onclick*="toggleDropdown"]') && !e.target.closest('.dropdown')) {
+            closeAllDropdowns();
+        }
+    });
+
+    // ===================== NOTIFICATIONS =====================
+    let unreadCount = 3;
+
+    function markAllRead() {
+        document.querySelectorAll('.notif-item.unread').forEach(n => n.classList.remove('unread'));
+        document.querySelectorAll('.notif-unread-dot').forEach(d => d.remove());
+        unreadCount = 0;
+        document.getElementById('notif-count').style.display = 'none';
+    }
+
+    // ===================== REPORT MODAL =====================
+    function openReportModal() {
+        closeAllDropdowns();
+        document.getElementById('report-modal-overlay').classList.add('show');
+    }
+
+    function closeReportModal() {
+        document.getElementById('report-modal-overlay').classList.remove('show');
+        document.getElementById('r-week').value = '';
+        document.getElementById('r-title').value = '';
+        document.getElementById('r-content').value = '';
+        document.getElementById('upload-label').textContent = 'Kéo thả hoặc nhấn để chọn file';
+    }
+
+    function handleFileChange(input) {
+        if (input.files && input.files[0]) {
+            document.getElementById('upload-label').textContent = input.files[0].name;
+        }
+    }
+
+    function submitReport() {
+        const week = document.getElementById('r-week').value.trim();
+        const title = document.getElementById('r-title').value.trim();
+
+        if (!week || !title) {
+            showToast('Vui lòng điền đầy đủ thông tin!', 'error');
+            return;
         }
 
-        // HIỂN THỊ THÔNG TIN THEO ROLE
-        let displayName = '';
-        let displayId = '';
-        let roleText = '';
-        
-        // Lấy tên thật từ sessionStorage
-        if (userName && userName !== 'null' && userName !== '') {
-            displayName = userName;
-        } else {
-            displayName = email.split('@')[0];
-        }
-        
-        // Hiển thị theo role
-        if (role === 'sinhvien') {
-            // Sinh viên: hiển thị "SV/HV/NCS - MSSV"
-            const mssv = (userMSSV && userMSSV !== 'null') ? userMSSV : email.split('@')[0];
-            displayId = `SV/HV/NCS - ${mssv}`;
-            roleText = 'SINH VIÊN';
-            document.getElementById('greeting-name').textContent = displayName.split(' ').pop() || displayName;
-        } else if (role === 'giangvien') {
-            // Giảng viên: hiển thị "Giảng viên - Mã GV"
-            const maGV = (userMSSV && userMSSV !== 'null') ? userMSSV : email.split('@')[0];
-            displayId = `Giảng viên - ${maGV}`;
-            roleText = 'GIẢNG VIÊN';
-            document.getElementById('greeting-name').textContent = `Thầy/Cô ${displayName.split(' ').pop() || displayName}`;
-        } else {
-            displayId = `ID: ${email}`;
-            roleText = 'USER';
-        }
-        
-        // Gán vào DOM
-        document.getElementById('user-name').textContent = displayName;
-        document.getElementById('user-id').textContent = displayId;
-        document.querySelector('.user-role').textContent = roleText;
-        
-        // Gán email vào modal
-        document.getElementById('m-gmail').value = email;
-        
-        let gvData = [];
+        const btn = document.getElementById('btn-submit-report');
+        btn.textContent = 'Đang nộp...';
+        btn.disabled = true;
 
-        // LOAD GIẢNG VIÊN
-        async function loadGV(){
-            try {
-                const res = await fetch(`${API}?action=getGiangVien`);
-                const json = await res.json();
-                gvData = json.data || [];
-                console.log('Advisors:', gvData);
-                
-                const sel = document.getElementById('m-gvhd');
-                sel.innerHTML = '<option value="">-- Chọn giảng viên --</option>';
-                gvData.forEach(g=>{
-                    const opt = document.createElement('option');
-                    opt.value = g['Họ và Tên'] || g['ho_ten'] || '';
-                    opt.textContent = g['Họ và Tên'] || g['ho_ten'] || '';
-                    sel.appendChild(opt);
-                });
-            } catch(e){
-                console.log('Error loading GV:', e);
+        setTimeout(() => {
+            const now = new Date();
+            const months = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+            const dateStr = `${now.getDate()} ${months[now.getMonth()]}, ${now.getFullYear()}`;
+
+            reportsData.unshift({
+                id: Date.now(),
+                name: `Báo cáo tuần ${week}: ${title}`,
+                file: `BC_T${week}_${displayName.split(' ').pop()}.pdf`,
+                date: dateStr,
+                status: 'pending'
+            });
+
+            progressPct = Math.min(progressPct + 5, 100);
+            const remain = 100 - progressPct;
+            document.getElementById('progress-fill').style.width = progressPct + '%';
+            document.getElementById('stat-progress').textContent = progressPct + '%';
+            document.getElementById('prog-label-done').textContent = `HOÀN THÀNH ${progressPct}%`;
+            document.getElementById('prog-label-remain').textContent = `Còn lại ${remain}%`;
+
+            renderAllReports();
+            closeReportModal();
+            btn.textContent = 'Nộp báo cáo';
+            btn.disabled = false;
+            showToast('Báo cáo đã được nộp thành công!');
+        }, 900);
+    }
+
+    // ===================== LOCK MODAL =====================
+    function openLockModal() {
+        document.getElementById('lock-modal-overlay').classList.add('show');
+    }
+
+    function closeLockModal() {
+        document.getElementById('lock-modal-overlay').classList.remove('show');
+    }
+
+    // ===================== KLTN MODAL =====================
+    let gvData = [];
+
+    async function loadGV() {
+        try {
+            const res = await fetch(`${API}?action=getGiangVien`);
+            const json = await res.json();
+            gvData = json.data || [];
+            const sel = document.getElementById('m-gvhd');
+            sel.innerHTML = '<option value="">-- Chọn giảng viên --</option>';
+            gvData.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g['Họ và Tên'] || g['ho_ten'] || '';
+                opt.textContent = g['Họ và Tên'] || g['ho_ten'] || '';
+                sel.appendChild(opt);
+            });
+        } catch (e) { console.log('Error loading GV:', e); }
+    }
+
+    function closeKltnModal() {
+        document.getElementById('kltn-modal-overlay').classList.remove('show');
+        document.getElementById('m-hoten').value = '';
+        document.getElementById('m-mssv').value = '';
+        document.getElementById('m-detai').value = '';
+        document.getElementById('m-gvhd').value = '';
+    }
+
+    async function submitKltnForm() {
+        const hoTen = document.getElementById('m-hoten').value.trim();
+        const mssv  = document.getElementById('m-mssv').value.trim();
+        const deTai = document.getElementById('m-detai').value.trim();
+        const gvhd  = document.getElementById('m-gvhd').value.trim();
+
+        if (!hoTen || !mssv || !deTai || !gvhd) {
+            showToast('Vui lòng điền đầy đủ thông tin!', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('btn-submit-kltn');
+        btn.textContent = 'Đang gửi...';
+        btn.disabled = true;
+
+        try {
+            await fetch(API, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'register', hoTen, mssv, gmail: email, deTai, gvhd })
+            });
+
+            const selectedAdvisor = gvData.find(g => (g['Họ và Tên'] || g['ho_ten']) === gvhd);
+            if (selectedAdvisor) {
+                document.getElementById('advisor-card').style.display = 'block';
+                document.getElementById('advisor-name').textContent = selectedAdvisor['Họ và Tên'] || selectedAdvisor['ho_ten'] || '-';
+                document.getElementById('advisor-code').textContent = selectedAdvisor['MSSV'] || selectedAdvisor['ma_gv'] || '-';
+                document.getElementById('advisor-email').textContent = selectedAdvisor['Gmail'] || selectedAdvisor['gmail'] || '-';
+                document.getElementById('advisor-batch').textContent = selectedAdvisor['Đợt'] || selectedAdvisor['dot'] || 'K48';
             }
+
+            closeKltnModal();
+            showToast('Đăng ký KLTN thành công!');
+        } catch (e) {
+            showToast('Có lỗi xảy ra, vui lòng thử lại.', 'error');
         }
 
-        // LOAD DỮ LIỆU ĐĂNG KÝ CỦA USER
-        async function loadUserRegistrations(){
-            try {
-                const res = await fetch(`${API}?action=getRegistrations&email=${encodeURIComponent(email)}`);
-                const json = await res.json();
-                const data = json.data || [];
-                console.log('User registrations:', data);
-                
-                if (data.length > 0) {
-                    const lastReg = data[data.length - 1];
-                    document.getElementById('advisor-card').style.display = 'block';
-                    document.getElementById('advisor-name').textContent = lastReg.gvhd || '-';
-                    document.getElementById('advisor-code').textContent = lastReg.gvCode || '-';
-                    document.getElementById('advisor-email').textContent = lastReg.gvEmail || '-';
-                    document.getElementById('advisor-batch').textContent = lastReg.batch || 'K48';
-                }
-            } catch(e){ 
-                console.log('Error loading registrations:', e); 
+        btn.textContent = 'Gửi đăng ký';
+        btn.disabled = false;
+    }
+
+    async function loadUserRegistrations() {
+        try {
+            const res = await fetch(`${API}?action=getRegistrations&email=${encodeURIComponent(email)}`);
+            const json = await res.json();
+            const data = json.data || [];
+            if (data.length > 0) {
+                const lastReg = data[data.length - 1];
+                document.getElementById('advisor-card').style.display = 'block';
+                document.getElementById('advisor-name').textContent = lastReg.gvhd || '-';
+                document.getElementById('advisor-code').textContent = lastReg.gvCode || '-';
+                document.getElementById('advisor-email').textContent = lastReg.gvEmail || '-';
+                document.getElementById('advisor-batch').textContent = lastReg.batch || 'K48';
             }
-        }
+        } catch (e) { console.log('Error loading registrations:', e); }
+    }
 
-        // MODAL FUNCTIONS
-        function openModal(){
-            document.getElementById('modal-overlay').classList.add('show');
-        }
+    // ===================== TOAST =====================
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        const icon = t.querySelector('i');
+        document.getElementById('toast-msg').textContent = msg;
+        t.className = `toast ${type}`;
+        icon.className = type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3500);
+    }
 
-        function closeModal(){
-            document.getElementById('modal-overlay').classList.remove('show');
-            document.getElementById('m-hoten').value = '';
-            document.getElementById('m-mssv').value = '';
-            document.getElementById('m-detai').value = '';
-            document.getElementById('m-gvhd').value = '';
-        }
+    // ===================== LOGOUT =====================
+    function logout() {
+        sessionStorage.clear();
+        window.location.href = 'login.html';
+    }
 
-        async function submitForm(){
-            const hoTen = document.getElementById('m-hoten').value.trim();
-            const mssv = document.getElementById('m-mssv').value.trim();
-            const deTai = document.getElementById('m-detai').value.trim();
-            const gvhd = document.getElementById('m-gvhd').value.trim();
-            
-            if(!hoTen||!mssv||!deTai||!gvhd){ 
-                alert('Vui lòng điền đầy đủ thông tin!'); 
-                return; 
-            }
-
-            const btn = document.getElementById('btn-submit');
-            btn.textContent = 'Đang gửi...';
-            btn.disabled = true;
-
-            try {
-                const response = await fetch(API, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'register',
-                        hoTen,
-                        mssv,
-                        gmail: email,
-                        deTai,
-                        gvhd
-                    })
-                });
-                
-                const selectedAdvisor = gvData.find(g => (g['Họ và Tên'] || g['ho_ten']) === gvhd);
-                
-                if(selectedAdvisor) {
-                    document.getElementById('advisor-card').style.display = 'block';
-                    document.getElementById('advisor-name').textContent = selectedAdvisor['Họ và Tên'] || selectedAdvisor['ho_ten'] || '-';
-                    document.getElementById('advisor-code').textContent = selectedAdvisor['MSSV'] || selectedAdvisor['ma_gv'] || '-';
-                    document.getElementById('advisor-email').textContent = selectedAdvisor['Gmail'] || selectedAdvisor['gmail'] || '-';
-                    document.getElementById('advisor-batch').textContent = selectedAdvisor['Đợt'] || selectedAdvisor['dot'] || 'K48';
-                }
-                
-                closeModal();
-                showNotification('✅', 'Đăng ký thành công!', 'Thông tin của bạn đã được ghi nhận
+    // ===================== INIT =====================
+    loadGV();
+    loadUserRegistrations();
+</script>
+</body>
+</html>
