@@ -94,7 +94,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzRmU2ZtrI93erZ4X2SPO-rAmPEg-8oeDd-06VQ74SMf-7aOPxxJe_C8BPge2xqkKct/exec';
+const API = 'https://script.google.com/macros/s/AKfycbzC8Tv9lpDms6MUcA8GUzfaIBWtxEeaWB3arF_3-XtaKSEpq93HmgXDXMyvueBMx0oD/exec';
 const ADMIN_USER = 'admin', ADMIN_PASS = 'ute2025';
 
 function ce(id){ document.getElementById(id).classList.remove('has-error'); }
@@ -122,6 +122,8 @@ function doLogin(){
   if(u === ADMIN_USER && p === ADMIN_PASS){
     sessionStorage.setItem('ute_email', 'admin');
     sessionStorage.setItem('ute_role', 'admin');
+    sessionStorage.setItem('ute_name', 'Administrator');
+    sessionStorage.setItem('ute_maSo', 'ADMIN');
     showOverlay('success','✅','Đăng nhập thành công!','Đang chuyển hướng...');
     setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
   } else {
@@ -142,23 +144,28 @@ async function handleGoogleLogin(response){
     const res = await fetch(`${API}?action=checkEmail&email=${encodeURIComponent(email)}`);
     const data = await res.json();
 
-    if(data.role === 'sinhvien'){
+    if(data.success === true && data.role === 'sinhvien'){
       sessionStorage.setItem('ute_email', email);
       sessionStorage.setItem('ute_role', 'sinhvien');
-      showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
+      sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
+      sessionStorage.setItem('ute_maSo', data.maSo || '');
+      showOverlay('success', '👏', 'Chúc mừng bạn đã đăng nhập thành công!', 'Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
-
-    } else if(data.role === 'giangvien'){
+      
+    } else if(data.success === true && data.role === 'giangvien'){
       sessionStorage.setItem('ute_email', email);
       sessionStorage.setItem('ute_role', 'giangvien');
-      showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
+      sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
+      sessionStorage.setItem('ute_maSo', data.maSo || '');
+      showOverlay('success', '👏', 'Chúc mừng bạn đã đăng nhập thành công!', 'Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
-
+      
     } else {
       showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
       setTimeout(hideOverlay, 3000);
     }
   } catch(err){
+    console.error('Login error:', err);
     showOverlay('error','⚠️','Lỗi kết nối. Vui lòng thử lại.','');
     setTimeout(hideOverlay, 3000);
   }
