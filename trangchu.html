@@ -43,38 +43,37 @@
             cursor: pointer;
         }
         
-        .sidebar-logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 18px;
+        .sidebar-logo img {
+            border-radius: 4px;
         }
         
         .sidebar-logo-text {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: #4f46e5;
         }
         
-.sidebar-logo img {
-    border-radius: 4px;
-}
-
-.sidebar-user {
-    background: #f0f4ff;
-    border-radius: 12px;
-    margin-bottom: 24px;
-}
-
-.user-avatar {
-    flex-shrink: 0;
-}
+        .sidebar-user {
+            background: #f0f4ff;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+        }
+        
+        .user-avatar {
+            flex-shrink: 0;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #9ca3af;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
         
         .user-name {
             font-size: 14px;
@@ -85,8 +84,7 @@
         
         .user-id {
             font-size: 12px;
-            color: #999;
-            margin-bottom: 12px;
+            color: #666;
         }
         
         .user-role {
@@ -97,6 +95,7 @@
             border-radius: 6px;
             font-size: 11px;
             font-weight: 600;
+            margin-top: 8px;
         }
         
         .sidebar-menu {
@@ -714,21 +713,21 @@
 </head>
 <body>
     <!-- SIDEBAR -->
-<div class="sidebar">
-    <div class="sidebar-logo">
-        <img id="school-logo" src="https://drive.google.com/uc?export=view&id=174jQ16v-9F-yYEzeJzO-UuIj4zYYM1kn" alt="HCMUTE" style="width: 40px; height: 40px; object-fit: contain;">
-        <div class="sidebar-logo-text" style="font-size: 16px;">HCMUTE</div>
-    </div>
-    
-    <div class="sidebar-user" style="display: flex; align-items: center; gap: 12px; padding: 12px;">
-        <div class="user-avatar" id="avatar" style="background: #9ca3af; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px;">
-            <i class="fas fa-user" style="color: white;"></i>
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <img id="school-logo" src="https://drive.google.com/uc?export=view&id=174jQ16v-9F-yYEzeJzO-UuIj4zYYM1kn" alt="HCMUTE" style="width: 40px; height: 40px; object-fit: contain;">
+            <div class="sidebar-logo-text">HCMUTE</div>
         </div>
-        <div style="flex: 1;">
-            <div class="user-name" id="user-name">Đang tải...</div>
-            <div class="user-id" id="user-id">ID: --</div>
+        
+        <div class="sidebar-user">
+            <div class="user-avatar" id="avatar">
+                <i class="fas fa-user" style="color: white;"></i>
+            </div>
+            <div style="flex: 1;">
+                <div class="user-name" id="user-name">Đang tải...</div>
+                <div class="user-id" id="user-id">--</div>
+            </div>
         </div>
-    </div>
         
         <ul class="sidebar-menu">
             <li><a href="#" class="active" onclick="scrollToTop()"><i class="fas fa-chart-line"></i> Dashboard</a></li>
@@ -933,179 +932,151 @@
         <div class="notification-message" id="noti-message">Thông tin của bạn đã được ghi nhận</div>
     </div>
 
-<script>
-    const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
+    <script>
+        const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
 
-    // CHECK LOGIN
-    const email = sessionStorage.getItem('ute_email');
-    const role = sessionStorage.getItem('ute_role');
-    const userName = sessionStorage.getItem('ute_name');
-    const userMSSV = sessionStorage.getItem('ute_maSo');
-    
-    if(!email){ 
-        window.location.href='login.html'; 
-    }
-
-    // HIỂN THỊ THÔNG TIN THEO ROLE
-    if (userName && userName !== 'null') {
-        document.getElementById('user-name').textContent = userName;
-    } else {
-        document.getElementById('user-name').textContent = email.split('@')[0];
-    }
-    
-    // Hiển thị MSSV hoặc Mã số giảng viên
-    let idText = '';
-    let roleText = '';
-    if (role === 'sinhvien') {
-        idText = userMSSV && userMSSV !== 'null' ? `MSSV: ${userMSSV}` : `MSSV: ${email.split('@')[0]}`;
-        roleText = 'SINH VIÊN';
-        document.getElementById('greeting-name').textContent = userName || email.split('@')[0];
-    } else if (role === 'giangvien') {
-        idText = userMSSV && userMSSV !== 'null' ? `Mã GV: ${userMSSV}` : `Mã GV: ${email.split('@')[0]}`;
-        roleText = 'GIẢNG VIÊN';
-        document.getElementById('greeting-name').textContent = `Thầy/Cô ${userName || email.split('@')[0]}`;
-    } else {
-        idText = `ID: ${email}`;
-        roleText = 'USER';
-    }
-    document.getElementById('user-id').textContent = idText;
-    document.querySelector('.user-role').textContent = roleText;
-    
-    // Gán email vào modal
-    document.getElementById('m-gmail').value = email;
-    
-    let gvData = [];
-
-    // LOAD GIẢNG VIÊN
-    async function loadGV(){
-        try {
-            const res = await fetch(`${API}?action=getGiangVien`);
-            const json = await res.json();
-            gvData = json.data || [];
-            console.log('Advisors:', gvData);
-            
-            const sel = document.getElementById('m-gvhd');
-            sel.innerHTML = '<option value="">-- Chọn giảng viên --</option>';
-            gvData.forEach(g=>{
-                const opt = document.createElement('option');
-                opt.value = g['Họ và Tên'] || g['ho_ten'] || '';
-                opt.textContent = g['Họ và Tên'] || g['ho_ten'] || '';
-                sel.appendChild(opt);
-            });
-        } catch(e){
-            console.log('Error loading GV:', e);
-        }
-    }
-
-    // LOAD DỮ LIỆU ĐĂNG KÝ CỦA USER
-    async function loadUserRegistrations(){
-        try {
-            const res = await fetch(`${API}?action=getRegistrations&email=${encodeURIComponent(email)}`);
-            const json = await res.json();
-            const data = json.data || [];
-            console.log('User registrations:', data);
-            
-            if (data.length > 0) {
-                const lastReg = data[data.length - 1];
-                document.getElementById('advisor-card').style.display = 'block';
-                document.getElementById('advisor-name').textContent = lastReg.gvhd || '-';
-                document.getElementById('advisor-code').textContent = lastReg.gvCode || '-';
-                document.getElementById('advisor-email').textContent = lastReg.gvEmail || '-';
-                document.getElementById('advisor-batch').textContent = lastReg.batch || 'K48';
-            }
-        } catch(e){ 
-            console.log('Error loading registrations:', e); 
-        }
-    }
-
-    // MODAL FUNCTIONS
-    function openModal(){
-        document.getElementById('modal-overlay').classList.add('show');
-    }
-
-    function closeModal(){
-        document.getElementById('modal-overlay').classList.remove('show');
-        document.getElementById('m-hoten').value = '';
-        document.getElementById('m-mssv').value = '';
-        document.getElementById('m-detai').value = '';
-        document.getElementById('m-gvhd').value = '';
-    }
-
-    async function submitForm(){
-        const hoTen = document.getElementById('m-hoten').value.trim();
-        const mssv = document.getElementById('m-mssv').value.trim();
-        const deTai = document.getElementById('m-detai').value.trim();
-        const gvhd = document.getElementById('m-gvhd').value.trim();
+        // CHECK LOGIN
+        const email = sessionStorage.getItem('ute_email');
+        const role = sessionStorage.getItem('ute_role');
+        const userName = sessionStorage.getItem('ute_name');
+        const userMSSV = sessionStorage.getItem('ute_maSo');
         
-        if(!hoTen||!mssv||!deTai||!gvhd){ 
-            alert('Vui lòng điền đầy đủ thông tin!'); 
-            return; 
+        if(!email){ 
+            window.location.href='login.html'; 
         }
 
-        const btn = document.getElementById('btn-submit');
-        btn.textContent = 'Đang gửi...';
-        btn.disabled = true;
-
-        try {
-            const response = await fetch(API, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: 'register',
-                    hoTen,
-                    mssv,
-                    gmail: email,
-                    deTai,
-                    gvhd
-                })
-            });
-            
-            const selectedAdvisor = gvData.find(g => (g['Họ và Tên'] || g['ho_ten']) === gvhd);
-            
-            if(selectedAdvisor) {
-                document.getElementById('advisor-card').style.display = 'block';
-                document.getElementById('advisor-name').textContent = selectedAdvisor['Họ và Tên'] || selectedAdvisor['ho_ten'] || '-';
-                document.getElementById('advisor-code').textContent = selectedAdvisor['MSSV'] || selectedAdvisor['ma_gv'] || '-';
-                document.getElementById('advisor-email').textContent = selectedAdvisor['Gmail'] || selectedAdvisor['gmail'] || '-';
-                document.getElementById('advisor-batch').textContent = selectedAdvisor['Đợt'] || selectedAdvisor['dot'] || 'K48';
-            }
-            
-            closeModal();
-            showNotification('✅', 'Đăng ký thành công!', 'Thông tin của bạn đã được ghi nhận');
-            setTimeout(() => {
-                document.getElementById('notification').classList.remove('show');
-                loadUserRegistrations();
-            }, 3000);
-        } catch(e){
-            showNotification('❌', 'Lỗi kết nối', 'Vui lòng thử lại');
-            console.log('Error:', e);
+        // HIỂN THỊ THÔNG TIN THEO ROLE
+        let displayName = '';
+        let displayId = '';
+        let roleText = '';
+        
+        // Lấy tên thật từ sessionStorage
+        if (userName && userName !== 'null' && userName !== '') {
+            displayName = userName;
+        } else {
+            displayName = email.split('@')[0];
         }
         
-        btn.textContent = 'Gửi đăng ký';
-        btn.disabled = false;
-    }
+        // Hiển thị theo role
+        if (role === 'sinhvien') {
+            // Sinh viên: hiển thị "SV/HV/NCS - MSSV"
+            const mssv = (userMSSV && userMSSV !== 'null') ? userMSSV : email.split('@')[0];
+            displayId = `SV/HV/NCS - ${mssv}`;
+            roleText = 'SINH VIÊN';
+            document.getElementById('greeting-name').textContent = displayName.split(' ').pop() || displayName;
+        } else if (role === 'giangvien') {
+            // Giảng viên: hiển thị "Giảng viên - Mã GV"
+            const maGV = (userMSSV && userMSSV !== 'null') ? userMSSV : email.split('@')[0];
+            displayId = `Giảng viên - ${maGV}`;
+            roleText = 'GIẢNG VIÊN';
+            document.getElementById('greeting-name').textContent = `Thầy/Cô ${displayName.split(' ').pop() || displayName}`;
+        } else {
+            displayId = `ID: ${email}`;
+            roleText = 'USER';
+        }
+        
+        // Gán vào DOM
+        document.getElementById('user-name').textContent = displayName;
+        document.getElementById('user-id').textContent = displayId;
+        document.querySelector('.user-role').textContent = roleText;
+        
+        // Gán email vào modal
+        document.getElementById('m-gmail').value = email;
+        
+        let gvData = [];
 
-    function showNotification(icon, title, message){
-        document.getElementById('noti-icon').textContent = icon;
-        document.getElementById('noti-title').textContent = title;
-        document.getElementById('noti-message').textContent = message;
-        document.getElementById('notification').classList.add('show');
-        setTimeout(() => {
-            document.getElementById('notification').classList.remove('show');
-        }, 3000);
-    }
+        // LOAD GIẢNG VIÊN
+        async function loadGV(){
+            try {
+                const res = await fetch(`${API}?action=getGiangVien`);
+                const json = await res.json();
+                gvData = json.data || [];
+                console.log('Advisors:', gvData);
+                
+                const sel = document.getElementById('m-gvhd');
+                sel.innerHTML = '<option value="">-- Chọn giảng viên --</option>';
+                gvData.forEach(g=>{
+                    const opt = document.createElement('option');
+                    opt.value = g['Họ và Tên'] || g['ho_ten'] || '';
+                    opt.textContent = g['Họ và Tên'] || g['ho_ten'] || '';
+                    sel.appendChild(opt);
+                });
+            } catch(e){
+                console.log('Error loading GV:', e);
+            }
+        }
 
-    // NAVIGATION
-    function scrollToTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
-    function scrollToReports(){ document.querySelector('.reports-section').scrollIntoView({behavior:'smooth'}); }
-    function openSettings(){ alert('Profile Settings - Coming soon!'); }
-    function logout(){ 
-        sessionStorage.clear(); 
-        window.location.href='login.html'; 
-    }
+        // LOAD DỮ LIỆU ĐĂNG KÝ CỦA USER
+        async function loadUserRegistrations(){
+            try {
+                const res = await fetch(`${API}?action=getRegistrations&email=${encodeURIComponent(email)}`);
+                const json = await res.json();
+                const data = json.data || [];
+                console.log('User registrations:', data);
+                
+                if (data.length > 0) {
+                    const lastReg = data[data.length - 1];
+                    document.getElementById('advisor-card').style.display = 'block';
+                    document.getElementById('advisor-name').textContent = lastReg.gvhd || '-';
+                    document.getElementById('advisor-code').textContent = lastReg.gvCode || '-';
+                    document.getElementById('advisor-email').textContent = lastReg.gvEmail || '-';
+                    document.getElementById('advisor-batch').textContent = lastReg.batch || 'K48';
+                }
+            } catch(e){ 
+                console.log('Error loading registrations:', e); 
+            }
+        }
 
-    // INIT
-    loadGV();
-    loadUserRegistrations();
-</script>
-</body>
-</html>
+        // MODAL FUNCTIONS
+        function openModal(){
+            document.getElementById('modal-overlay').classList.add('show');
+        }
+
+        function closeModal(){
+            document.getElementById('modal-overlay').classList.remove('show');
+            document.getElementById('m-hoten').value = '';
+            document.getElementById('m-mssv').value = '';
+            document.getElementById('m-detai').value = '';
+            document.getElementById('m-gvhd').value = '';
+        }
+
+        async function submitForm(){
+            const hoTen = document.getElementById('m-hoten').value.trim();
+            const mssv = document.getElementById('m-mssv').value.trim();
+            const deTai = document.getElementById('m-detai').value.trim();
+            const gvhd = document.getElementById('m-gvhd').value.trim();
+            
+            if(!hoTen||!mssv||!deTai||!gvhd){ 
+                alert('Vui lòng điền đầy đủ thông tin!'); 
+                return; 
+            }
+
+            const btn = document.getElementById('btn-submit');
+            btn.textContent = 'Đang gửi...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(API, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'register',
+                        hoTen,
+                        mssv,
+                        gmail: email,
+                        deTai,
+                        gvhd
+                    })
+                });
+                
+                const selectedAdvisor = gvData.find(g => (g['Họ và Tên'] || g['ho_ten']) === gvhd);
+                
+                if(selectedAdvisor) {
+                    document.getElementById('advisor-card').style.display = 'block';
+                    document.getElementById('advisor-name').textContent = selectedAdvisor['Họ và Tên'] || selectedAdvisor['ho_ten'] || '-';
+                    document.getElementById('advisor-code').textContent = selectedAdvisor['MSSV'] || selectedAdvisor['ma_gv'] || '-';
+                    document.getElementById('advisor-email').textContent = selectedAdvisor['Gmail'] || selectedAdvisor['gmail'] || '-';
+                    document.getElementById('advisor-batch').textContent = selectedAdvisor['Đợt'] || selectedAdvisor['dot'] || 'K48';
+                }
+                
+                closeModal();
+                showNotification('✅', 'Đăng ký thành công!', 'Thông tin của bạn đã được ghi nhận
