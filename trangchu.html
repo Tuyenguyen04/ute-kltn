@@ -1,428 +1,994 @@
 <!DOCTYPE html>
-<html class="light" lang="vi">
+<html lang="vi">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Trường Đại học Công nghệ Kỹ thuật - Student Portal</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-tailwind.config = {
-  darkMode: "class",
-  theme: {
-    extend: {
-      colors: {
-        "primary": "#005bbf",
-        "primary-container": "#1a73e8",
-        "on-primary": "#ffffff",
-        "on-surface": "#191c1d",
-        "on-surface-variant": "#414754",
-        "surface": "#f8f9fa",
-        "surface-container": "#edeeef",
-        "outline-variant": "#c1c6d6"
-      },
-      fontFamily: {
-        "headline": ["Manrope"],
-        "body": ["Inter"],
-        "label": ["Inter"]
-      }
-    }
-  }
-}
-</script>
-<style>
-  .material-symbols-outlined {
-    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  }
-  body {
-    font-family: 'Inter', sans-serif;
-    background-color: #f8f9fa;
-    color: #191c1d;
-    min-height: max(884px, 100dvh);
-  }
-  .modal-bg {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.45);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 500;
-  }
-  .modal-bg.show {
-    display: flex;
-  }
-  .overlay {
-    position: fixed;
-    inset: 0;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    background: rgba(6,95,70,.92);
-  }
-  .overlay.show {
-    display: flex;
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang chủ - Student Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            background: #fff;
+            border-right: 1px solid #e0e0e0;
+            padding: 24px 16px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            cursor: pointer;
+        }
+        
+        .sidebar-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .sidebar-logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            color: #4f46e5;
+        }
+        
+        .sidebar-user {
+            background: #f0f4ff;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 12px;
+        }
+        
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        
+        .user-id {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 12px;
+        }
+        
+        .user-role {
+            display: inline-block;
+            background: #4f46e5;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 8px;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: #666;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: #f0f4ff;
+            color: #4f46e5;
+        }
+        
+        .sidebar-menu i {
+            font-size: 18px;
+            width: 20px;
+        }
+        
+        .logout-btn {
+            width: calc(100% - 32px);
+            padding: 12px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 24px;
+            transition: all 0.3s;
+        }
+        
+        .logout-btn:hover {
+            background: #f5f7fa;
+            color: #e74c3c;
+        }
+        
+        /* MAIN CONTENT */
+        .main {
+            flex: 1;
+            margin-left: 280px;
+            padding: 24px;
+        }
+        
+        /* HEADER */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            background: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .header-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s;
+        }
+        
+        .header-btn:hover {
+            color: #4f46e5;
+        }
+        
+        /* HERO SECTION */
+        .hero {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .hero-left {
+            flex: 1;
+        }
+        
+        .hero-greeting {
+            font-size: 28px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .hero-sub {
+            font-size: 14px;
+            color: #999;
+        }
+        
+        .hero-btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+        
+        .hero-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
+        }
+        
+        /* PROGRESS SECTION */
+        .progress-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 32px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .progress-card {
+            flex: 1;
+        }
+        
+        .progress-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .progress-info {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5 0%, #7c3aed 100%);
+            width: 65%;
+            border-radius: 4px;
+        }
+        
+        .progress-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+        }
+        
+        .step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        
+        .step-icon.done {
+            background: #4f46e5;
+        }
+        
+        .step-icon.active {
+            background: #fff;
+            border: 2px solid #4f46e5;
+            color: #4f46e5;
+        }
+        
+        .step-icon.pending {
+            background: #f0f0f0;
+            color: #ccc;
+        }
+        
+        .step-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            text-align: center;
+        }
+        
+        .deadline-card {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe8a8 100%);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .deadline-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+        
+        .deadline-title {
+            font-size: 14px;
+            color: #ff9800;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .deadline-sub {
+            font-size: 12px;
+            color: #f57c00;
+            margin-bottom: 12px;
+        }
+        
+        .deadline-days {
+            font-size: 28px;
+            font-weight: 700;
+            color: #ff9800;
+        }
+        
+        /* REPORTS SECTION */
+        .reports-section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .see-all {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .reports-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .reports-table thead {
+            background: #f9f9f9;
+        }
+        
+        .reports-table th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #999;
+            font-size: 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .reports-table td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+        
+        .report-name {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .report-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .report-icon.pdf {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .report-file {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge.approved {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .badge.pending {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .badge.rejected {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            padding: 8px;
+        }
+        
+        @media (max-width: 1200px) {
+            .progress-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 250px;
+                padding: 16px;
+            }
+            
+            .main {
+                margin-left: 250px;
+                padding: 16px;
+            }
+            
+            .hero {
+                flex-direction: column;
+            }
+            
+            .progress-steps {
+                flex-wrap: wrap;
+            }
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .form-group input[readonly] {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .modal-btn.cancel {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .modal-btn.cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .modal-btn.submit {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .modal-btn.submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
+        }
+
+        /* NOTIFICATION */
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            z-index: 2000;
+            display: none;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .notification.show {
+            display: block;
+            animation: popIn 0.3s ease;
+        }
+
+        .notification-icon {
+            font-size: 56px;
+            margin-bottom: 16px;
+        }
+
+        .notification-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .notification-message {
+            font-size: 14px;
+            color: #999;
+        }
+
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+    </style>
 </head>
-<body class="flex min-h-screen">
-
-<!-- Modal Đăng ký -->
-<div class="modal-bg" id="modal-bg">
-  <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
-    <h2 class="text-2xl font-bold text-on-surface mb-2">📝 Đăng ký đề tài KLTN</h2>
-    <p class="text-sm text-on-surface-variant mb-6">Điền đầy đủ thông tin bên dưới</p>
-    
-    <div class="space-y-4">
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Họ và tên *</label>
-        <input type="text" id="m-hoten" placeholder="Nguyễn Văn A" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"/>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">MSSV *</label>
-        <input type="text" id="m-mssv" placeholder="23124153" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"/>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Gmail sinh viên</label>
-        <input type="text" id="m-gmail" readonly class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600"/>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Tên đề tài KLTN *</label>
-        <input type="text" id="m-detai" placeholder="Nhập tên đề tài của bạn" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition"/>
-      </div>
-      
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-1">Giảng viên hướng dẫn *</label>
-        <select id="m-gvhd" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition">
-          <option value="">-- Chọn giảng viên --</option>
-        </select>
-      </div>
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">U</div>
+            <div class="sidebar-logo-text">USTE</div>
+        </div>
+        
+        <div class="sidebar-user">
+            <div class="user-avatar" id="avatar">A</div>
+            <div class="user-name" id="user-name">Alex Rivers</div>
+            <div class="user-id" id="user-id">ID: 2024-8892</div>
+            <span class="user-role">UX RESEARCH INTERN</span>
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li><a href="#" class="active" onclick="scrollToTop()"><i class="fas fa-chart-line"></i> Dashboard</a></li>
+            <li><a href="#" onclick="scrollToReports()"><i class="fas fa-file-pdf"></i> My Reports</a></li>
+            <li><a href="#" onclick="openModal()"><i class="fas fa-briefcase"></i> Internships</a></li>
+            <li><a href="#" onclick="openSettings()"><i class="fas fa-cog"></i> Profile Settings</a></li>
+        </ul>
+        
+        <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
     </div>
     
-    <div class="flex gap-3 mt-6">
-      <button onclick="closeModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-50 transition">Hủy</button>
-      <button id="btn-submit" onclick="submitForm()" class="flex-1 px-4 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-container transition">Gửi đăng ký</button>
-    </div>
-  </div>
-</div>
-
-<!-- Overlay -->
-<div class="overlay" id="overlay">
-  <div class="text-6xl mb-4" id="ov-icon"></div>
-  <div class="text-2xl font-bold text-white text-center px-6" id="ov-msg"></div>
-  <div class="text-sm text-white text-center mt-2 px-6" id="ov-sub"></div>
-</div>
-
-<!-- Sidebar -->
-<aside class="w-72 fixed left-0 top-0 h-screen bg-white border-r border-outline-variant/20 flex flex-col z-40">
-  <div class="p-6 flex items-center gap-3">
-    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
-      <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
-    </div>
-    <span class="font-bold text-xl text-primary uppercase">HCM·UTE</span>
-  </div>
-  
-  <div class="px-6 py-4 mb-4">
-    <div class="bg-blue-50 rounded-2xl p-4 border border-blue-200">
-      <div class="flex items-center gap-3 mb-3">
-        <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white text-lg font-bold" id="avatar">A</div>
-        <div class="overflow-hidden">
-          <p class="font-bold text-on-surface" id="user-name">...</p>
-          <p class="text-xs text-on-surface-variant" id="user-id">ID: ...</p>
+    <!-- MAIN CONTENT -->
+    <div class="main">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-title">Trường Đại học Công nghệ Kỹ thuật</div>
+            <div class="header-actions">
+                <button class="header-btn"><i class="fas fa-flag"></i></button>
+                <button class="header-btn"><i class="fas fa-bell"></i></button>
+                <button class="header-btn"><i class="fas fa-search"></i></button>
+            </div>
         </div>
-      </div>
-      <div class="px-3 py-1.5 bg-primary text-white text-xs rounded-lg font-bold inline-flex gap-1" id="role-badge">
-        <span class="material-symbols-outlined text-sm">badge</span>
-        <span id="role-text">SINH VIÊN</span>
-      </div>
-    </div>
-  </div>
-  
-  <nav class="flex-1 px-4 space-y-1">
-    <a onclick="scrollToTop()" class="flex items-center gap-3 px-4 py-3 text-primary bg-blue-50 rounded-lg font-semibold cursor-pointer group">
-      <span class="material-symbols-outlined">dashboard</span>
-      <span>Dashboard</span>
-    </a>
-    <a onclick="scrollToGV()" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium cursor-pointer transition">
-      <span class="material-symbols-outlined">people</span>
-      <span>Danh sách GV</span>
-    </a>
-    <a onclick="scrollToStatus()" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium cursor-pointer transition">
-      <span class="material-symbols-outlined">assignment</span>
-      <span>Trạng thái đề tài</span>
-    </a>
-    <a onclick="openModal()" class="flex items-center gap-3 px-4 py-3 text-gray-600 hover:text-primary hover:bg-blue-50 rounded-lg font-medium cursor-pointer transition">
-      <span class="material-symbols-outlined">add_circle</span>
-      <span>Đăng ký đề tài</span>
-    </a>
-  </nav>
-  
-  <div class="p-6 border-t">
-    <button onclick="logout()" class="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg font-semibold hover:bg-red-100 transition flex items-center gap-2">
-      <span class="material-symbols-outlined">logout</span>
-      <span>Đăng xuất</span>
-    </button>
-  </div>
-</aside>
-
-<!-- Main Content -->
-<main class="ml-72 flex-1 min-h-screen">
-  <!-- Header -->
-  <header class="bg-white border-b sticky top-0 z-30">
-    <div class="px-10 py-4 flex justify-between items-center">
-      <h1 class="text-xl font-bold text-primary">Trường Đại học Công nghệ Kỹ thuật</h1>
-      <div class="flex items-center gap-4">
-        <button class="p-2 hover:bg-gray-100 rounded-full transition">
-          <span class="material-symbols-outlined">notifications</span>
-        </button>
-        <button onclick="logout()" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-50 transition">Đăng xuất</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Hero -->
-  <div class="px-10 py-8">
-    <div class="mb-8">
-      <h2 class="text-4xl font-bold text-on-surface mb-2">Xin chào, <span id="hero-name">...</span>!</h2>
-      <p class="text-on-surface-variant">Hệ thống đăng ký và quản lý đề tài Khóa Luận Tốt Nghiệp — HCM·UTE</p>
-    </div>
-
-    <!-- Stats -->
-    <div class="grid grid-cols-4 gap-4 mb-8">
-      <div class="bg-white rounded-lg p-6 border border-outline-variant/20">
-        <p class="text-sm text-on-surface-variant font-semibold mb-2">Tổng đăng ký</p>
-        <p class="text-3xl font-bold text-primary" id="stat-total">–</p>
-      </div>
-      <div class="bg-white rounded-lg p-6 border border-outline-variant/20">
-        <p class="text-sm text-on-surface-variant font-semibold mb-2">Chờ xác nhận</p>
-        <p class="text-3xl font-bold text-yellow-600" id="stat-wait">–</p>
-      </div>
-      <div class="bg-white rounded-lg p-6 border border-outline-variant/20">
-        <p class="text-sm text-on-surface-variant font-semibold mb-2">Đã nhận</p>
-        <p class="text-3xl font-bold text-green-600" id="stat-yes">–</p>
-      </div>
-      <div class="bg-white rounded-lg p-6 border border-outline-variant/20">
-        <p class="text-sm text-on-surface-variant font-semibold mb-2">Từ chối</p>
-        <p class="text-3xl font-bold text-red-600" id="stat-no">–</p>
-      </div>
-    </div>
-
-    <!-- Status Section -->
-    <div class="bg-white rounded-2xl p-8 mb-8 border border-outline-variant/20" id="sv-status" style="display:none">
-      <h3 class="text-xl font-bold text-on-surface mb-4 flex items-center gap-2">
-        <span class="material-symbols-outlined">assignment</span>
-        Thông tin đề tài của bạn
-      </h3>
-      <div id="status-body">
-        <div class="text-center py-12 text-on-surface-variant">
-          <p class="text-lg mb-4">📋 Bạn chưa đăng ký đề tài nào</p>
-          <button onclick="openModal()" class="px-6 py-2 bg-primary text-white rounded-lg font-semibold hover:bg-primary-container transition">Đăng ký ngay</button>
+        
+        <!-- HERO -->
+        <div class="hero">
+            <div class="hero-left">
+                <div class="hero-greeting">Chào buổi sáng, <span id="greeting-name">Alex</span>!</div>
+                <div class="hero-sub">Hôm nay là một ngày tuyệt vời để tiếp tục kỳ thực tập của bạn.</div>
+                <button class="hero-btn" onclick="openModal()">
+                    <i class="fas fa-plus-circle"></i> Tạo báo cáo mới
+                </button>
+            </div>
         </div>
-      </div>
+        
+        <!-- PROGRESS & DEADLINE -->
+        <div class="progress-section">
+            <div class="progress-card">
+                <div class="progress-title">
+                    <span>Tiến độ thực tập</span>
+                    <span style="font-size: 12px; color: #4f46e5; background: #f0f4ff; padding: 6px 12px; border-radius: 20px;">Tuần 8 / 12</span>
+                </div>
+                <div class="progress-info">
+                    <span style="background: #4f46e5; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px;">HOÀN THÀNH 65%</span>
+                    <span>Dự kiến kết thúc: 25/12/2024</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill"></div>
+                </div>
+                
+                <div class="progress-steps">
+                    <div class="progress-step">
+                        <div class="step-icon done">✓</div>
+                        <div class="step-label">Bắt đầu</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-icon done">✓</div>
+                        <div class="step-label">Phân tích</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-icon active">✎</div>
+                        <div class="step-label">Báo cáo</div>
+                    </div>
+                    <div class="progress-step">
+                        <div class="step-icon pending">✓</div>
+                        <div class="step-label">Kết thúc</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="deadline-card">
+                <div class="deadline-icon">⏱️</div>
+                <div class="deadline-title">Hạn nộp tiếp theo</div>
+                <div class="deadline-sub">Báo cáo tuần 8</div>
+                <div class="deadline-days">Còn 2 ngày</div>
+            </div>
+        </div>
+        
+        <!-- REPORTS TABLE -->
+        <div class="reports-section">
+            <div class="section-header">
+                <h3 class="section-title">Báo cáo gần đây</h3>
+                <a href="#" class="see-all">Xem tất cả →</a>
+            </div>
+            <table class="reports-table">
+                <thead>
+                    <tr>
+                        <th>TÊN BÁO CÁO</th>
+                        <th>NGÀY NỘP</th>
+                        <th>TRẠNG THÁI</th>
+                        <th>HÀNH ĐỘNG</th>
+                    </tr>
+                </thead>
+                <tbody id="reports-tbody">
+                    <tr>
+                        <td>
+                            <div class="report-name">
+                                <div class="report-icon pdf">📄</div>
+                                <div>
+                                    <div>Báo cáo tuần 7: Phân tích UI người dùng</div>
+                                    <div class="report-file">File: BC_T7_Rivers.pdf</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>12 Tháng 10, 2024</td>
+                        <td><span class="badge approved">✓ Đã duyệt</span></td>
+                        <td><button class="action-btn"><i class="fas fa-ellipsis-v"></i></button></td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="report-name">
+                                <div class="report-icon pdf">📄</div>
+                                <div>
+                                    <div>Báo cáo tuần 6: Khảo sát thói quen sử dụng</div>
+                                    <div class="report-file">File: BC_T6_Rivers.pdf</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>05 Tháng 10, 2024</td>
+                        <td><span class="badge pending">⏱ Đang chờ</span></td>
+                        <td><button class="action-btn"><i class="fas fa-ellipsis-v"></i></button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-title">📝 Đăng ký đề tài KLTN</div>
+            <div class="modal-subtitle">Điền đầy đủ thông tin bên dưới</div>
+            
+            <div class="form-group">
+                <label>Họ và tên *</label>
+                <input type="text" id="m-hoten" placeholder="Nguyễn Văn A">
+            </div>
+            
+            <div class="form-group">
+                <label>MSSV *</label>
+                <input type="text" id="m-mssv" placeholder="23124153">
+            </div>
+            
+            <div class="form-group">
+                <label>Gmail sinh viên</label>
+                <input type="text" id="m-gmail" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label>Tên đề tài KLTN *</label>
+                <input type="text" id="m-detai" placeholder="Nhập tên đề tài của bạn">
+            </div>
+            
+            <div class="form-group">
+                <label>Giảng viên hướng dẫn *</label>
+                <select id="m-gvhd">
+                    <option value="">-- Chọn giảng viên --</option>
+                </select>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="modal-btn cancel" onclick="closeModal()">Hủy</button>
+                <button class="modal-btn submit" id="btn-submit" onclick="submitForm()">Gửi đăng ký</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- NOTIFICATION -->
+    <div class="notification" id="notification">
+        <div class="notification-icon" id="noti-icon">✓</div>
+        <div class="notification-title" id="noti-title">Đăng ký thành công!</div>
+        <div class="notification-message" id="noti-message">Thông tin của bạn đã được ghi nhận</div>
     </div>
 
-    <!-- GV List Section -->
-    <div class="bg-white rounded-2xl p-8 mb-8 border border-outline-variant/20" id="gv-list-section" style="display:block">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-xl font-bold text-on-surface flex items-center gap-2">
-          <span class="material-symbols-outlined">people</span>
-          Danh sách giảng viên hướng dẫn
-        </h3>
-        <input type="text" id="gv-search" placeholder="Tìm giảng viên..." oninput="filterGV()" class="px-4 py-2 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition w-64"/>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="border-b-2 border-outline-variant/20">
-            <tr class="text-on-surface-variant text-xs font-bold uppercase">
-              <th class="text-left py-3 px-4">STT</th>
-              <th class="text-left py-3 px-4">Họ và tên</th>
-              <th class="text-left py-3 px-4">MSSV/Mã GV</th>
-              <th class="text-left py-3 px-4">Gmail</th>
-              <th class="text-left py-3 px-4">Vai trò</th>
-            </tr>
-          </thead>
-          <tbody id="gv-tbody" class="divide-y divide-outline-variant/10">
-            <tr><td colspan="5" class="text-center py-8 text-on-surface-variant">Đang tải dữ liệu...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <script>
+        const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
 
-    <!-- Notifications -->
-    <div class="bg-white rounded-2xl p-8 border border-outline-variant/20">
-      <h3 class="text-xl font-bold text-on-surface mb-4 flex items-center gap-2">
-        <span class="material-symbols-outlined">notifications</span>
-        Thông báo & Hướng dẫn
-      </h3>
-      <div class="space-y-4">
-        <div class="flex gap-4 p-4 bg-red-50 rounded-lg border border-red-200">
-          <span class="text-2xl">📌</span>
-          <div>
-            <p class="font-semibold text-on-surface">Hạn đăng ký đề tài KLTN: <strong>30/04/2025</strong></p>
-            <p class="text-sm text-on-surface-variant">Sinh viên cần hoàn tất đăng ký trước ngày trên</p>
-          </div>
-        </div>
-        <div class="flex gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-          <span class="text-2xl">⚠️</span>
-          <div>
-            <p class="font-semibold text-on-surface">Mỗi sinh viên chỉ được đăng ký <strong>1 đề tài</strong></p>
-            <p class="text-sm text-on-surface-variant">Liên hệ giảng viên cố vấn nếu cần thay đổi đề tài</p>
-          </div>
-        </div>
-        <div class="flex gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <span class="text-2xl">⏱️</span>
-          <div>
-            <p class="font-semibold text-on-surface">Giảng viên sẽ xác nhận trong vòng <strong>3–5 ngày làm việc</strong></p>
-            <p class="text-sm text-on-surface-variant">Kiểm tra trạng thái đề tài tại trang này</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</main>
+        // CHECK LOGIN
+        const email = sessionStorage.getItem('ute_email');
+        const role = sessionStorage.getItem('ute_role');
+        if(!email){ 
+            window.location.href='login.html'; 
+        }
 
-<script>
-const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
+        // SET USER INFO
+        const userName = email.split('@')[0];
+        document.getElementById('user-name').textContent = email;
+        document.getElementById('user-id').textContent = `ID: ${email}`;
+        document.getElementById('greeting-name').textContent = userName;
+        document.getElementById('avatar').textContent = email[0].toUpperCase();
+        document.getElementById('m-gmail').value = email;
 
-const email = sessionStorage.getItem('ute_email');
-const role = sessionStorage.getItem('ute_role');
-if(!email){ window.location.href='login.html'; }
+        let gvData = [];
 
-document.getElementById('hero-name').textContent = email.split('@')[0];
-document.getElementById('user-name').textContent = email;
-document.getElementById('user-id').textContent = 'ID: ' + email;
-document.getElementById('role-text').textContent = role === 'sinhvien' ? 'SINH VIÊN' : 'GIẢNG VIÊN';
-document.getElementById('avatar').textContent = email[0].toUpperCase();
+        // LOAD DATA
+        async function loadData(){
+            try {
+                const res = await fetch(`${API}?action=getRegistrations`);
+                const json = await res.json();
+                const data = json.data || [];
+                console.log('Data:', data);
+            } catch(e){ 
+                console.log('Error:', e); 
+            }
+        }
 
-let gvData = [];
+        // LOAD GIẢNG VIÊN
+        async function loadGV(){
+            try {
+                const res = await fetch(`${API}?action=getGiangVien`);
+                const json = await res.json();
+                gvData = json.data || [];
+                
+                const sel = document.getElementById('m-gvhd');
+                gvData.forEach(g=>{
+                    const opt = document.createElement('option');
+                    opt.value = g['Họ và Tên']||g['ho_ten']||'';
+                    opt.textContent = g['Họ và Tên']||g['ho_ten']||'';
+                    sel.appendChild(opt);
+                });
+            } catch(e){
+                console.log('Error:', e);
+            }
+        }
 
-async function loadData(){
-  try {
-    const res = await fetch(`${API}?action=getRegistrations`);
-    const json = await res.json();
-    const data = json.data || [];
+        // MODAL FUNCTIONS
+        function openModal(){
+            document.getElementById('modal-overlay').classList.add('show');
+        }
 
-    document.getElementById('stat-total').textContent = data.length;
-    document.getElementById('stat-wait').textContent = data.filter(r=>r['Xác nhận']==='Chờ xác nhận').length;
-    document.getElementById('stat-yes').textContent = data.filter(r=>r['Xác nhận']==='Đã nhận').length;
-    document.getElementById('stat-no').textContent = data.filter(r=>r['Xác nhận']==='Từ chối').length;
+        function closeModal(){
+            document.getElementById('modal-overlay').classList.remove('show');
+            document.getElementById('m-hoten').value = '';
+            document.getElementById('m-mssv').value = '';
+            document.getElementById('m-detai').value = '';
+            document.getElementById('m-gvhd').value = '';
+        }
 
-    if(role === 'sinhvien'){
-      document.getElementById('sv-status').style.display = 'block';
-      const mine = data.find(r => (r['Gmail']||'').toLowerCase() === email.toLowerCase());
-      if(mine){
-        const status = mine['Xác nhận'] || 'Chờ xác nhận';
-        document.getElementById('status-body').innerHTML = `
-          <div class="grid grid-cols-2 gap-4">
-            <div><label class="text-xs text-on-surface-variant font-bold uppercase">Họ và tên</label><p class="text-lg font-semibold text-on-surface">${mine['Họ tên']||'–'}</p></div>
-            <div><label class="text-xs text-on-surface-variant font-bold uppercase">MSSV</label><p class="text-lg font-semibold text-on-surface">${mine['MSSV']||'–'}</p></div>
-            <div><label class="text-xs text-on-surface-variant font-bold uppercase">Gmail</label><p class="text-lg font-semibold text-on-surface">${mine['Gmail']||'–'}</p></div>
-            <div><label class="text-xs text-on-surface-variant font-bold uppercase">GVHD</label><p class="text-lg font-semibold text-on-surface">${mine['GVHD']||'–'}</p></div>
-            <div class="col-span-2"><label class="text-xs text-on-surface-variant font-bold uppercase">Tên đề tài</label><p class="text-lg font-semibold text-on-surface">${mine['Đề tài']||'–'}</p></div>
-            <div><label class="text-xs text-on-surface-variant font-bold uppercase">Thời gian nộp</label><p class="text-lg font-semibold text-on-surface">${mine['Thời gian']||'–'}</p></div>
-            <div><label class="text-xs text-on-surface-variant font-bold uppercase">Trạng thái</label><p class="text-lg font-semibold"><span class="px-3 py-1 rounded-full text-white ${status==='Đã nhận'?'bg-green-600':status==='Từ chối'?'bg-red-600':'bg-yellow-600'}">${status}</span></p></div>
-          </div>`;
-      }
-    }
-  } catch(e){ console.log(e); }
-}
+        async function submitForm(){
+            const hoTen = document.getElementById('m-hoten').value.trim();
+            const mssv = document.getElementById('m-mssv').value.trim();
+            const deTai = document.getElementById('m-detai').value.trim();
+            const gvhd = document.getElementById('m-gvhd').value.trim();
+            
+            if(!hoTen||!mssv||!deTai||!gvhd){ 
+                alert('Vui lòng điền đầy đủ thông tin!'); 
+                return; 
+            }
 
-async function loadGV(){
-  try {
-    const res = await fetch(`${API}?action=getGiangVien`);
-    const json = await res.json();
-    gvData = json.data || [];
-    renderGV(gvData);
-    const sel = document.getElementById('m-gvhd');
-    gvData.forEach(g=>{
-      const opt = document.createElement('option');
-      opt.value = g['Họ và Tên']||g['ho_ten']||'';
-      opt.textContent = g['Họ và Tên']||g['ho_ten']||'';
-      sel.appendChild(opt);
-    });
-  } catch(e){
-    gvData = [];
-    renderGV(gvData);
-  }
-}
+            const btn = document.getElementById('btn-submit');
+            btn.textContent = 'Đang gửi...';
+            btn.disabled = true;
 
-function renderGV(data){
-  const tbody = document.getElementById('gv-tbody');
-  if(!data.length){
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-on-surface-variant">Chưa có dữ liệu giảng viên</td></tr>';
-    return;
-  }
-  tbody.innerHTML = data.map((g,i)=>{
-    const name = g['Họ và Tên']||g['ho_ten']||'';
-    return `<tr class="hover:bg-blue-50 transition">
-      <td class="py-3 px-4">${i+1}</td>
-      <td class="py-3 px-4 font-semibold text-on-surface">${name}</td>
-      <td class="py-3 px-4">${g['MSSV']||g['ma_gv']||'–'}</td>
-      <td class="py-3 px-4 text-sm text-on-surface-variant">${g['Gmail']||g['gmail']||'–'}</td>
-      <td class="py-3 px-4"><span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Giảng viên</span></td>
-    </tr>`;
-  }).join('');
-}
+            try {
+                const response = await fetch(API, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'register',
+                        hoTen,
+                        mssv,
+                        gmail: email,
+                        deTai,
+                        gvhd
+                    })
+                });
+                
+                closeModal();
+                showNotification('✅', 'Đăng ký thành công!', 'Thông tin của bạn đã được ghi nhận');
+                setTimeout(() => {
+                    document.getElementById('notification').classList.remove('show');
+                    loadData();
+                }, 3000);
+            } catch(e){
+                showNotification('❌', 'Lỗi kết nối', 'Vui lòng thử lại');
+            }
+            
+            btn.textContent = 'Gửi đăng ký';
+            btn.disabled = false;
+        }
 
-function filterGV(){
-  const q = document.getElementById('gv-search').value.toLowerCase();
-  if(!q){ renderGV(gvData); return; }
-  renderGV(gvData.filter(g=>(g['Họ và Tên']||'').toLowerCase().includes(q)||(g['Gmail']||'').toLowerCase().includes(q)));
-}
+        function showNotification(icon, title, message){
+            document.getElementById('noti-icon').textContent = icon;
+            document.getElementById('noti-title').textContent = title;
+            document.getElementById('noti-message').textContent = message;
+            document.getElementById('notification').classList.add('show');
+        }
 
-function openModal(){
-  document.getElementById('m-gmail').value = email;
-  document.getElementById('modal-bg').classList.add('show');
-}
+        // NAVIGATION
+        function scrollToTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
+        function scrollToReports(){ document.querySelector('.reports-section').scrollIntoView({behavior:'smooth'}); }
+        function openSettings(){ alert('Profile Settings - Coming soon!'); }
+        function logout(){ 
+            sessionStorage.clear(); 
+            window.location.href='login.html'; 
+        }
 
-function closeModal(){
-  document.getElementById('modal-bg').classList.remove('show');
-}
-
-async function submitForm(){
-  const hoTen = document.getElementById('m-hoten').value.trim();
-  const mssv = document.getElementById('m-mssv').value.trim();
-  const deTai = document.getElementById('m-detai').value.trim();
-  const gvhd = document.getElementById('m-gvhd').value.trim();
-  if(!hoTen||!mssv||!deTai||!gvhd){ alert('Vui lòng điền đầy đủ thông tin!'); return; }
-
-  const btn = document.getElementById('btn-submit');
-  btn.textContent = 'Đang gửi...';
-  btn.disabled = true;
-
-  try {
-    await fetch(API,{method:'POST',body:JSON.stringify({action:'register',hoTen,mssv,gmail:email,deTai,gvhd})});
-    closeModal();
-    showOverlay('✅','Đăng ký thành công!','Thông tin của bạn đã được ghi nhận');
-    setTimeout(()=>{ document.getElementById('overlay').classList.remove('show'); loadData(); },3000);
-  } catch(e){
-    showOverlay('⚠️','Lỗi kết nối. Vui lòng thử lại.','');
-    setTimeout(()=>{ document.getElementById('overlay').classList.remove('show'); },3000);
-  }
-  btn.textContent = 'Gửi đăng ký';
-  btn.disabled = false;
-}
-
-function showOverlay(icon,msg,sub){
-  document.getElementById('ov-icon').textContent = icon;
-  document.getElementById('ov-msg').textContent = msg;
-  document.getElementById('ov-sub').textContent = sub||'';
-  document.getElementById('overlay').classList.add('show');
-}
-
-function scrollToTop(){ window.scrollTo({top:0,behavior:'smooth'}); }
-function scrollToGV(){ document.getElementById('gv-list-section').scrollIntoView({behavior:'smooth'}); }
-function scrollToStatus(){ document.getElementById('sv-status').scrollIntoView({behavior:'smooth'}); }
-function logout(){ sessionStorage.clear(); window.location.href='login.html'; }
-
-loadData();
-loadGV();
-</script>
+        // INIT
+        loadData();
+        loadGV();
+    </script>
 </body>
 </html>
