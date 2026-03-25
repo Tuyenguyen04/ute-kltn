@@ -8,10 +8,10 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --blue:#1a4fad;--blue-dark:#0f3480;--blue-light:#e8f0fe;
-  --red:#c0392b;--green:#1a7a4a;--orange:#d97706;
-  --gray-bg:#f0f2f7;--gray-border:#dde1ea;--gray-text:#5a6478;
-  --white:#fff;--shadow:0 2px 12px rgba(20,50,120,.08);
+ --blue:#1a4fad;--blue-dark:#0f3480;--blue-light:#e8f0fe;
+ --red:#c0392b;--green:#1a7a4a;--orange:#d97706;
+ --gray-bg:#f0f2f7;--gray-border:#dde1ea;--gray-text:#5a6478;
+ --white:#fff;--shadow:0 2px 12px rgba(20,50,120,.08);
 }
 body{font-family:'Be Vietnam Pro',sans-serif;background:var(--gray-bg);min-height:100vh;color:#1a2340}
 
@@ -60,7 +60,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--gray-bg);min-heigh
 .action-sub{font-size:12px;color:var(--gray-text);line-height:1.5}
 
 /* ── STATUS CARD ── */
-.status-section{margin-bottom:32px}
+.status-section{margin-bottom:32px;display:none}
 .status-card{background:var(--white);border-radius:8px;box-shadow:var(--shadow);border:1px solid var(--gray-border);overflow:hidden}
 .status-header{padding:16px 20px;border-bottom:1px solid var(--gray-border);display:flex;align-items:center;justify-content:space-between}
 .status-header-title{font-size:14px;font-weight:700;color:#1a2340}
@@ -80,6 +80,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--gray-bg);min-heigh
 .btn-register:hover{background:var(--blue-dark)}
 
 /* ── GIẢNG VIÊN TABLE ── */
+.gv-list-section{display:none;margin-bottom:32px}
 .gv-table-wrap{background:var(--white);border-radius:8px;box-shadow:var(--shadow);border:1px solid var(--gray-border);overflow:auto;margin-bottom:32px}
 .gv-toolbar{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--gray-border)}
 .search-inp{padding:8px 14px;border:1.5px solid var(--gray-border);border-radius:6px;font-family:inherit;font-size:13.5px;outline:none;width:220px;transition:.2s}
@@ -130,15 +131,14 @@ tr:hover td{background:#f8f9fb}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── ROLE TAG ── */
 .role-sv{color:var(--blue);background:var(--blue-light);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
 .role-gv{color:#065f46;background:#d1fae5;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700}
 
 @media(max-width:600px){
-  .main{padding:16px}
-  .hero{padding:24px 16px}
-  .topbar{padding:0 16px}
-  .hero-stats{gap:12px}
+ .main{padding:16px}
+ .hero{padding:24px 16px}
+ .topbar{padding:0 16px}
+ .hero-stats{gap:12px}
 }
 </style>
 </head>
@@ -213,7 +213,7 @@ tr:hover td{background:#f8f9fb}
   </div>
 
   <!-- Trạng thái đề tài (sinh viên) -->
-  <div class="status-section" id="sv-status" style="display:none">
+  <div class="status-section" id="sv-status">
     <div class="sec-title">Thông tin đề tài của bạn</div>
     <div class="status-card" id="status-card">
       <div class="status-header">
@@ -231,7 +231,7 @@ tr:hover td{background:#f8f9fb}
   </div>
 
   <!-- Danh sách giảng viên -->
-  <div id="gv-list-section" style="display:none">
+  <div class="gv-list-section" id="gv-list-section">
     <div class="sec-title">Danh sách giảng viên hướng dẫn</div>
     <div class="gv-table-wrap">
       <div class="gv-toolbar">
@@ -283,11 +283,11 @@ tr:hover td{background:#f8f9fb}
 </div><!-- end main -->
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzVnS2plVyKHB1s8pD5pHCNKBKHeOoY6SG5Ys0qW4CDUyt7pNNOG_n_rfWZhVYGgOds/exec';
+const API = 'https://script.google.com/macros/s/AKfycbx4-3IGf6Vm8DABsIyPJIjTHCmYtUsrlF7apAkBWvg5isQRRXvYGL27FEUY8oSpgMKP/exec';
 
 // Kiểm tra đăng nhập
 const email = sessionStorage.getItem('ute_email');
-const role  = sessionStorage.getItem('ute_role');
+const role = sessionStorage.getItem('ute_role');
 if(!email){ window.location.href='login.html'; }
 
 // Hiển thị thông tin user
@@ -297,63 +297,63 @@ document.getElementById('hero-name').textContent = email;
 
 // Quick Actions theo role
 const svActions = [
-  {icon:'📝',cls:'blue',title:'Đăng ký đề tài',sub:'Điền thông tin và gửi đề tài KLTN',onclick:'openModal()'},
-  {icon:'📊',cls:'green',title:'Xem trạng thái',sub:'Kiểm tra tình trạng đề tài đã nộp',onclick:'scrollToStatus()'},
-  {icon:'👨‍🏫',cls:'orange',title:'Danh sách giảng viên',sub:'Xem GV hướng dẫn có thể chọn',onclick:'scrollToGV()'},
-  {icon:'📋',cls:'red',title:'Hướng dẫn đăng ký',sub:'Xem quy trình và yêu cầu KLTN',onclick:'showGuide()'},
+ {icon:'📝',cls:'blue',title:'Đăng ký đề tài',sub:'Điền thông tin và gửi đề tài KLTN',onclick:'openModal()'},
+ {icon:'📊',cls:'green',title:'Xem trạng thái',sub:'Kiểm tra tình trạng đề tài đã nộp',onclick:'scrollToStatus()'},
+ {icon:'👨‍🏫',cls:'orange',title:'Danh sách giảng viên',sub:'Xem GV hướng dẫn có thể chọn',onclick:'scrollToGV()'},
+ {icon:'📋',cls:'red',title:'Hướng dẫn đăng ký',sub:'Xem quy trình và yêu cầu KLTN',onclick:'showGuide()'},
 ];
 const gvActions = [
-  {icon:'📋',cls:'blue',title:'Danh sách đăng ký',sub:'Xem toàn bộ đề tài sinh viên đã nộp',onclick:"window.location.href='giangvien.html'"},
-  {icon:'✅',cls:'green',title:'Xác nhận đề tài',sub:'Nhận hoặc từ chối lời mời hướng dẫn',onclick:"window.location.href='giangvien.html'"},
-  {icon:'👨‍🎓',cls:'orange',title:'Danh sách sinh viên',sub:'Xem sinh viên thuộc diện đăng ký',onclick:'scrollToGV()'},
-  {icon:'📊',cls:'red',title:'Thống kê',sub:'Xem thống kê đăng ký theo đợt',onclick:'scrollToHero()'},
+ {icon:'📋',cls:'blue',title:'Danh sách đăng ký',sub:'Xem toàn bộ đề tài sinh viên đã nộp',onclick:"window.location.href='giangvien.html'"},
+ {icon:'✅',cls:'green',title:'Xác nhận đề tài',sub:'Nhận hoặc từ chối lời mời hướng dẫn',onclick:"window.location.href='giangvien.html'"},
+ {icon:'👨‍🎓',cls:'orange',title:'Danh sách sinh viên',sub:'Xem sinh viên thuộc diện đăng ký',onclick:'scrollToGV()'},
+ {icon:'📊',cls:'red',title:'Thống kê',sub:'Xem thống kê đăng ký theo đợt',onclick:'scrollToHero()'},
 ];
 
 function renderActions(){
-  const actions = (role === 'sinhvien') ? svActions : gvActions;
-  document.getElementById('actions-grid').innerHTML = actions.map(a=>`
-    <div class="action-card" onclick="${a.onclick}">
-      <div class="action-icon ${a.cls}">${a.icon}</div>
-      <div>
-        <div class="action-title">${a.title}</div>
-        <div class="action-sub">${a.sub}</div>
-      </div>
-    </div>`).join('');
+ const actions = (role === 'sinhvien') ? svActions : gvActions;
+ document.getElementById('actions-grid').innerHTML = actions.map(a=>`
+   <div class="action-card" onclick="${a.onclick}">
+     <div class="action-icon ${a.cls}">${a.icon}</div>
+     <div>
+       <div class="action-title">${a.title}</div>
+       <div class="action-sub">${a.sub}</div>
+     </div>
+   </div>`).join('');
 }
 
 // Load data
 async function loadData(){
-  try {
-    const res = await fetch(`${API}?action=getRegistrations`);
-    const json = await res.json();
-    const data = json.data || [];
+ try {
+   const res = await fetch(`${API}?action=getRegistrations`);
+   const json = await res.json();
+   const data = json.data || [];
 
-    // Stats
+   // Stats
     document.getElementById('stat-total').textContent = data.length;
-    document.getElementById('stat-wait').textContent  = data.filter(r=>r['Xác nhận']==='Chờ xác nhận').length;
-    document.getElementById('stat-yes').textContent   = data.filter(r=>r['Xác nhận']==='Đã nhận').length;
-    document.getElementById('stat-no').textContent    = data.filter(r=>r['Xác nhận']==='Từ chối').length;
+   document.getElementById('stat-wait').textContent  = data.filter(r=>r['Xác nhận']==='Chờ xác nhận').length;
+   document.getElementById('stat-yes').textContent   = data.filter(r=>r['Xác nhận']==='Đã nhận').length;
+   document.getElementById('stat-no').textContent    = data.filter(r=>r['Xác nhận']==='Từ chối').length;
 
-    // Sinh viên: xem đề tài của mình
+// Sinh viên: xem đề tài của mình
     if(role === 'sinhvien'){
-      document.getElementById('sv-status').style.display = 'block';
-      const mine = data.find(r => (r['Gmail']||'').toLowerCase() === email.toLowerCase());
-      if(mine){
-        const status = mine['Xác nhận'] || 'Chờ xác nhận';
-        const badgeClass = status==='Đã nhận'?'yes':status==='Từ chối'?'no':'wait';
-        document.getElementById('status-badge').className = 'badge '+badgeClass;
-        document.getElementById('status-badge').textContent = status;
-        document.getElementById('status-body').innerHTML = `
-          <div class="info-grid">
-            <div class="info-item"><label>Họ và tên</label><p>${mine['Họ tên']||'–'}</p></div>
-            <div class="info-item"><label>MSSV</label><p>${mine['MSSV']||'–'}</p></div>
-            <div class="info-item"><label>Gmail</label><p>${mine['Gmail']||'–'}</p></div>
-            <div class="info-item"><label>GVHD</label><p>${mine['GVHD']||'–'}</p></div>
-            <div class="info-item" style="grid-column:1/-1"><label>Tên đề tài</label><p>${mine['Đề tài']||'–'}</p></div>
-            <div class="info-item"><label>Thời gian nộp</label><p>${mine['Thời gian']||'–'}</p></div>
-            <div class="info-item"><label>Trạng thái</label><p><span class="badge ${badgeClass}">${status}</span></p></div>
-          </div>`;
-      }
+     document.getElementById('sv-status').style.display = 'block';
+     const mine = data.find(r => (r['Gmail']||'').toLowerCase() === email.toLowerCase());
+     if(mine){
+       const status = mine['Xác nhận'] || 'Chờ xác nhận';
+       const badgeClass = status==='Đã nhận'?'yes':status==='Từ chối'?'no':'wait';
+       document.getElementById('status-badge').className = 'badge '+badgeClass;
+       document.getElementById('status-badge').textContent = status;
+       document.getElementById('status-body').innerHTML = `
+         <div class="info-grid">
+           <div class="info-item"><label>Họ và tên</label><p>${mine['Họ tên']||'–'}</p></div>
+           <div class="info-item"><label>MSSV</label><p>${mine['MSSV']||'–'}</p></div>
+           <div class="info-item"><label>Gmail</label><p>${mine['Gmail']||'–'}</p></div>
+           <div class="info-item"><label>GVHD</label><p>${mine['GVHD']||'–'}</p></div>
+           <div class="info-item" style="grid-column:1/-1"><label>Tên đề tài</label><p>${mine['Đề tài']||'–'}</p></div>
+           <div class="info-item"><label>Thời gian nộp</label><p>${mine['Thời gian']||'–'}</p></div>
+           <div class="info-item"><label>Trạng thái</label><p><span class="badge ${badgeClass}">${status}</span></p></div>
+         </div>`;
+       }
     }
   } catch(e){ console.log(e); }
 }
@@ -449,7 +449,7 @@ function showOverlay(icon,msg,sub){
 function scrollToStatus(){ document.getElementById('sv-status').scrollIntoView({behavior:'smooth'}); }
 function scrollToGV(){ document.getElementById('gv-list-section').scrollIntoView({behavior:'smooth'}); }
 function scrollToHero(){ window.scrollTo({top:0,behavior:'smooth'}); }
-function showGuide(){ alert('📋 Hướng dẫn đăng ký KLTN:\n\n1. Chọn "Đăng ký đề tài"\n2. Điền đầy đủ thông tin\n3. Chọn giảng viên hướng dẫn\n4. Chờ giảng viên xác nhận (3-5 ngày)\n5. Kiểm tra trạng thái tại trang này'); }
+function showGuide(){ alert('📋 Hướng dẫn đăng ký KLTN:\n\n1. Chọn "Đăng ký đề tài"\n2. Điền đầy đủ thông tin\n3. Chọn giảng viên hướng dẫn\n4. Chờ giảng viên xác nhận trong 3-5 ngày\n5. Kiểm tra trạng thái tại trang này'); }
 function logout(){ sessionStorage.clear(); window.location.href='login.html'; }
 
 // Hiển thị section theo role
