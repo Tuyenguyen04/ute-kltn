@@ -94,7 +94,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbzC8Tv9lpDms6MUcA8GUzfaIBWtxEeaWB3arF_3-XtaKSEpq93HmgXDXMyvueBMx0oD/exec';
+const API = 'https://script.google.com/macros/s/AKfycbynfdyJBBtkC15qP3RIy138iWkHcJOJPgKX8OAh8f6uJtZ9vLYp6AHXcNDfwtN23Frl/exec';
 const ADMIN_USER = 'admin', ADMIN_PASS = 'ute2025';
 
 function ce(id){ document.getElementById(id).classList.remove('has-error'); }
@@ -144,21 +144,19 @@ async function handleGoogleLogin(response){
     const res = await fetch(`${API}?action=checkEmail&email=${encodeURIComponent(email)}`);
     const data = await res.json();
 
-    if(data.success === true && data.role === 'sinhvien'){
-      sessionStorage.setItem('ute_email', email);
-      sessionStorage.setItem('ute_role', 'sinhvien');
-      sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
-      sessionStorage.setItem('ute_maSo', data.maSo || '');
-      showOverlay('success', '👏', 'Chúc mừng bạn đã đăng nhập thành công!', 'Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
-      
-    } else if(data.success === true && data.role === 'giangvien'){
-      sessionStorage.setItem('ute_email', email);
-      sessionStorage.setItem('ute_role', 'giangvien');
-      sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
-      sessionStorage.setItem('ute_maSo', data.maSo || '');
-      showOverlay('success', '👏', 'Chúc mừng bạn đã đăng nhập thành công!', 'Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
+    if(data.role === 'sinhvien'){
+    sessionStorage.setItem('ute_email', email);
+    sessionStorage.setItem('ute_role', 'sinhvien');
+    sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
+    sessionStorage.setItem('ute_maSo', data.maSo || '');
+    // ...
+} else if(data.role === 'giangvien'){
+    sessionStorage.setItem('ute_email', email);
+    sessionStorage.setItem('ute_role', 'giangvien');
+    sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
+    sessionStorage.setItem('ute_maSo', data.maSo || '');
+    // ...
+}
       
     } else {
       showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
