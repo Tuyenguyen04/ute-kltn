@@ -5,8 +5,8 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>UTE Internship Management Dashboard</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
       tailwind.config = {
         darkMode: "class",
@@ -81,6 +81,10 @@
         body {
           min-height: max(884px, 100dvh);
         }
+        @keyframes slideUp {
+          from { transform: translateY(40px); opacity: 0; }
+          to   { transform: translateY(0);    opacity: 1; }
+        }
     </style>
 </head>
 <body class="bg-background text-on-background min-h-screen">
@@ -92,28 +96,28 @@
 </div>
 <div class="mb-8 p-4 bg-surface-container rounded-2xl">
 <div class="flex flex-col items-start gap-2">
-<img alt="Alex Rivers" class="w-12 h-12 rounded-full border-2 border-primary-fixed-dim shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBebeJpsFgw6IvZ2Nc9Ef6WZrbK0x2ov0SnajN8sQHYK-nOrOSB3xmobc0-I1jrzHsBapVFaP9fUiWW5m-Nm7RjbrRSMfjeINv7_7UADqOfbHn9syjwo5ZOHnip1_-__Z-gR7PqAMia8K9a9zmaYrUGBvNgkzFoQGgWKUjLUyDIVc2SjD8587mM8y0p3KlxzTR1sLegvNfUL0g7goK6jxm7ME7V8p-SO1TsoUTIuVSCoOP27LsmOLaNRQjvyYV8OMnMvobMK7Mr43MU"/>
+<img id="sidebar-avatar" alt="Alex Rivers" class="w-12 h-12 rounded-full border-2 border-primary-fixed-dim shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBebeJpsFgw6IvZ2Nc9Ef6WZrbK0x2ov0SnajN8sQHYK-nOrOSB3xmobc0-I1jrzHsBapVFaP9fUiWW5m-Nm7RjbrRSMfjeINv7_7UADqOfbHn9syjwo5ZOHnip1_-__Z-gR7PqAMia8K9a9zmaYrUGBvNgkzFoQGgWKUjLUyDIVc2SjD8587mM8y0p3KlxzTR1sLegvNfUL0g7goK6jxm7ME7V8p-SO1TsoUTIuVSCoOP27LsmOLaNRQjvyYV8OMnMvobMK7Mr43MU"/>
 <div>
-<h4 class="font-bold text-on-surface">Alex Rivers</h4>
-<p class="text-xs text-on-surface-variant font-medium">MSSV: 2024-8892</p>
-<p class="text-xs text-on-surface-variant truncate">sv@ute.edu.vn</p>
+<h4 id="sidebar-name" class="font-bold text-on-surface">Alex Rivers</h4>
+<p id="sidebar-mssv" class="text-xs text-on-surface-variant font-medium">MSSV: 2024-8892</p>
+<p id="sidebar-email" class="text-xs text-on-surface-variant truncate">sv@ute.edu.vn</p>
 <span class="inline-block mt-2 px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold rounded-full">SV</span>
 </div>
 </div>
 </div>
-<nav class="space-y-1">
+<nav id="main-nav" class="space-y-1">
 <a class="flex items-center gap-3 px-4 py-3 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-xl font-bold" href="#">
 <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
 <span>Bảng điều khiển</span>
 </a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-xl transition-colors duration-200" href="#">
+<a id="nav-bctt" class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-xl transition-colors duration-200" href="#">
 <span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
-<span>Internship Reports</span>
+<span>Đăng ký BCTT</span>
 </a>
-<div class="flex items-center justify-between px-4 py-3 text-slate-400 opacity-50 cursor-not-allowed">
+<div id="nav-kltn" class="flex items-center justify-between px-4 py-3 text-slate-400 opacity-50 cursor-not-allowed">
 <div class="flex items-center gap-3">
 <span class="material-symbols-outlined" data-icon="school">school</span>
-<span class="font-medium">Graduation Thesis</span>
+<span class="font-medium">Đăng ký KLTN</span>
 </div>
 <span class="material-symbols-outlined text-sm" data-icon="lock">lock</span>
 </div>
@@ -132,7 +136,7 @@
 <span class="text-xs font-bold text-on-surface">VN</span>
 </div>
 <div class="flex items-center gap-2 pl-2 border-l border-outline-variant/30 group cursor-pointer">
-<img alt="Profile" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDw33g4E46Uksk20Sz64QVikLd7L6WwfQSnH1xDxPlijNppVGZb0HmOYnGJWLao9c4DnYhbFZ5ZQYUnXZlBbLbu6_5ZeQRJB_4zuzdnfNda0XnVgDh5qDo7IlAwPdY3_IIfBWPXvEkBaWmlu9WAHUywggitFsDu2wLAp86ursWCYV9auDJpXEuh9fkdkU-vrpLdUSa6jGbU6CzuTLdjIGKHxSDXMmkITZcXTPXNtbCGDlZqsY1_xS1PiJ59NT6C36xc_x9TzQwYJ3eA"/>
+<img id="header-avatar" alt="Profile" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDw33g4E46Uksk20Sz64QVikLd7L6WwfQSnH1xDxPlijNppVGZb0HmOYnGJWLao9c4DnYhbFZ5ZQYUnXZlBbLbu6_5ZeQRJB_4zuzdnfNda0XnVgDh5qDo7IlAwPdY3_IIfBWPXvEkBaWmlu9WAHUywggitFsDu2wLAp86ursWCYV9auDJpXEuh9fkdkU-vrpLdUSa6jGbU6CzuTLdjIGKHxSDXMmkITZcXTPXNtbCGDlZqsY1_xS1PiJ59NT6C36xc_x9TzQwYJ3eA"/>
 <span class="material-symbols-outlined text-on-surface-variant text-sm group-hover:rotate-180 transition-transform" data-icon="expand_more">expand_more</span>
 </div>
 </div>
@@ -145,99 +149,99 @@
 <!-- Quick Actions -->
 <div class="md:col-span-8 flex flex-col justify-center p-6 bg-surface-container-lowest rounded-3xl shadow-sm">
 <div class="grid grid-cols-2 gap-4">
-<button class="bg-gradient-to-br from-primary to-primary-container text-white p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+<button id="btn-create-report" class="bg-gradient-to-br from-primary to-primary-container text-white p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
 <span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
 <span class="text-sm">Tạo báo cáo mới</span>
 </button>
-<button class="bg-surface-container-highest text-on-surface/50 p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3 cursor-not-allowed opacity-50">
+<button id="btn-change-topic" class="bg-surface-container-highest text-on-surface/50 p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3 cursor-not-allowed opacity-50">
 <span class="material-symbols-outlined text-2xl" data-icon="sync_alt">sync_alt</span>
 <span class="text-sm">Đổi đề tài</span>
 </button>
 </div>
 </div>
 <!-- Grade Card -->
-<div class="md:col-span-4 p-6 bg-tertiary-fixed text-on-tertiary-fixed rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm">
+<div id="grade-card" class="md:col-span-4 p-6 bg-tertiary-fixed text-on-tertiary-fixed rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm">
 <span class="text-[10px] font-bold uppercase tracking-widest opacity-70">Kết quả thực tập</span>
 <div class="flex items-baseline gap-2">
-<span class="text-5xl font-headline font-black text-on-tertiary-fixed">10</span>
-<span class="text-2xl font-headline font-bold text-tertiary-fixed-dim">A+</span>
+<span id="grade-num" class="text-5xl font-headline font-black text-on-tertiary-fixed">10</span>
+<span id="grade-alpha" class="text-2xl font-headline font-bold text-tertiary-fixed-dim">A+</span>
 </div>
-<p class="text-xs font-medium">Xuất sắc • Học kỳ 1, 2024</p>
+<p id="grade-sub" class="text-xs font-medium">Xuất sắc • Học kỳ 1, 2024</p>
 </div>
 </div>
 <!-- Instructor & Progress Row -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 <!-- Teacher Info Card -->
-<div class="p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-between">
+<div id="instructor-card" class="p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-between">
 <div class="flex items-center justify-between mb-4">
 <h3 class="font-bold text-on-surface">Thông tin Giảng viên</h3>
 <span class="material-symbols-outlined text-primary" data-icon="contact_page">contact_page</span>
 </div>
-<div class="flex items-center gap-4 p-4 bg-surface-container-low rounded-2xl mb-4">
-<img alt="Lecturer" class="w-16 h-16 rounded-2xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCOkI0kJ9RsGzbHr8RNhRtfxUG7-OD_UCJid4FUCEzbk9VWUGwpoRF0FE4k1ZKDoAUhjuKgf2hq5DxU68_bXKD1Nr3MRloNv2SNiPIFXGqk6s26X2__iDO4TDj5EfnuoIZFyX0E7X9xwg95It5rUquohkuY-Djzx3aYUe3fF-71_CJVr_qeXzDZDptemz_A1M3myoDfuNuIoMUEbwxzIJEzUIiFq5hmwANQDHLeJayhH8p_anCNMS5pH79dLP43G-y6p2PyMd5oIvo"/>
+<div id="instructor-body" class="flex items-center gap-4 p-4 bg-surface-container-low rounded-2xl mb-4">
+<img id="instructor-img" alt="Lecturer" class="w-16 h-16 rounded-2xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCOkI0kJ9RsGzbHr8RNhRtfxUG7-OD_UCJid4FUCEzbk9VWUGwpoRF0FE4k1ZKDoAUhjuKgf2hq5DxU68_bXKD1Nr3MRloNv2SNiPIFXGqk6s26X2__iDO4TDj5EfnuoIZFyX0E7X9xwg95It5rUquohkuY-Djzx3aYUe3fF-71_CJVr_qeXzDZDptemz_A1M3myoDfuNuIoMUEbwxzIJEzUIiFq5hmwANQDHLeJayhH8p_anCNMS5pH79dLP43G-y6p2PyMd5oIvo"/>
 <div>
-<p class="font-bold text-on-surface">PGS.TS Nguyễn Kim Anh</p>
-<p class="text-xs text-on-surface-variant">GV.10294</p>
+<p id="instructor-name" class="font-bold text-on-surface">PGS.TS Nguyễn Kim Anh</p>
+<p id="instructor-id" class="text-xs text-on-surface-variant">GV.10294</p>
 </div>
 </div>
-<div class="space-y-3 mb-4">
+<div id="instructor-details" class="space-y-3 mb-4">
 <div class="flex items-center gap-3 text-sm text-on-surface-variant">
 <span class="material-symbols-outlined text-base" data-icon="mail">mail</span>
-<span>anhnk@ute.edu.vn</span>
+<span id="instructor-email">kimanh@ute.edu.vn</span>
 </div>
 <div class="flex items-center gap-3 text-sm text-on-surface-variant">
 <span class="material-symbols-outlined text-base" data-icon="calendar_today">calendar_today</span>
-<span>Đợt 1 - Học kỳ 1, 2024</span>
+<span id="instructor-term">Đợt 1 - Học kỳ 1, 2024</span>
 </div>
 </div>
-<button class="w-full py-3 bg-surface-container-highest text-primary font-bold rounded-xl text-sm hover:bg-primary/5 transition-colors">
+<button id="btn-message-gv" class="w-full py-3 bg-surface-container-highest text-primary font-bold rounded-xl text-sm hover:bg-primary/5 transition-colors">
                         Gửi tin nhắn cho GV
                     </button>
 </div>
 <!-- Milestone Tracker -->
 <section class="p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
 <h3 class="text-lg font-bold mb-10 text-center">Hành trình thực tập</h3>
-<div class="relative flex justify-between">
+<div id="stepper" class="relative flex justify-between">
 <div class="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20 -z-0"></div>
-<div class="absolute top-5 left-0 w-[50%] h-[2px] bg-tertiary-fixed-dim -z-0"></div>
+<div id="stepper-progress-line" class="absolute top-5 left-0 w-[50%] h-[2px] bg-tertiary-fixed-dim -z-0 transition-all duration-500"></div>
 <div class="relative z-10 flex flex-col items-center gap-3">
 <div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed">
-<span class="material-symbols-outlined text-sm" data-icon="check_circle" data-weight="fill">check_circle</span>
+<span class="material-symbols-outlined text-sm">check_circle</span>
 </div>
 <span class="text-[10px] font-bold text-on-surface">Bắt đầu</span>
 </div>
 <div class="relative z-10 flex flex-col items-center gap-3">
 <div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed">
-<span class="material-symbols-outlined text-sm" data-icon="check_circle" data-weight="fill">check_circle</span>
+<span class="material-symbols-outlined text-sm">check_circle</span>
 </div>
 <span class="text-[10px] font-bold text-on-surface">Đăng ký</span>
 </div>
 <div class="relative z-10 flex flex-col items-center gap-3">
 <div class="w-10 h-10 rounded-full bg-primary border-4 border-primary-fixed-dim flex items-center justify-center text-white ring-4 ring-white">
-<span class="material-symbols-outlined text-sm" data-icon="potted_plant">potted_plant</span>
+<span class="material-symbols-outlined text-sm">potted_plant</span>
 </div>
 <span class="text-[10px] font-bold text-primary">Thực hiện</span>
 </div>
 <div class="relative z-10 flex flex-col items-center gap-3">
 <div class="w-10 h-10 rounded-full bg-surface-dim flex items-center justify-center text-on-surface-variant">
-<span class="material-symbols-outlined text-sm" data-icon="flag">flag</span>
+<span class="material-symbols-outlined text-sm">flag</span>
 </div>
 <span class="text-[10px] font-medium text-on-surface-variant">Kết thúc</span>
 </div>
 <div class="relative z-10 flex flex-col items-center gap-3">
 <div class="w-10 h-10 rounded-full bg-surface-dim flex items-center justify-center text-on-surface-variant">
-<span class="material-symbols-outlined text-sm" data-icon="verified">verified</span>
+<span class="material-symbols-outlined text-sm">verified</span>
 </div>
 <span class="text-[10px] font-medium text-on-surface-variant">Xác nhận</span>
 </div>
 </div>
 <div class="mt-8 flex flex-col md:flex-row items-center gap-4 w-full">
 <div class="flex-1 w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
-<div class="bg-primary h-full rounded-full" style="width: 60%"></div>
+<div id="progress-bar" class="bg-primary h-full rounded-full transition-all duration-500" style="width: 60%"></div>
 </div>
 <div class="flex items-center gap-2 whitespace-nowrap">
-<span class="text-xs font-bold text-primary">60%</span>
-<span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">• Đợt 1 - Học kỳ 1 - Tuần 8/12</span>
+<span id="progress-pct" class="text-xs font-bold text-primary">60%</span>
+<span id="progress-label" class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">• Đợt 1 - Học kỳ 1 - Tuần 8/12</span>
 </div>
 </div></section>
 </div>
@@ -259,7 +263,7 @@
 <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant text-right">Trạng thái</th>
 </tr>
 </thead>
-<tbody class="divide-y divide-outline-variant/10">
+<tbody id="activity-tbody" class="divide-y divide-outline-variant/10">
 <tr>
 <td class="px-6 py-4">
 <p class="text-sm font-bold text-on-surface">Phân tích Hệ thống ERP</p>
@@ -325,150 +329,577 @@
 <span class="text-[10px] font-semibold mt-1">Cá nhân</span>
 </a>
 </nav>
+
+<!-- ================================================================
+     BUSINESS LOGIC ENGINE — thay thế toàn bộ script cũ
+     ================================================================ -->
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        // 1. Hệ thống Toast Notification (Thông báo góc dưới màn hình)
-        function showToast(message, type = 'error') {
-            // Xóa toast cũ nếu có
-            const oldToast = document.getElementById('custom-toast');
-            if (oldToast) oldToast.remove();
+/**
+ * UTE TRANGCHU.HTML — BUSINESS LOGIC ENGINE v2
+ * Auth guard, profile binding, dashboard state, registration modal,
+ * approval loop, grading, KLTN unlock.
+ */
 
-            const toast = document.createElement('div');
-            toast.id = 'custom-toast';
-            // Style cho toast bằng Tailwind
-            toast.className = `fixed bottom-10 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm z-[100] transition-all duration-300 translate-y-10 opacity-0 flex items-center gap-2`;
-            toast.style.backgroundColor = type === 'error' ? '#ba1a1a' : '#005236'; // Đỏ lỗi hoặc Xanh thành công
-            
-            const icon = type === 'error' ? 'lock' : 'check_circle';
-            toast.innerHTML = `<span class="material-symbols-outlined text-lg">${icon}</span> ${message}`;
-            
-            document.body.appendChild(toast);
-            
-            // Hiệu ứng trượt lên
-            setTimeout(() => {
-                toast.classList.remove('translate-y-10', 'opacity-0');
-            }, 10);
-            
-            // Tự động ẩn sau 3 giây
-            setTimeout(() => {
-                toast.classList.add('translate-y-10', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
+const API_URL = 'https://script.google.com/macros/s/AKfycbwMaY83CO3-sr0Z_mw-Sfx1kTWJM95rBbkq-HX36M6TTNVrrG4ETimVVfw2FzHgsv4a/exec';
 
-        // 2. Logic: Khóa nút "Graduation Thesis" (Đăng ký khóa luận)
-        // Tìm thẻ div chứa chữ Graduation Thesis
-        const thesisNav = document.querySelector('aside nav div.cursor-not-allowed');
-        if (thesisNav) {
-            thesisNav.addEventListener('click', () => {
-                showToast('Tính năng này đã bị khóa vì bạn chưa làm Báo cáo thực tập!', 'error');
-            });
-        }
+// ── AUTH GUARD ────────────────────────────────────────────────────────────────
+(function authGuard(){
+  if(!sessionStorage.getItem('ute_role')){
+    window.location.href = 'login.html';
+  }
+})();
 
-        // 3. Logic: Nút "Đổi đề tài" bị mờ
-        const changeTopicBtn = document.querySelectorAll('.grid-cols-2 button')[1]; // Lấy nút thứ 2
-        if (changeTopicBtn) {
-            changeTopicBtn.addEventListener('click', () => {
-                showToast('Đề tài của bạn đã được xác nhận, không thể đổi lúc này!', 'error');
-            });
-        }
+// ── SESSION ───────────────────────────────────────────────────────────────────
+const SESSION = {
+  email : sessionStorage.getItem('ute_email') || '',
+  role  : sessionStorage.getItem('ute_role')  || '',
+  name  : sessionStorage.getItem('ute_name')  || 'Sinh viên',
+  maSo  : sessionStorage.getItem('ute_maSo')  || '---',
+};
 
-        // 4. Logic: Nút "Tạo báo cáo mới" -> Tự động thêm 1 dòng vào Lịch sử hoạt động
-        const createReportBtn = document.querySelectorAll('.grid-cols-2 button')[0]; // Lấy nút đầu tiên
-        const tableBody = document.querySelector('tbody');
-        let reportCount = 5; // Số thứ tự báo cáo tuần
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const TOPICS = [
+  'Phân tích Hệ thống ERP',
+  'Thiết kế UI/UX Mobile App',
+  'Nghiên cứu Cloud Architecture',
+  'Xây dựng hệ thống IoT',
+  'Phát triển Web với React',
+  'Machine Learning & AI ứng dụng',
+];
+const COMPANIES = [
+  'FPT Software', 'VNG Corp', 'Viettel Group',
+  'VNPT Technology', 'Tiki Corporation', 'Công ty khác',
+];
+const INSTRUCTORS = [
+  { name:'PGS.TS Nguyễn Kim Anh', id:'GV.10294', email:'kimanh@ute.edu.vn',   term:'Đợt 1 - HK1, 2024' },
+  { name:'TS. Trần Minh Tuấn',    id:'GV.10187', email:'minhtuan@ute.edu.vn', term:'Đợt 1 - HK1, 2024' },
+  { name:'ThS. Lê Thị Hương',     id:'GV.10312', email:'thihuong@ute.edu.vn', term:'Đợt 1 - HK1, 2024' },
+  { name:'PGS.TS Phạm Quốc Hùng', id:'GV.10055', email:'quochung@ute.edu.vn', term:'Đợt 1 - HK1, 2024' },
+];
 
-        if (createReportBtn && tableBody) {
-            createReportBtn.addEventListener('click', () => {
-                // Tạo hiệu ứng thu phóng nhỏ khi bấm
-                createReportBtn.style.transform = 'scale(0.95)';
-                setTimeout(() => createReportBtn.style.transform = '', 150);
+// ════════════════════════════════════════════════════════════════════════════
+// KHỞI ĐỘNG
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
 
-                // Thêm dòng mới vào đầu bảng
-                const tr = document.createElement('tr');
-                tr.className = "bg-green-50/30 transition-colors duration-500"; // Đổi màu nhẹ để báo hiệu dòng mới
-                tr.innerHTML = `
-                    <td class="px-6 py-4">
-                        <p class="text-sm font-bold text-on-surface">Báo cáo tiến độ tuần ${reportCount}</p>
-                        <p class="text-[10px] text-on-surface-variant mt-1">Bao_cao_tuan_${reportCount}.pdf</p>
-                    </td>
-                    <td class="px-6 py-4 text-sm text-on-surface-variant">FPT Software</td>
-                    <td class="px-6 py-4 text-right">
-                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-secondary-container text-on-secondary-container">
-                            <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                            Đang chờ
-                        </span>
-                    </td>
-                `;
-                
-                tableBody.insertBefore(tr, tableBody.firstChild);
-                reportCount++; // Tăng số thứ tự cho lần bấm sau
-                
-                showToast('Đã nộp báo cáo mới thành công!', 'success');
-            });
-        }
+  bindProfileData();
+  initLogoutDropdown();
+  initMessageBtn();
 
-        // 5. Logic: Nút "Gửi tin nhắn cho GV"
-        const messageBtn = document.querySelector('button.bg-surface-container-highest.text-primary');
-        if (messageBtn) {
-            messageBtn.addEventListener('click', () => {
-                showToast('Hệ thống tin nhắn đang được bảo trì!', 'error');
-            });
-        }
+  // Sự kiện menu KLTN (mặc định khoá)
+  document.getElementById('nav-kltn')?.addEventListener('click', () => {
+    showToast('Hoàn thành BCTT trước khi đăng ký KLTN!', 'error');
+  });
 
-        // 6. Logic: Dropdown Đăng xuất (Gắn vào Avatar trên Header)
-        const profileHeader = document.querySelector('header .group.cursor-pointer');
-        if (profileHeader) {
-            // Tạo menu dropdown
-            const dropdown = document.createElement('div');
-            dropdown.className = 'absolute right-6 top-16 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-2 opacity-0 pointer-events-none transition-all duration-200 transform translate-y-[-10px] z-50';
-            dropdown.innerHTML = `
-                <div class="px-4 py-2 border-b border-slate-100 mb-1">
-                    <p class="text-sm font-bold">Alex Rivers</p>
-                    <p class="text-xs text-slate-500">sv@ute.edu.vn</p>
-                </div>
-                <a href="#" class="block px-4 py-2 text-sm text-red-600 font-bold hover:bg-red-50 flex items-center gap-2" id="logout-btn">
-                    <span class="material-symbols-outlined text-sm">logout</span> Đăng xuất
-                </a>
-            `;
-            document.querySelector('header').appendChild(dropdown);
+  // Sự kiện menu BCTT
+  document.getElementById('nav-bctt')?.addEventListener('click', e => {
+    e.preventDefault();
+    if(document.getElementById('nav-bctt').classList.contains('pointer-events-none')) return;
+    openRegistrationModal('bctt');
+  });
 
-            // Bật/tắt dropdown khi click
-            profileHeader.addEventListener('click', (e) => {
-                e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
-                const isOpen = dropdown.classList.contains('opacity-100');
-                if (isOpen) {
-                    dropdown.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
-                    dropdown.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
-                } else {
-                    dropdown.classList.add('opacity-100', 'pointer-events-auto', 'translate-y-0');
-                    dropdown.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
-                }
-            });
+  // Sự kiện nút "Tạo báo cáo mới"
+  document.getElementById('btn-create-report')?.addEventListener('click', () => {
+    const btn = document.getElementById('btn-create-report');
+    if(btn.hasAttribute('disabled')) return;
+    openRegistrationModal('bctt');
+  });
 
-            // Click nút đăng xuất
-            dropdown.querySelector('#logout-btn').addEventListener('click', (e) => {
-                e.preventDefault();
-                alert("Đăng xuất thành công! (Mô phỏng)");
-                // Thực tế bạn sẽ chuyển hướng: window.location.href = '/login.html';
-            });
+  // Sự kiện nút "Đổi đề tài" — trạng thái khởi tạo
+  initChangeBtnLocked();
 
-            // Click ra ngoài để đóng dropdown
-            document.addEventListener('click', () => {
-                dropdown.classList.remove('opacity-100', 'pointer-events-auto', 'translate-y-0');
-                dropdown.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-10px]');
-            });
-        }
-        
-        // 7. Logic: Nút Chuông thông báo
-        const bellIcon = document.querySelector('header .relative.p-2');
-        if (bellIcon) {
-            bellIcon.addEventListener('click', () => {
-                showToast('Bạn có 3 thông báo mới từ GVHD!', 'success');
-            });
-        }
+  // Tải dashboard từ API
+  try {
+    const dash = await fetchDashboardData(SESSION.email);
+    applyDashboardState(dash);
+  } catch(err){
+    console.error('Dashboard load error:', err);
+    applyDashboardState({ registered: false });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// BIND PROFILE
+// ════════════════════════════════════════════════════════════════════════════
+function bindProfileData(){
+  setEl('sidebar-name',  SESSION.name);
+  setEl('sidebar-mssv',  `MSSV: ${SESSION.maSo}`);
+  setEl('sidebar-email', SESSION.email);
+  const sAvatar = document.getElementById('sidebar-avatar');
+  if(sAvatar) sAvatar.alt = SESSION.name;
+  const hAvatar = document.getElementById('header-avatar');
+  if(hAvatar) hAvatar.alt = SESSION.name;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════════════════════════
+function showToast(message, type = 'error'){
+  document.getElementById('ute-toast')?.remove();
+  const t = document.createElement('div');
+  t.id = 'ute-toast';
+  t.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm z-[200] flex items-center gap-2 transition-all duration-300 translate-y-10 opacity-0';
+  t.style.backgroundColor = type === 'error' ? '#ba1a1a' : '#005236';
+  t.innerHTML = `<span class="material-symbols-outlined text-lg">${type==='error'?'lock':'check_circle'}</span> ${message}`;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    t.classList.remove('translate-y-10','opacity-0');
+  }));
+  setTimeout(() => {
+    t.classList.add('translate-y-10','opacity-0');
+    setTimeout(() => t.remove(), 300);
+  }, 3500);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LOGOUT DROPDOWN
+// ════════════════════════════════════════════════════════════════════════════
+function initLogoutDropdown(){
+  const profileBtn = document.querySelector('header .group.cursor-pointer');
+  if(!profileBtn) return;
+
+  const dd = document.createElement('div');
+  dd.className = 'absolute right-6 top-16 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-2 opacity-0 pointer-events-none -translate-y-2 transition-all duration-200 z-[150]';
+  dd.innerHTML = `
+    <div class="px-4 py-2 border-b border-slate-100 mb-1">
+      <p class="text-sm font-bold text-on-surface truncate">${SESSION.name}</p>
+      <p class="text-xs text-slate-500 truncate">${SESSION.email}</p>
+    </div>
+    <a href="#" id="logout-btn" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors">
+      <span class="material-symbols-outlined text-sm">logout</span> Đăng xuất
+    </a>
+  `;
+  document.querySelector('header').appendChild(dd);
+
+  const toggle = open => {
+    dd.classList.toggle('opacity-0',!open);
+    dd.classList.toggle('pointer-events-none',!open);
+    dd.classList.toggle('-translate-y-2',!open);
+    dd.classList.toggle('translate-y-0',open);
+    dd.classList.toggle('opacity-100',open);
+  };
+
+  profileBtn.addEventListener('click', e => { e.stopPropagation(); toggle(!dd.classList.contains('opacity-100')); });
+  dd.querySelector('#logout-btn').addEventListener('click', e => {
+    e.preventDefault();
+    sessionStorage.clear();
+    window.location.href = 'login.html';
+  });
+  document.addEventListener('click', () => toggle(false));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NÚT GỬI TIN NHẮN GV
+// ════════════════════════════════════════════════════════════════════════════
+function initMessageBtn(){
+  document.getElementById('btn-message-gv')?.addEventListener('click', () => {
+    showToast('Hệ thống tin nhắn đang được bảo trì!', 'error');
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NÚT ĐỔI ĐỀ TÀI — trạng thái ban đầu (khóa)
+// ════════════════════════════════════════════════════════════════════════════
+function initChangeBtnLocked(){
+  const btn = document.getElementById('btn-change-topic');
+  if(!btn) return;
+  btn.addEventListener('click', () => {
+    showToast('Đề tài của bạn đã được xác nhận, không thể đổi lúc này!', 'error');
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FETCH DASHBOARD
+// ════════════════════════════════════════════════════════════════════════════
+async function fetchDashboardData(email){
+  const res = await fetch(`${API_URL}?action=getStudentDashboardData&email=${encodeURIComponent(email)}`);
+  return await res.json();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ÁP DỤNG TRẠNG THÁI DASHBOARD
+// ════════════════════════════════════════════════════════════════════════════
+function applyDashboardState(d){
+  if(!d.registered){ applyUnregisteredState(); return; }
+
+  if(d.instructor) fillInstructorCard(d.instructor);
+  fillActivityHistory(d.topic, d.company, d.status);
+
+  if(d.status === 'pending'){
+    setProgressStep(1);
+    setChangeBtnState('disabled');
+  } else if(d.status === 'approved'){
+    setProgressStep(2);
+    setChangeBtnState('locked');
+  } else if(d.status === 'rejected'){
+    setProgressStep(1);
+    setChangeBtnState('active');
+    showToast('Đề tài của bạn đã bị từ chối. Vui lòng đổi đề tài.', 'error');
+  }
+
+  if(d.grade !== null && d.grade !== undefined){
+    applyGradeResult(d.grade, d.semester || '');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TRẠNG THÁI CHƯA ĐĂNG KÝ
+// ════════════════════════════════════════════════════════════════════════════
+function applyUnregisteredState(){
+  // Giảng viên card — placeholder
+  const instrBody = document.getElementById('instructor-body');
+  if(instrBody){
+    instrBody.innerHTML = `
+      <div class="w-full py-6 flex flex-col items-center gap-2 text-on-surface-variant">
+        <span class="material-symbols-outlined text-4xl opacity-30">person_off</span>
+        <p class="text-sm font-medium">Chưa đăng ký GVHD</p>
+      </div>
+    `;
+  }
+  document.getElementById('instructor-details')?.style.setProperty('display','none');
+  document.getElementById('btn-message-gv')?.style.setProperty('display','none');
+
+  // Progress — chỉ bước 0 "Bắt đầu" sáng
+  setProgressStep(0);
+
+  // Activity history — empty
+  const tbody = document.getElementById('activity-tbody');
+  if(tbody){
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="3" class="px-6 py-10 text-center text-on-surface-variant text-sm">
+          <span class="material-symbols-outlined text-3xl block mb-2 opacity-30">inbox</span>
+          Chưa có dữ liệu
+        </td>
+      </tr>
+    `;
+  }
+
+  // Grade — "--"
+  setEl('grade-num',   '--');
+  setEl('grade-alpha', '');
+  setEl('grade-sub',   'Chưa có kết quả');
+
+  setChangeBtnState('disabled');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FILL INSTRUCTOR CARD
+// ════════════════════════════════════════════════════════════════════════════
+function fillInstructorCard(instr){
+  setEl('instructor-name',  instr.name  || '');
+  setEl('instructor-id',    instr.id    || '');
+  setEl('instructor-email', instr.email || '');
+  setEl('instructor-term',  instr.term  || '');
+
+  // Hiện lại details nếu đang ẩn
+  const det = document.getElementById('instructor-details');
+  const btn = document.getElementById('btn-message-gv');
+  if(det) det.style.removeProperty('display');
+  if(btn) btn.style.removeProperty('display');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PROGRESS STEPPER
+// step: 0=Bắt đầu, 1=Đăng ký, 2=Thực hiện, 3=Kết thúc, 4=Xác nhận
+// ════════════════════════════════════════════════════════════════════════════
+function setProgressStep(step){
+  const nodes  = document.querySelectorAll('#stepper > .relative.z-10');
+  const icons  = ['check_circle','check_circle','potted_plant','flag','verified'];
+  const labels = ['Bắt đầu','Đăng ký','Thực hiện','Kết thúc','Xác nhận'];
+  const pcts   = [0, 25, 50, 75, 100];
+
+  nodes.forEach((node, i) => {
+    const circle = node.querySelector('div');
+    const label  = node.querySelector('span');
+    const icon   = circle.querySelector('span');
+
+    if(i < step){
+      // Đã qua
+      circle.className = 'w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed';
+      if(icon) icon.textContent = 'check_circle';
+      if(label){ label.className = 'text-[10px] font-bold text-on-surface'; label.textContent = labels[i]; }
+    } else if(i === step){
+      // Hiện tại
+      circle.className = 'w-10 h-10 rounded-full bg-primary border-4 border-primary-fixed-dim flex items-center justify-center text-white ring-4 ring-white';
+      if(icon) icon.textContent = icons[i];
+      if(label){ label.className = 'text-[10px] font-bold text-primary'; label.textContent = labels[i]; }
+    } else {
+      // Chưa đến
+      circle.className = 'w-10 h-10 rounded-full bg-surface-dim flex items-center justify-center text-on-surface-variant';
+      if(icon) icon.textContent = icons[i];
+      if(label){ label.className = 'text-[10px] font-medium text-on-surface-variant'; label.textContent = labels[i]; }
+    }
+  });
+
+  const pct = pcts[Math.min(step, 4)];
+  const bar = document.getElementById('progress-bar');
+  const pctEl  = document.getElementById('progress-pct');
+  const line   = document.getElementById('stepper-progress-line');
+  if(bar)   bar.style.width   = pct + '%';
+  if(pctEl) pctEl.textContent = pct + '%';
+  if(line)  line.style.width  = pct + '%';
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// NÚT ĐỔI ĐỀ TÀI — cập nhật trạng thái
+// ════════════════════════════════════════════════════════════════════════════
+function setChangeBtnState(state){
+  const btn = document.getElementById('btn-change-topic');
+  if(!btn) return;
+  // Clone để xoá listener cũ
+  const nb = btn.cloneNode(true);
+  btn.parentNode.replaceChild(nb, btn);
+  nb.id = 'btn-change-topic';
+
+  nb.className = 'p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3';
+  nb.querySelector('span.text-sm').textContent = 'Đổi đề tài';
+
+  if(state === 'disabled'){
+    nb.classList.add('bg-surface-container-highest','text-on-surface/50','opacity-50','cursor-not-allowed');
+    nb.setAttribute('disabled','');
+  } else if(state === 'locked'){
+    nb.classList.add('bg-surface-container-highest','text-on-surface/50','opacity-50','cursor-not-allowed');
+    nb.setAttribute('disabled','');
+    nb.addEventListener('click', () => showToast('Đề tài đã được xác nhận, không thể đổi!','error'));
+  } else if(state === 'active'){
+    nb.classList.add('bg-secondary-container','text-on-secondary-container','hover:scale-[1.02]','transition-transform','cursor-pointer');
+    nb.removeAttribute('disabled');
+    nb.addEventListener('click', () => openRegistrationModal('bctt'));
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ACTIVITY HISTORY
+// ════════════════════════════════════════════════════════════════════════════
+function fillActivityHistory(topic, company, status){
+  const tbody = document.getElementById('activity-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = '';
+  addActivityRow(topic, company, status);
+}
+
+function addActivityRow(topic, company, status){
+  const tbody = document.getElementById('activity-tbody');
+  if(!tbody) return;
+
+  const pills = {
+    pending  : `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-secondary-container text-on-secondary-container"><span class="w-1.5 h-1.5 rounded-full bg-secondary inline-block"></span>Đang chờ</span>`,
+    approved : `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-tertiary-fixed-dim/20 text-on-tertiary-fixed"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim inline-block"></span>Đã xác nhận</span>`,
+    rejected : `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-error-container text-on-error-container"><span class="w-1.5 h-1.5 rounded-full bg-error inline-block"></span>Bị từ chối</span>`,
+  };
+
+  const tr = document.createElement('tr');
+  tr.className = 'bg-green-50/30 transition-colors duration-500';
+  tr.innerHTML = `
+    <td class="px-6 py-4">
+      <p class="text-sm font-bold text-on-surface">${topic || 'Chưa có đề tài'}</p>
+      <p class="text-[10px] text-on-surface-variant mt-1">${new Date().toLocaleDateString('vi-VN')}</p>
+    </td>
+    <td class="px-6 py-4 text-sm text-on-surface-variant">${company || '---'}</td>
+    <td class="px-6 py-4 text-right">${pills[status] || pills.pending}</td>
+  `;
+  tbody.insertBefore(tr, tbody.firstChild);
+  setTimeout(() => tr.classList.remove('bg-green-50/30'), 2000);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// KẾT QUẢ ĐIỂM
+// ════════════════════════════════════════════════════════════════════════════
+function applyGradeResult(grade, semester){
+  const card    = document.getElementById('grade-card');
+  const numEl   = document.getElementById('grade-num');
+  const alphaEl = document.getElementById('grade-alpha');
+  const subEl   = document.getElementById('grade-sub');
+  const passed  = grade >= 5.0;
+
+  const letter = [[9,'A+'],[8,'A'],[7,'B+'],[6,'B'],[5,'C+'],[4,'C'],[0,'F']]
+    .find(([m]) => grade >= m)?.[1] || 'F';
+
+  if(numEl)   numEl.textContent   = grade.toFixed(1);
+  if(alphaEl) alphaEl.textContent = letter;
+  if(subEl)   subEl.textContent   = `${passed?'Đạt':'Không đạt'} • ${semester}`;
+
+  if(card){
+    card.classList.remove('bg-tertiary-fixed','bg-red-100','bg-green-100');
+    card.classList.add(passed ? 'bg-green-100' : 'bg-red-100');
+  }
+
+  if(passed){
+    unlockKLTN();
+    disableBCTT();
+  } else {
+    setChangeBtnState('active');
+    showToast('Điểm thực tập dưới 5.0. Vui lòng đăng ký lại!', 'error');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// UNLOCK KLTN / DISABLE BCTT
+// ════════════════════════════════════════════════════════════════════════════
+function unlockKLTN(){
+  const kltnDiv = document.getElementById('nav-kltn');
+  if(!kltnDiv) return;
+  const a = document.createElement('a');
+  a.href = '#';
+  a.id   = 'nav-kltn';
+  a.className = 'flex items-center justify-between px-4 py-3 text-slate-600 hover:bg-slate-200/50 rounded-xl transition-colors duration-200';
+  a.innerHTML = `
+    <div class="flex items-center gap-3">
+      <span class="material-symbols-outlined">school</span>
+      <span class="font-medium">Đăng ký KLTN</span>
+    </div>
+    <span class="px-2 py-0.5 bg-green-100 text-green-800 text-[10px] font-bold rounded-full">MỚI</span>
+  `;
+  kltnDiv.parentNode.replaceChild(a, kltnDiv);
+  a.addEventListener('click', e => { e.preventDefault(); openRegistrationModal('kltn'); });
+  showToast('Đăng ký KLTN đã được mở khóa!', 'success');
+}
+
+function disableBCTT(){
+  const btn = document.getElementById('btn-create-report');
+  if(btn){
+    const nb = btn.cloneNode(true);
+    btn.parentNode.replaceChild(nb, btn);
+    nb.id = 'btn-create-report';
+    nb.classList.add('opacity-30','cursor-not-allowed');
+    nb.setAttribute('disabled','');
+  }
+  const navBctt = document.getElementById('nav-bctt');
+  if(navBctt) navBctt.classList.add('opacity-40','pointer-events-none');
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MODAL ĐĂNG KÝ
+// ════════════════════════════════════════════════════════════════════════════
+function openRegistrationModal(type = 'bctt'){
+  document.getElementById('ute-reg-modal')?.remove();
+  const title = type === 'kltn' ? 'Đăng ký Khóa Luận Tốt Nghiệp' : 'Đăng ký Báo Cáo Thực Tập';
+
+  const modal = document.createElement('div');
+  modal.id = 'ute-reg-modal';
+  modal.className = 'fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
+  modal.innerHTML = `
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 relative" style="animation:slideUp .3s ease">
+      <button id="modal-close" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface-container flex items-center justify-center hover:bg-slate-200 transition-colors">
+        <span class="material-symbols-outlined text-sm">close</span>
+      </button>
+      <h2 class="text-xl font-black text-on-surface mb-1">${title}</h2>
+      <p class="text-xs text-on-surface-variant mb-6">Vui lòng điền đầy đủ thông tin bên dưới</p>
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Đề tài</label>
+          <select id="sel-topic" class="w-full border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
+            <option value="">— Chọn đề tài —</option>
+            ${TOPICS.map(t=>`<option value="${t}">${t}</option>`).join('')}
+          </select>
+        </div>
+        ${type==='bctt' ? `
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Đơn vị thực tập</label>
+          <select id="sel-company" class="w-full border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
+            <option value="">— Chọn đơn vị —</option>
+            ${COMPANIES.map(c=>`<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </div>` : ''}
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Giảng viên hướng dẫn</label>
+          <select id="sel-instructor" class="w-full border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
+            <option value="">— Chọn giảng viên —</option>
+            ${INSTRUCTORS.map((iv,i)=>`<option value="${i}">${iv.name} — ${iv.id}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Ghi chú (tùy chọn)</label>
+          <textarea id="sel-note" rows="3" placeholder="Mô tả thêm về kế hoạch của bạn..." class="w-full border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
+        </div>
+      </div>
+      <div id="modal-error" class="hidden mt-3 text-xs text-red-600 font-medium flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">error</span>
+        <span id="modal-error-text">Vui lòng điền đầy đủ thông tin.</span>
+      </div>
+      <div class="mt-6 flex gap-3">
+        <button id="modal-cancel" class="flex-1 py-3 rounded-xl border border-outline-variant text-sm font-bold text-on-surface hover:bg-surface-container transition-colors">Hủy</button>
+        <button id="modal-submit" class="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-sm">send</span>Gửi đăng ký
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('#modal-close').addEventListener('click', close);
+  modal.querySelector('#modal-cancel').addEventListener('click', close);
+  modal.addEventListener('click', e => { if(e.target===modal) close(); });
+  modal.querySelector('#modal-submit').addEventListener('click', () => submitRegistration(type, modal));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SUBMIT ĐĂNG KÝ
+// ════════════════════════════════════════════════════════════════════════════
+async function submitRegistration(type, modal){
+  const topic    = modal.querySelector('#sel-topic')?.value;
+  const company  = modal.querySelector('#sel-company')?.value || 'N/A';
+  const instrIdx = modal.querySelector('#sel-instructor')?.value;
+  const note     = modal.querySelector('#sel-note')?.value || '';
+
+  const errBox  = modal.querySelector('#modal-error');
+  const errText = modal.querySelector('#modal-error-text');
+
+  if(!topic || (type==='bctt' && !company) || instrIdx==='' || instrIdx===undefined){
+    errBox.classList.remove('hidden');
+    errText.textContent = 'Vui lòng điền đầy đủ thông tin bắt buộc.';
+    return;
+  }
+
+  const instr  = INSTRUCTORS[parseInt(instrIdx)];
+  const subBtn = modal.querySelector('#modal-submit');
+  subBtn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">refresh</span> Đang gửi...';
+  subBtn.setAttribute('disabled','');
+
+  try {
+    const res = await fetch(API_URL, {
+      method  : 'POST',
+      headers : { 'Content-Type':'application/json' },
+      body    : JSON.stringify({
+        action:'submitRegistration', type,
+        email:SESSION.email, name:SESSION.name, maSo:SESSION.maSo,
+        topic, company,
+        instructorName:instr.name, instructorEmail:instr.email,
+        instructorId:instr.id, term:instr.term, note,
+      }),
     });
-</script>
-</body></html>
+    const data = await res.json();
 
+    if(data.success){
+      modal.remove();
+      fillInstructorCard(instr);
+      addActivityRow(topic, company, 'pending');
+      setProgressStep(1);
+      setChangeBtnState('disabled');
+      showToast('Đăng ký thành công! GV đã nhận được thông báo.', 'success');
+    } else {
+      errBox.classList.remove('hidden');
+      errText.textContent = data.message || 'Gửi thất bại. Thử lại.';
+      subBtn.innerHTML = '<span class="material-symbols-outlined text-sm">send</span>Gửi đăng ký';
+      subBtn.removeAttribute('disabled');
+    }
+  } catch(err){
+    errBox.classList.remove('hidden');
+    errText.textContent = 'Lỗi kết nối. Vui lòng thử lại.';
+    subBtn.innerHTML = '<span class="material-symbols-outlined text-sm">send</span>Gửi đăng ký';
+    subBtn.removeAttribute('disabled');
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// UTIL
+// ════════════════════════════════════════════════════════════════════════════
+function setEl(id, text){
+  const el = document.getElementById(id);
+  if(el) el.textContent = text;
+}
+</script>
+</body>
+</html>
