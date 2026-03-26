@@ -26,10 +26,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh
 .btn-login:hover{background:#15408f}
 .divider{display:flex;align-items:center;gap:12px;margin:4px 0 16px;font-size:12px;color:#9ca3af}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:#e5e7eb}
-
-/* Google button container căn giữa */
 .google-btn-wrap{display:flex;justify-content:center;width:100%}
-
 /* Overlay */
 .overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;animation:fadeIn .3s ease}
 .overlay.show{display:flex}
@@ -111,7 +108,7 @@ function hideOverlay(){
   document.getElementById('overlay').className = 'overlay';
 }
 
-// Đăng nhập Admin
+// ── Đăng nhập Admin ──────────────────────────────────────────────────────────
 function doLogin(){
   const u = document.getElementById('username').value.trim();
   const p = document.getElementById('password').value;
@@ -119,54 +116,56 @@ function doLogin(){
   if(!u){ document.getElementById('fu').classList.add('has-error'); ok=false; }
   if(!p){ document.getElementById('fp').classList.add('has-error'); ok=false; }
   if(!ok) return;
+
   if(u === ADMIN_USER && p === ADMIN_PASS){
     sessionStorage.setItem('ute_email', 'admin');
     sessionStorage.setItem('ute_role', 'admin');
     sessionStorage.setItem('ute_name', 'Administrator');
     sessionStorage.setItem('ute_maSo', 'ADMIN');
     showOverlay('success','✅','Đăng nhập thành công!','Đang chuyển hướng...');
-    setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
+    setTimeout(()=>{ window.location.href='trangchu.html'; }, 2000);
   } else {
     showOverlay('error','🚫','Tên đăng nhập hoặc mật khẩu không đúng.','');
     setTimeout(hideOverlay, 3000);
   }
 }
 
-// Callback từ Google Sign-In thật
+// ── Callback từ Google Sign-In ────────────────────────────────────────────────
 async function handleGoogleLogin(response){
-  // Giải mã JWT token để lấy email
+  // Giải mã JWT để lấy email — KHÔNG dùng email prefix làm tên
   const payload = JSON.parse(atob(response.credential.split('.')[1]));
-  const email = payload.email;
+  const email   = payload.email;
 
   showOverlay('success','⏳','Đang kiểm tra quyền truy cập...','');
 
   try {
-    const res = await fetch(`${API}?action=checkEmail&email=${encodeURIComponent(email)}`);
+    const res  = await fetch(`${API}?action=checkEmail&email=${encodeURIComponent(email)}`);
     const data = await res.json();
-
-    // Log để kiểm tra dữ liệu nhận được
     console.log('Dữ liệu từ API:', data);
 
     if(data.role === 'sinhvien'){
+      // Lưu tên thật + MSSV chính xác từ Google Sheet
       sessionStorage.setItem('ute_email', email);
-      sessionStorage.setItem('ute_role', 'sinhvien');
-      sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
-      sessionStorage.setItem('ute_maSo', data.maSo || '');
+      sessionStorage.setItem('ute_role',  'sinhvien');
+      sessionStorage.setItem('ute_name',  data.name  || email.split('@')[0]);
+      sessionStorage.setItem('ute_maSo',  data.maSo  || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
+      setTimeout(()=>{ window.location.href='trangchu.html'; }, 2000);
 
     } else if(data.role === 'giangvien'){
       sessionStorage.setItem('ute_email', email);
-      sessionStorage.setItem('ute_role', 'giangvien');
-      sessionStorage.setItem('ute_name', data.name || email.split('@')[0]);
-      sessionStorage.setItem('ute_maSo', data.maSo || '');
+      sessionStorage.setItem('ute_role',  'giangvien');
+      sessionStorage.setItem('ute_name',  data.name  || email.split('@')[0]);
+      sessionStorage.setItem('ute_maSo',  data.maSo  || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href='trangchu.html'; }, 3000);
+      // Route sang giangvien.html (file sẽ build sau)
+      setTimeout(()=>{ window.location.href='giangvien.html'; }, 2000);
 
     } else {
       showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
       setTimeout(hideOverlay, 3000);
     }
+
   } catch(err){
     console.error('Login error:', err);
     showOverlay('error','⚠️','Lỗi kết nối. Vui lòng thử lại.','');
