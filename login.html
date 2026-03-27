@@ -206,7 +206,7 @@ async function handleGoogleLogin(response){
       sessionStorage.setItem('ute_maSo',  sv.maSo || '');
       sessionStorage.setItem('ute_nganh', sv.nganh || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 1000);
+      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000);
       return;
     }
 
@@ -219,7 +219,7 @@ async function handleGoogleLogin(response){
       sessionStorage.setItem('ute_maSo',  gv.maSo || '');
       sessionStorage.setItem('ute_nganh', gv.nganh || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 1000);
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
       return;
     }
 
