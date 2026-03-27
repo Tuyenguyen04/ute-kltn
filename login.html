@@ -146,9 +146,10 @@ function findEmailInRows(rows, email){
     const rowEmail = (row[3] || '').replace(/"/g, '').trim().toLowerCase();
     if(rowEmail === email.toLowerCase()){
       return {
-        name : (row[1] || '').replace(/"/g, '').trim(),
-        maSo : (row[2] || '').replace(/"/g, '').trim(),
-        role : (row[4] || '').replace(/"/g, '').trim(),
+        name  : (row[1] || '').replace(/"/g, '').trim(),
+        maSo  : (row[2] || '').replace(/"/g, '').trim(),
+        role  : (row[4] || '').replace(/"/g, '').trim(),
+        nganh : (row[5] || '').replace(/"/g, '').trim(), // cột F = Ngành
       };
     }
   }
@@ -203,9 +204,9 @@ async function handleGoogleLogin(response){
       sessionStorage.setItem('ute_role',  'sinhvien');
       sessionStorage.setItem('ute_name',  sv.name || nameGG);
       sessionStorage.setItem('ute_maSo',  sv.maSo || '');
-      sessionStorage.setItem('ute_nganh', data.nganh || '');
+      sessionStorage.setItem('ute_nganh', sv.nganh || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000);
+      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 1000);
       return;
     }
 
@@ -216,9 +217,9 @@ async function handleGoogleLogin(response){
       sessionStorage.setItem('ute_role',  'giangvien');
       sessionStorage.setItem('ute_name',  gv.name || nameGG);
       sessionStorage.setItem('ute_maSo',  gv.maSo || '');
-      sessionStorage.setItem('ute_nganh', data.nganh || '');
+      sessionStorage.setItem('ute_nganh', gv.nganh || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 1000);
       return;
     }
 
