@@ -91,21 +91,68 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh
 </div>
 
 <script>
-const API = 'https://script.google.com/macros/s/AKfycbyjhgQ8h_hlJTDC7kFMfEX1nfefDvoBkHFdHnUxC7duqS4CcVpJerL3K6JtH7t9TZJw/exec';
 const ADMIN_USER = 'admin', ADMIN_PASS = 'ute2025';
 
+// ── Cấu hình Google Sheet ─────────────────────────────────────────────────────
+// Sheet phải được chia sẻ "Anyone with the link → Viewer"
+const SHEET_ID = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
+const SHEET_SV = 'Sinh viên đợt 1';
+const SHEET_GV = 'Giảng viên phụ trách';
+
+// ── Helper UI ─────────────────────────────────────────────────────────────────
 function ce(id){ document.getElementById(id).classList.remove('has-error'); }
 
 function showOverlay(type, icon, msg, sub){
   const ov = document.getElementById('overlay');
   document.getElementById('ov-icon').textContent = icon;
-  document.getElementById('ov-msg').textContent = msg;
-  document.getElementById('ov-sub').textContent = sub || '';
+  document.getElementById('ov-msg').textContent  = msg;
+  document.getElementById('ov-sub').textContent  = sub || '';
   ov.className = 'overlay show ' + type;
 }
-
 function hideOverlay(){
   document.getElementById('overlay').className = 'overlay';
+}
+
+// ── Đọc CSV trực tiếp từ Google Sheet ────────────────────────────────────────
+async function fetchSheetCSV(sheetName){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Không tải được sheet: ' + sheetName);
+  return res.text();
+}
+
+// Parse CSV — xử lý đúng dấu phẩy bên trong ngoặc kép
+function parseCSV(text){
+  return text.trim().split('\n').map(line => {
+    const cols = [];
+    let cur = '', inQ = false;
+    for(let i = 0; i < line.length; i++){
+      const c = line[i];
+      if(c === '"'){ inQ = !inQ; }
+      else if(c === ',' && !inQ){ cols.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+// Tìm email trong rows — bỏ dòng header (row 0)
+// Cấu trúc: A=STT, B=Họ Tên, C=MSSV/MãGV, D=Gmail, E=Role, F=Ngành
+function findEmailInRows(rows, email){
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row || row.length < 4) continue;
+    const rowEmail = (row[3] || '').replace(/"/g, '').trim().toLowerCase();
+    if(rowEmail === email.toLowerCase()){
+      return {
+        name : (row[1] || '').replace(/"/g, '').trim(),
+        maSo : (row[2] || '').replace(/"/g, '').trim(),
+        role : (row[4] || '').replace(/"/g, '').trim(),
+      };
+    }
+  }
+  return null;
 }
 
 // ── Đăng nhập Admin ──────────────────────────────────────────────────────────
@@ -119,11 +166,11 @@ function doLogin(){
 
   if(u === ADMIN_USER && p === ADMIN_PASS){
     sessionStorage.setItem('ute_email', 'admin');
-    sessionStorage.setItem('ute_role', 'admin');
-    sessionStorage.setItem('ute_name', 'Administrator');
-    sessionStorage.setItem('ute_maSo', 'ADMIN');
+    sessionStorage.setItem('ute_role',  'admin');
+    sessionStorage.setItem('ute_name',  'Administrator');
+    sessionStorage.setItem('ute_maSo',  'ADMIN');
     showOverlay('success','✅','Đăng nhập thành công!','Đang chuyển hướng...');
-    setTimeout(()=>{ window.location.href='trangchu.html'; }, 2000);
+    setTimeout(()=>{ window.location.href = 'admin.html'; }, 2000);
   } else {
     showOverlay('error','🚫','Tên đăng nhập hoặc mật khẩu không đúng.','');
     setTimeout(hideOverlay, 3000);
@@ -132,39 +179,50 @@ function doLogin(){
 
 // ── Callback từ Google Sign-In ────────────────────────────────────────────────
 async function handleGoogleLogin(response){
-  // Giải mã JWT để lấy email — KHÔNG dùng email prefix làm tên
+  // Giải mã JWT để lấy email và tên từ Google account
   const payload = JSON.parse(atob(response.credential.split('.')[1]));
   const email   = payload.email;
+  const nameGG  = payload.name || email.split('@')[0];
 
   showOverlay('success','⏳','Đang kiểm tra quyền truy cập...','');
 
   try {
-    const res  = await fetch(`${API}?action=checkEmail&email=${encodeURIComponent(email)}`);
-    const data = await res.json();
-    console.log('Dữ liệu từ API:', data);
+    // Tải song song cả 2 sheet
+    const [csvSV, csvGV] = await Promise.all([
+      fetchSheetCSV(SHEET_SV),
+      fetchSheetCSV(SHEET_GV),
+    ]);
 
-    if(data.role === 'sinhvien'){
-      // Lưu tên thật + MSSV chính xác từ Google Sheet
+    const rowsSV = parseCSV(csvSV);
+    const rowsGV = parseCSV(csvGV);
+
+    // Kiểm tra sheet Sinh viên trước
+    const sv = findEmailInRows(rowsSV, email);
+    if(sv){
       sessionStorage.setItem('ute_email', email);
       sessionStorage.setItem('ute_role',  'sinhvien');
-      sessionStorage.setItem('ute_name',  data.name  || email.split('@')[0]);
-      sessionStorage.setItem('ute_maSo',  data.maSo  || '');
+      sessionStorage.setItem('ute_name',  sv.name || nameGG);
+      sessionStorage.setItem('ute_maSo',  sv.maSo || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href='trangchu.html'; }, 2000);
+      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000);
+      return;
+    }
 
-    } else if(data.role === 'giangvien'){
+    // Kiểm tra sheet Giảng viên
+    const gv = findEmailInRows(rowsGV, email);
+    if(gv){
       sessionStorage.setItem('ute_email', email);
       sessionStorage.setItem('ute_role',  'giangvien');
-      sessionStorage.setItem('ute_name',  data.name  || email.split('@')[0]);
-      sessionStorage.setItem('ute_maSo',  data.maSo  || '');
+      sessionStorage.setItem('ute_name',  gv.name || nameGG);
+      sessionStorage.setItem('ute_maSo',  gv.maSo || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      // Route sang giangvien.html (file sẽ build sau)
-      setTimeout(()=>{ window.location.href='giangvien.html'; }, 2000);
-
-    } else {
-      showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
-      setTimeout(hideOverlay, 3000);
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
+      return;
     }
+
+    // Email không có trong cả 2 sheet
+    showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
+    setTimeout(hideOverlay, 3000);
 
   } catch(err){
     console.error('Login error:', err);
