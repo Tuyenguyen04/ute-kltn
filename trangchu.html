@@ -55,6 +55,43 @@ const {useState,useEffect,useCallback} = React;
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const API_URL = 'https://script.google.com/macros/s/AKfycbzptXTukZzho3esHy5efvLJqqo62LYzmVrNrdxy2Ev3fDstmNdVkIeo6NqWw6QhvTO2/exec';
 
+// 5 ngành khớp đúng cột Ngành trong sheet GV
+const NGANH_LIST = ['QLCN','Kế toán','Thương mại điện tử','Kinh doanh quốc tế','Logistic'];
+const SHEET_ID_GV = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
+const SHEET_GV_TAB = 'Giảng viên phụ trách';
+
+// Đọc GV từ Google Sheet CSV (không cần Apps Script)
+// Cột sheet GV: A=STT B=HọTên C=MãGV D=Gmail E=Role F=SLđăngkí G=SLcònlại H=Ngành
+async function fetchGVFromCSV(){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID_GV}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_GV_TAB)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Không tải được sheet GV');
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cols=[];let cur='',inQ=false;
+    for(let j=0;j<lines[i].length;j++){
+      const c=lines[i][j];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===','&&!inQ){cols.push(cur.replace(/"/g,'').trim());cur='';}
+      else{cur+=c;}
+    }
+    cols.push(cur.replace(/"/g,'').trim());
+    if(cols[1]&&cols[3]){
+      rows.push({
+        name:cols[1]||'',
+        code:cols[2]||'',
+        email:cols[3]||'',
+        slDangKi:parseInt(cols[5])||0,
+        slConLai:parseInt(cols[6])||0,
+        nganh:cols[7]||'',
+      });
+    }
+  }
+  return rows;
+}
+
 // Đọc session — tên + maSo đã được lưu ĐÚNG từ login.html (đọc từ sheet)
 const SESSION = {
   email: sessionStorage.getItem('ute_email') || '',
@@ -680,9 +717,7 @@ function Registration({onSuccess,instructorList,loadingGV}){
                     <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
                       className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface">
                       <option value="">Chọn mảng đề tài</option>
-                      <option>Phát triển Web</option><option>Trí tuệ nhân tạo (AI)</option>
-                      <option>An toàn thông tin</option><option>Hệ thống nhúng</option>
-                      <option>Quản lý doanh nghiệp</option><option>Kế toán - Tài chính</option>
+                      {NGANH_LIST.map(n=><option key={n} value={n}>{n}</option>)}
                       <option>Thương mại điện tử</option><option>Logistic</option>
                     </select>
                     <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
@@ -749,9 +784,9 @@ function Registration({onSuccess,instructorList,loadingGV}){
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-outline-variant/10">
-                        {instructorList.length===0?(
+                        {instructorList.filter(iv=>!form.category||iv.nganh===form.category).length===0?(
                           <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-on-surface-variant">Không có dữ liệu giảng viên</td></tr>
-                        ):instructorList.map((iv,idx)=>{
+                        ):instructorList.filter(iv=>!form.category||iv.nganh===form.category).map((iv,idx)=>{
                           const rem=typeof iv.slConLai==='number'?iv.slConLai:parseInt(iv.slConLai)||0;
                           const full=rem<=0;
                           const total=rem+((typeof iv.slDangKi==='number'?iv.slDangKi:0)||0);
@@ -946,12 +981,10 @@ function App(){
   useEffect(()=>{
     if(tab==='registration'&&instructorList.length===0){
       setLoadingGV(true);
-      apiGet({action:'getInstructorList'})
-        .then(res=>{
-          if(res.instructors) setInstructorList(res.instructors);
-          setLoadingGV(false);
-        })
-        .catch(()=>setLoadingGV(false));
+      fetchGVFromCSV()
+        .then(rows=>setInstructorList(rows))
+        .catch(()=>console.warn('Không tải được GV từ Sheet'))
+        .finally(()=>setLoadingGV(false));
     }
   },[tab]);
 
