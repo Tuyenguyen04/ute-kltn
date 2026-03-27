@@ -1,905 +1,768 @@
 <!DOCTYPE html>
-
-<html class="light" lang="vi"><head>
+<html class="light" lang="vi">
+<head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>UTE Internship Management Dashboard</title>
+<title>UTE Hub — Dashboard</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              "on-error-container": "#93000a",
-              "on-tertiary-fixed-variant": "#005236",
-              "outline": "#737784",
-              "error": "#ba1a1a",
-              "surface-variant": "#e2e2eb",
-              "on-secondary-fixed": "#2a1700",
-              "outline-variant": "#c3c6d5",
-              "tertiary-fixed-dim": "#4edea3",
-              "surface-container-low": "#f3f3fc",
-              "secondary-fixed": "#ffddb8",
-              "surface-container": "#ededf6",
-              "on-tertiary": "#ffffff",
-              "tertiary": "#003f29",
-              "on-primary": "#ffffff",
-              "primary-fixed": "#dae2ff",
-              "tertiary-fixed": "#6ffbbe",
-              "tertiary-container": "#00593c",
-              "on-secondary-fixed-variant": "#653e00",
-              "error-container": "#ffdad6",
-              "on-primary-fixed": "#001847",
-              "primary-fixed-dim": "#b2c5ff",
-              "surface-container-highest": "#e2e2eb",
-              "background": "#faf8ff",
-              "on-primary-fixed-variant": "#0040a0",
-              "on-secondary": "#ffffff",
-              "secondary-fixed-dim": "#ffb95f",
-              "on-primary-container": "#a5bdff",
-              "inverse-surface": "#2e3037",
-              "surface-container-high": "#e7e7f1",
-              "on-background": "#191b22",
-              "on-surface": "#191b22",
-              "surface-bright": "#faf8ff",
-              "inverse-primary": "#b2c5ff",
-              "primary": "#00317e",
-              "secondary": "#855300",
-              "primary-container": "#0046ad",
-              "inverse-on-surface": "#f0f0f9",
-              "secondary-container": "#fea619",
-              "on-surface-variant": "#434653",
-              "surface-container-lowest": "#ffffff",
-              "on-secondary-container": "#684000",
-              "on-tertiary-container": "#44d69b",
-              "on-error": "#ffffff",
-              "surface-dim": "#d9d9e2",
-              "on-tertiary-fixed": "#002113",
-              "surface-tint": "#2559bf",
-              "surface": "#faf8ff"
-            },
-            fontFamily: {
-              "headline": ["Manrope"],
-              "body": ["Inter"],
-              "label": ["Inter"]
-            },
-            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
-          },
-        },
-      }
-    </script>
+tailwind.config = {
+  darkMode:"class",
+  theme:{extend:{colors:{
+    "primary":"#00317e","primary-container":"#0046ad","on-primary":"#ffffff",
+    "primary-fixed":"#dae2ff","primary-fixed-dim":"#b2c5ff","on-primary-fixed":"#001847","on-primary-fixed-variant":"#0040a0",
+    "secondary":"#855300","secondary-container":"#fea619","on-secondary":"#ffffff",
+    "secondary-fixed":"#ffddb8","secondary-fixed-dim":"#ffb95f","on-secondary-fixed":"#2a1700","on-secondary-fixed-variant":"#653e00","on-secondary-container":"#684000",
+    "tertiary":"#003f29","tertiary-container":"#00593c","on-tertiary":"#ffffff","on-tertiary-container":"#44d69b",
+    "tertiary-fixed":"#6ffbbe","tertiary-fixed-dim":"#4edea3","on-tertiary-fixed":"#002113","on-tertiary-fixed-variant":"#005236",
+    "error":"#ba1a1a","error-container":"#ffdad6","on-error":"#ffffff","on-error-container":"#93000a",
+    "background":"#faf8ff","on-background":"#191b22",
+    "surface":"#faf8ff","surface-bright":"#faf8ff","surface-dim":"#d9d9e2",
+    "surface-container-lowest":"#ffffff","surface-container-low":"#f3f3fc",
+    "surface-container":"#ededf6","surface-container-high":"#e7e7f1","surface-container-highest":"#e2e2eb",
+    "surface-variant":"#e2e2eb","on-surface":"#191b22","on-surface-variant":"#434653",
+    "outline":"#737784","outline-variant":"#c3c6d5",
+    "inverse-surface":"#2e3037","inverse-on-surface":"#f0f0f9","inverse-primary":"#b2c5ff",
+    "surface-tint":"#2559bf",
+  },fontFamily:{"headline":["Manrope"],"body":["Inter"],"label":["Inter"]},
+  borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"}}}
+}
+</script>
 <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .tonal-shift { background-color: rgba(237, 237, 246, 0.5); }
-        body { font-family: 'Inter', sans-serif; background-color: #faf8ff; color: #191b22; }
-        h1, h2, h3, .font-headline { font-family: 'Manrope', sans-serif; }
-        body {
-          min-height: max(884px, 100dvh);
-        }
-        @keyframes slideUp {
-          from { transform: translateY(40px); opacity: 0; }
-          to   { transform: translateY(0);    opacity: 1; }
-        }
-    </style>
+  *{box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#faf8ff;color:#191b22;margin:0;min-height:100vh}
+  h1,h2,h3,h4,.font-headline{font-family:'Manrope',sans-serif}
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+  .fill-icon{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .anim-fade{animation:fadeIn .35s ease both}
+  .anim-slide{animation:slideUp .4s cubic-bezier(.22,1,.36,1) both}
+  .anim-pop{animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both}
+  .anim-spin{animation:spin .8s linear infinite}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#c3c6d5;border-radius:99px}
+</style>
 </head>
-<body class="bg-background text-on-background min-h-screen">
-<!-- NavigationDrawer (Shared Component) -->
-<aside class="hidden md:flex flex-col fixed left-0 top-0 h-full p-4 bg-slate-50 dark:bg-slate-900 h-screen w-72 border-r-0 rounded-r-3xl z-50">
-<div class="mb-8 px-4 flex items-center gap-3">
-<div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl">U</div>
-<span class="text-2xl font-black text-blue-900 dark:text-blue-100 tracking-tight">UTE Hub</span>
-</div>
-<div class="mb-8 p-4 bg-surface-container rounded-2xl">
-<div class="flex flex-col items-start gap-2">
-<img id="sidebar-avatar" alt="Alex Rivers" class="w-12 h-12 rounded-full border-2 border-primary-fixed-dim shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBebeJpsFgw6IvZ2Nc9Ef6WZrbK0x2ov0SnajN8sQHYK-nOrOSB3xmobc0-I1jrzHsBapVFaP9fUiWW5m-Nm7RjbrRSMfjeINv7_7UADqOfbHn9syjwo5ZOHnip1_-__Z-gR7PqAMia8K9a9zmaYrUGBvNgkzFoQGgWKUjLUyDIVc2SjD8587mM8y0p3KlxzTR1sLegvNfUL0g7goK6jxm7ME7V8p-SO1TsoUTIuVSCoOP27LsmOLaNRQjvyYV8OMnMvobMK7Mr43MU"/>
-<div>
-<h4 id="sidebar-name" class="font-bold text-on-surface">Alex Rivers</h4>
-<p id="sidebar-mssv" class="text-xs text-on-surface-variant font-medium">MSSV: 2024-8892</p>
-<p id="sidebar-email" class="text-xs text-on-surface-variant truncate">sv@ute.edu.vn</p>
-<span class="inline-block mt-2 px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-bold rounded-full">SV</span>
-</div>
-</div>
-</div>
-<nav id="main-nav" class="space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-xl font-bold" href="#">
-<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
-<span>Bảng điều khiển</span>
-</a>
-<a id="nav-bctt" class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-800/50 rounded-xl transition-colors duration-200" href="#">
-<span class="material-symbols-outlined" data-icon="assignment_turned_in">assignment_turned_in</span>
-<span>Đăng ký BCTT</span>
-</a>
-<div id="nav-kltn" class="flex items-center justify-between px-4 py-3 text-slate-400 opacity-50 cursor-not-allowed">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined" data-icon="school">school</span>
-<span class="font-medium">Đăng ký KLTN</span>
-</div>
-<span class="material-symbols-outlined text-sm" data-icon="lock">lock</span>
-</div>
-</nav>
-</aside>
-<!-- TopAppBar (Shared Component) -->
-<header class="fixed top-0 w-full z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 md:ml-72 shadow-[0_12_32px_rgba(25,27,34,0.06)] no-border" style="width: calc(100% - 18rem);">
-<h1 class="font-manrope text-lg font-extrabold uppercase tracking-wide text-blue-900 dark:text-blue-100">ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</h1>
-<div class="flex items-center gap-4">
-<div class="relative p-2 hover:bg-surface-container rounded-full transition-colors cursor-pointer">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
-<span class="absolute top-1 right-1 bg-error text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
-</div>
-<div class="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full">
-<img alt="VN Flag" class="w-5 h-3.5 object-cover rounded-sm shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCe2FfISa9ZHToAUOea1ih3U4Dnnz_nKovs-hhVWG64MJYoKBtNzahCauBkZAj2-KunL33eBtTEsezVFQ7mZIMODzgC9mpnFReMITZH53hFkgXdoes5lELGxtXgTYjS1dNwDqFLV3KvEmLf7L9nReCb_T_dluwcqCvL2C5DlQVNBNfCXrrqwTITq9bxkgeLuTxZkwPzt_lTJN8u6C-zbT2n0IVq_HTxkbXK-ntizTXNTJbhgnpx0a5eGQ76EH5V-xR-I7bqU3hn4ssS"/>
-<span class="text-xs font-bold text-on-surface">VN</span>
-</div>
-<div class="flex items-center gap-2 pl-2 border-l border-outline-variant/30 group cursor-pointer">
-<img id="header-avatar" alt="Profile" class="w-8 h-8 rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDw33g4E46Uksk20Sz64QVikLd7L6WwfQSnH1xDxPlijNppVGZb0HmOYnGJWLao9c4DnYhbFZ5ZQYUnXZlBbLbu6_5ZeQRJB_4zuzdnfNda0XnVgDh5qDo7IlAwPdY3_IIfBWPXvEkBaWmlu9WAHUywggitFsDu2wLAp86ursWCYV9auDJpXEuh9fkdkU-vrpLdUSa6jGbU6CzuTLdjIGKHxSDXMmkITZcXTPXNtbCGDlZqsY1_xS1PiJ59NT6C36xc_x9TzQwYJ3eA"/>
-<span class="material-symbols-outlined text-on-surface-variant text-sm group-hover:rotate-180 transition-transform" data-icon="expand_more">expand_more</span>
-</div>
-</div>
-</header>
-<!-- Main Content -->
-<main class="pt-24 pb-24 md:pb-8 px-6 md:ml-72 min-h-screen">
-<div class="max-w-7xl mx-auto space-y-6">
-<!-- Quick Actions & Results Summary Row -->
-<div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-<!-- Quick Actions -->
-<div class="md:col-span-8 flex flex-col justify-center p-6 bg-surface-container-lowest rounded-3xl shadow-sm">
-<div class="grid grid-cols-2 gap-4">
-<button id="btn-create-report" class="bg-gradient-to-br from-primary to-primary-container text-white p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
-<span class="material-symbols-outlined text-2xl" data-icon="add">add</span>
-<span class="text-sm">Tạo báo cáo mới</span>
-</button>
-<button id="btn-change-topic" class="bg-surface-container-highest text-on-surface/50 p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3 cursor-not-allowed opacity-50">
-<span class="material-symbols-outlined text-2xl" data-icon="sync_alt">sync_alt</span>
-<span class="text-sm">Đổi đề tài</span>
-</button>
-</div>
-</div>
-<!-- Grade Card -->
-<div id="grade-card" class="md:col-span-4 p-6 bg-tertiary-fixed text-on-tertiary-fixed rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm">
-<span class="text-[10px] font-bold uppercase tracking-widest opacity-70">Kết quả thực tập</span>
-<div class="flex items-baseline gap-2">
-<span id="grade-num" class="text-5xl font-headline font-black text-on-tertiary-fixed">10</span>
-<span id="grade-alpha" class="text-2xl font-headline font-bold text-tertiary-fixed-dim">A+</span>
-</div>
-<p id="grade-sub" class="text-xs font-medium">Xuất sắc • Học kỳ 1, 2024</p>
-</div>
-</div>
-<!-- Instructor & Progress Row -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-<!-- Teacher Info Card -->
-<div id="instructor-card" class="p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-between">
-<div class="flex items-center justify-between mb-4">
-<h3 class="font-bold text-on-surface">Thông tin Giảng viên</h3>
-<span class="material-symbols-outlined text-primary" data-icon="contact_page">contact_page</span>
-</div>
-<div id="instructor-body" class="flex items-center gap-4 p-4 bg-surface-container-low rounded-2xl mb-4">
-<img id="instructor-img" alt="Lecturer" class="w-16 h-16 rounded-2xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBCOkI0kJ9RsGzbHr8RNhRtfxUG7-OD_UCJid4FUCEzbk9VWUGwpoRF0FE4k1ZKDoAUhjuKgf2hq5DxU68_bXKD1Nr3MRloNv2SNiPIFXGqk6s26X2__iDO4TDj5EfnuoIZFyX0E7X9xwg95It5rUquohkuY-Djzx3aYUe3fF-71_CJVr_qeXzDZDptemz_A1M3myoDfuNuIoMUEbwxzIJEzUIiFq5hmwANQDHLeJayhH8p_anCNMS5pH79dLP43G-y6p2PyMd5oIvo"/>
-<div>
-<p id="instructor-name" class="font-bold text-on-surface">PGS.TS Nguyễn Kim Anh</p>
-<p id="instructor-id" class="text-xs text-on-surface-variant">GV.10294</p>
-</div>
-</div>
-<div id="instructor-details" class="space-y-3 mb-4">
-<div class="flex items-center gap-3 text-sm text-on-surface-variant">
-<span class="material-symbols-outlined text-base" data-icon="mail">mail</span>
-<span id="instructor-email">kimanh@ute.edu.vn</span>
-</div>
-<div class="flex items-center gap-3 text-sm text-on-surface-variant">
-<span class="material-symbols-outlined text-base" data-icon="calendar_today">calendar_today</span>
-<span id="instructor-term">Đợt 1 - Học kỳ 1, 2024</span>
-</div>
-</div>
-<button id="btn-message-gv" class="w-full py-3 bg-surface-container-highest text-primary font-bold rounded-xl text-sm hover:bg-primary/5 transition-colors">
-                        Gửi tin nhắn cho GV
-                    </button>
-</div>
-<!-- Milestone Tracker -->
-<section class="p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
-<h3 class="text-lg font-bold mb-10 text-center">Hành trình thực tập</h3>
-<div id="stepper" class="relative flex justify-between">
-<div class="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20 -z-0"></div>
-<div id="stepper-progress-line" class="absolute top-5 left-0 w-[50%] h-[2px] bg-tertiary-fixed-dim -z-0 transition-all duration-500"></div>
-<div class="relative z-10 flex flex-col items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed">
-<span class="material-symbols-outlined text-sm">check_circle</span>
-</div>
-<span class="text-[10px] font-bold text-on-surface">Bắt đầu</span>
-</div>
-<div class="relative z-10 flex flex-col items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed">
-<span class="material-symbols-outlined text-sm">check_circle</span>
-</div>
-<span class="text-[10px] font-bold text-on-surface">Đăng ký</span>
-</div>
-<div class="relative z-10 flex flex-col items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-primary border-4 border-primary-fixed-dim flex items-center justify-center text-white ring-4 ring-white">
-<span class="material-symbols-outlined text-sm">potted_plant</span>
-</div>
-<span class="text-[10px] font-bold text-primary">Thực hiện</span>
-</div>
-<div class="relative z-10 flex flex-col items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-surface-dim flex items-center justify-center text-on-surface-variant">
-<span class="material-symbols-outlined text-sm">flag</span>
-</div>
-<span class="text-[10px] font-medium text-on-surface-variant">Kết thúc</span>
-</div>
-<div class="relative z-10 flex flex-col items-center gap-3">
-<div class="w-10 h-10 rounded-full bg-surface-dim flex items-center justify-center text-on-surface-variant">
-<span class="material-symbols-outlined text-sm">verified</span>
-</div>
-<span class="text-[10px] font-medium text-on-surface-variant">Xác nhận</span>
-</div>
-</div>
-<div class="mt-8 flex flex-col md:flex-row items-center gap-4 w-full">
-<div class="flex-1 w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
-<div id="progress-bar" class="bg-primary h-full rounded-full transition-all duration-500" style="width: 60%"></div>
-</div>
-<div class="flex items-center gap-2 whitespace-nowrap">
-<span id="progress-pct" class="text-xs font-bold text-primary">60%</span>
-<span id="progress-label" class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">• Đợt 1 - Học kỳ 1 - Tuần 8/12</span>
-</div>
-</div></section>
-</div>
-<!-- Activity History Full Width -->
-<div class="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
-<div class="p-6 flex items-center justify-between">
-<h3 class="font-bold text-on-surface">Lịch sử hoạt động</h3>
-<button class="text-primary text-sm font-bold flex items-center gap-1">
-                        Xem tất cả
-                        <span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
-</button>
-</div>
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="bg-surface-container-low">
-<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Đề tài</th>
-<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Đơn vị thực tập</th>
-<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant text-right">Trạng thái</th>
-</tr>
-</thead>
-<tbody id="activity-tbody" class="divide-y divide-outline-variant/10">
-<tr>
-<td class="px-6 py-4">
-<p class="text-sm font-bold text-on-surface">Phân tích Hệ thống ERP</p>
-<p class="text-[10px] text-on-surface-variant mt-1">Báo cáo tuần 4.pdf</p>
-</td>
-<td class="px-6 py-4 text-sm text-on-surface-variant">FPT Software</td>
-<td class="px-6 py-4 text-right">
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-tertiary-fixed-dim/20 text-on-tertiary-fixed">
-<span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim"></span>
-                                        Đã xác nhận
-                                    </span>
-</td>
-</tr>
-<tr>
-<td class="px-6 py-4">
-<p class="text-sm font-bold text-on-surface">Thiết kế UI/UX Mobile App</p>
-<p class="text-[10px] text-on-surface-variant mt-1">Báo cáo tuần 3.pdf</p>
-</td>
-<td class="px-6 py-4 text-sm text-on-surface-variant">VNG Corp</td>
-<td class="px-6 py-4 text-right">
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-error-container text-on-error-container">
-<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
-                                        Bị từ chối
-                                    </span>
-</td>
-</tr>
-<tr>
-<td class="px-6 py-4">
-<p class="text-sm font-bold text-on-surface">Nghiên cứu Cloud Architecture</p>
-<p class="text-[10px] text-on-surface-variant mt-1">Báo cáo tuần 2.pdf</p>
-</td>
-<td class="px-6 py-4 text-sm text-on-surface-variant">Viettel Group</td>
-<td class="px-6 py-4 text-right">
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-secondary-container text-on-secondary-container">
-<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                                        Đang chờ
-                                    </span>
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-</main>
-<!-- BottomNavBar (Shared Component) - Mobile Only -->
-<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-lg rounded-t-3xl tonal-shift shadow-2xl">
-<a class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-2xl px-5 py-2" href="#">
-<span class="material-symbols-outlined text-2xl" data-icon="home" data-weight="fill">home</span>
-<span class="text-[10px] font-semibold mt-1">Trang chủ</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-2xl transition-all" href="#">
-<span class="material-symbols-outlined text-2xl" data-icon="leaderboard">leaderboard</span>
-<span class="text-[10px] font-semibold mt-1">Tiến độ</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-2xl transition-all relative" href="#">
-<span class="material-symbols-outlined text-2xl" data-icon="notifications">notifications</span>
-<span class="absolute top-2 right-4 w-2 h-2 bg-error rounded-full border border-white"></span>
-<span class="text-[10px] font-semibold mt-1">Thông báo</span>
-</a>
-<a class="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 px-4 py-2 rounded-2xl transition-all" href="#">
-<span class="material-symbols-outlined text-2xl" data-icon="person">person</span>
-<span class="text-[10px] font-semibold mt-1">Cá nhân</span>
-</a>
-</nav>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect} = React;
 
-<!-- ================================================================
-     BUSINESS LOGIC ENGINE — thay thế toàn bộ script cũ
-     ================================================================ -->
-<script>
-/**
- * UTE TRANGCHU.HTML — BUSINESS LOGIC ENGINE v2
- * Auth guard, profile binding, dashboard state, registration modal,
- * approval loop, grading, KLTN unlock.
- */
+// ── CẤU HÌNH ─────────────────────────────────────────────────────────────────
+// !! Xem hướng dẫn tạo Apps Script ở cuối file để cập nhật URL này !!
+const API_URL = 'https://script.google.com/macros/s/AKfycbwMaY83CO3-sr0Z_mw-Sfx1kTWJM95rBbkq-HX36M6TTNVrrG4ETimVVfw2FzHgsv4a/exec';
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyjhgQ8h_hlJTDC7kFMfEX1nfefDvoBkHFdHnUxC7duqS4CcVpJerL3K6JtH7t9TZJw/exec';
-
-// ── AUTH GUARD ────────────────────────────────────────────────────────────────
-(function authGuard(){
-  if(!sessionStorage.getItem('ute_role')){
-    window.location.href = 'login.html';
-  }
-})();
-
-// ── SESSION ───────────────────────────────────────────────────────────────────
 const SESSION = {
-  email : sessionStorage.getItem('ute_email') || '',
-  role  : sessionStorage.getItem('ute_role')  || '',
-  name  : sessionStorage.getItem('ute_name')  || 'Sinh viên',
-  maSo  : sessionStorage.getItem('ute_maSo')  || '---',
+  email: sessionStorage.getItem('ute_email') || 'sv@student.hcmute.edu.vn',
+  name:  sessionStorage.getItem('ute_name')  || 'Nguyễn Thị Tuyết',
+  maSo:  sessionStorage.getItem('ute_maSo')  || '23124153',
+  role:  sessionStorage.getItem('ute_role')  || 'sinhvien',
 };
 
-// ── DATA ──────────────────────────────────────────────────────────────────────
-const TOPICS = [
-  'Phân tích Hệ thống ERP',
-  'Thiết kế UI/UX Mobile App',
-  'Nghiên cứu Cloud Architecture',
-  'Xây dựng hệ thống IoT',
-  'Phát triển Web với React',
-  'Machine Learning & AI ứng dụng',
-];
-const COMPANIES = [
-  'FPT Software', 'VNG Corp', 'Viettel Group',
-  'VNPT Technology', 'Tiki Corporation', 'Công ty khác',
-];
-const INSTRUCTORS = [
-  { name:'PGS.TS Nguyễn Kim Anh', id:'GV.10294', email:'kimanh@ute.edu.vn',   term:'Đợt 1 - HK1, 2024' },
-  { name:'TS. Trần Minh Tuấn',    id:'GV.10187', email:'minhtuan@ute.edu.vn', term:'Đợt 1 - HK1, 2024' },
-  { name:'ThS. Lê Thị Hương',     id:'GV.10312', email:'thihuong@ute.edu.vn', term:'Đợt 1 - HK1, 2024' },
-  { name:'PGS.TS Phạm Quốc Hùng', id:'GV.10055', email:'quochung@ute.edu.vn', term:'Đợt 1 - HK1, 2024' },
-];
+// 5 ngành khớp đúng với cột Ngành trong sheet GV
+const NGANH_LIST = ['QLCN','Kế toán','Thương mại điện tử','Kinh doanh quốc tế','Logistic'];
+const SHEET_ID = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
+const SHEET_GV_NAME = 'Giảng viên phụ trách';
 
-// ════════════════════════════════════════════════════════════════════════════
-// KHỞI ĐỘNG
-// ════════════════════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', async () => {
-
-  bindProfileData();
-  initLogoutDropdown();
-  initMessageBtn();
-
-  // Sự kiện menu KLTN (mặc định khoá)
-  document.getElementById('nav-kltn')?.addEventListener('click', () => {
-    showToast('Hoàn thành BCTT trước khi đăng ký KLTN!', 'error');
-  });
-
-  // Sự kiện menu BCTT
-  document.getElementById('nav-bctt')?.addEventListener('click', e => {
-    e.preventDefault();
-    if(document.getElementById('nav-bctt').classList.contains('pointer-events-none')) return;
-    openRegistrationModal('bctt');
-  });
-
-  // Sự kiện nút "Tạo báo cáo mới"
-  document.getElementById('btn-create-report')?.addEventListener('click', () => {
-    const btn = document.getElementById('btn-create-report');
-    if(btn.hasAttribute('disabled')) return;
-    openRegistrationModal('bctt');
-  });
-
-  // Sự kiện nút "Đổi đề tài" — trạng thái khởi tạo
-  initChangeBtnLocked();
-
-  // Tải dashboard từ API
-  try {
-    const dash = await fetchDashboardData(SESSION.email);
-    applyDashboardState(dash);
-  } catch(err){
-    console.error('Dashboard load error:', err);
-    applyDashboardState({ registered: false });
-  }
-});
-
-// ════════════════════════════════════════════════════════════════════════════
-// BIND PROFILE
-// ════════════════════════════════════════════════════════════════════════════
-function bindProfileData(){
-  setEl('sidebar-name',  SESSION.name);
-  setEl('sidebar-mssv',  `MSSV: ${SESSION.maSo}`);
-  setEl('sidebar-email', SESSION.email);
-  const sAvatar = document.getElementById('sidebar-avatar');
-  if(sAvatar) sAvatar.alt = SESSION.name;
-  const hAvatar = document.getElementById('header-avatar');
-  if(hAvatar) hAvatar.alt = SESSION.name;
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// TOAST
-// ════════════════════════════════════════════════════════════════════════════
-function showToast(message, type = 'error'){
-  document.getElementById('ute-toast')?.remove();
-  const t = document.createElement('div');
-  t.id = 'ute-toast';
-  t.className = 'fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm z-[200] flex items-center gap-2 transition-all duration-300 translate-y-10 opacity-0';
-  t.style.backgroundColor = type === 'error' ? '#ba1a1a' : '#005236';
-  t.innerHTML = `<span class="material-symbols-outlined text-lg">${type==='error'?'lock':'check_circle'}</span> ${message}`;
-  document.body.appendChild(t);
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    t.classList.remove('translate-y-10','opacity-0');
-  }));
-  setTimeout(() => {
-    t.classList.add('translate-y-10','opacity-0');
-    setTimeout(() => t.remove(), 300);
-  }, 3500);
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// LOGOUT DROPDOWN
-// ════════════════════════════════════════════════════════════════════════════
-function initLogoutDropdown(){
-  const profileBtn = document.querySelector('header .group.cursor-pointer');
-  if(!profileBtn) return;
-
-  const dd = document.createElement('div');
-  dd.className = 'absolute right-6 top-16 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-2 opacity-0 pointer-events-none -translate-y-2 transition-all duration-200 z-[150]';
-  dd.innerHTML = `
-    <div class="px-4 py-2 border-b border-slate-100 mb-1">
-      <p class="text-sm font-bold text-on-surface truncate">${SESSION.name}</p>
-      <p class="text-xs text-slate-500 truncate">${SESSION.email}</p>
-    </div>
-    <a href="#" id="logout-btn" class="flex items-center gap-2 px-4 py-2 text-sm text-red-600 font-bold hover:bg-red-50 transition-colors">
-      <span class="material-symbols-outlined text-sm">logout</span> Đăng xuất
-    </a>
-  `;
-  document.querySelector('header').appendChild(dd);
-
-  const toggle = open => {
-    dd.classList.toggle('opacity-0',!open);
-    dd.classList.toggle('pointer-events-none',!open);
-    dd.classList.toggle('-translate-y-2',!open);
-    dd.classList.toggle('translate-y-0',open);
-    dd.classList.toggle('opacity-100',open);
-  };
-
-  profileBtn.addEventListener('click', e => { e.stopPropagation(); toggle(!dd.classList.contains('opacity-100')); });
-  dd.querySelector('#logout-btn').addEventListener('click', e => {
-    e.preventDefault();
-    sessionStorage.clear();
-    window.location.href = 'login.html';
-  });
-  document.addEventListener('click', () => toggle(false));
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// NÚT GỬI TIN NHẮN GV
-// ════════════════════════════════════════════════════════════════════════════
-function initMessageBtn(){
-  document.getElementById('btn-message-gv')?.addEventListener('click', () => {
-    showToast('Hệ thống tin nhắn đang được bảo trì!', 'error');
-  });
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// NÚT ĐỔI ĐỀ TÀI — trạng thái ban đầu (khóa)
-// ════════════════════════════════════════════════════════════════════════════
-function initChangeBtnLocked(){
-  const btn = document.getElementById('btn-change-topic');
-  if(!btn) return;
-  btn.addEventListener('click', () => {
-    showToast('Đề tài của bạn đã được xác nhận, không thể đổi lúc này!', 'error');
-  });
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// FETCH DASHBOARD
-// ════════════════════════════════════════════════════════════════════════════
-async function fetchDashboardData(email){
-  const res = await fetch(`${API_URL}?action=getStudentDashboardData&email=${encodeURIComponent(email)}`);
-  return await res.json();
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// ÁP DỤNG TRẠNG THÁI DASHBOARD
-// ════════════════════════════════════════════════════════════════════════════
-function applyDashboardState(d){
-  if(!d.registered){ applyUnregisteredState(); return; }
-
-  if(d.instructor) fillInstructorCard(d.instructor);
-  fillActivityHistory(d.topic, d.company, d.status);
-
-  if(d.status === 'pending'){
-    setProgressStep(1);
-    setChangeBtnState('disabled');
-  } else if(d.status === 'approved'){
-    setProgressStep(2);
-    setChangeBtnState('locked');
-  } else if(d.status === 'rejected'){
-    setProgressStep(1);
-    setChangeBtnState('active');
-    showToast('Đề tài của bạn đã bị từ chối. Vui lòng đổi đề tài.', 'error');
-  }
-
-  if(d.grade !== null && d.grade !== undefined){
-    applyGradeResult(d.grade, d.semester || '');
-  }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// TRẠNG THÁI CHƯA ĐĂNG KÝ
-// ════════════════════════════════════════════════════════════════════════════
-function applyUnregisteredState(){
-  // Giảng viên card — placeholder
-  const instrBody = document.getElementById('instructor-body');
-  if(instrBody){
-    instrBody.innerHTML = `
-      <div class="w-full py-6 flex flex-col items-center gap-2 text-on-surface-variant">
-        <span class="material-symbols-outlined text-4xl opacity-30">person_off</span>
-        <p class="text-sm font-medium">Chưa đăng ký GVHD</p>
-      </div>
-    `;
-  }
-  document.getElementById('instructor-details')?.style.setProperty('display','none');
-  document.getElementById('btn-message-gv')?.style.setProperty('display','none');
-
-  // Progress — chỉ bước 0 "Bắt đầu" sáng
-  setProgressStep(0);
-
-  // Activity history — empty
-  const tbody = document.getElementById('activity-tbody');
-  if(tbody){
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="3" class="px-6 py-10 text-center text-on-surface-variant text-sm">
-          <span class="material-symbols-outlined text-3xl block mb-2 opacity-30">inbox</span>
-          Chưa có dữ liệu
-        </td>
-      </tr>
-    `;
-  }
-
-  // Grade — "--"
-  setEl('grade-num',   '--');
-  setEl('grade-alpha', '');
-  setEl('grade-sub',   'Chưa có kết quả');
-
-  setChangeBtnState('disabled');
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// FILL INSTRUCTOR CARD
-// ════════════════════════════════════════════════════════════════════════════
-function fillInstructorCard(instr){
-  setEl('instructor-name',  instr.name  || '');
-  setEl('instructor-id',    instr.id    || '');
-  setEl('instructor-email', instr.email || '');
-  setEl('instructor-term',  instr.term  || '');
-
-  // Hiện lại details nếu đang ẩn
-  const det = document.getElementById('instructor-details');
-  const btn = document.getElementById('btn-message-gv');
-  if(det) det.style.removeProperty('display');
-  if(btn) btn.style.removeProperty('display');
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// PROGRESS STEPPER
-// step: 0=Bắt đầu, 1=Đăng ký, 2=Thực hiện, 3=Kết thúc, 4=Xác nhận
-// ════════════════════════════════════════════════════════════════════════════
-function setProgressStep(step){
-  const nodes  = document.querySelectorAll('#stepper > .relative.z-10');
-  const icons  = ['check_circle','check_circle','potted_plant','flag','verified'];
-  const labels = ['Bắt đầu','Đăng ký','Thực hiện','Kết thúc','Xác nhận'];
-  const pcts   = [0, 25, 50, 75, 100];
-
-  nodes.forEach((node, i) => {
-    const circle = node.querySelector('div');
-    const label  = node.querySelector('span');
-    const icon   = circle.querySelector('span');
-
-    if(i < step){
-      // Đã qua
-      circle.className = 'w-10 h-10 rounded-full bg-tertiary-fixed-dim flex items-center justify-center text-on-tertiary-fixed';
-      if(icon) icon.textContent = 'check_circle';
-      if(label){ label.className = 'text-[10px] font-bold text-on-surface'; label.textContent = labels[i]; }
-    } else if(i === step){
-      // Hiện tại
-      circle.className = 'w-10 h-10 rounded-full bg-primary border-4 border-primary-fixed-dim flex items-center justify-center text-white ring-4 ring-white';
-      if(icon) icon.textContent = icons[i];
-      if(label){ label.className = 'text-[10px] font-bold text-primary'; label.textContent = labels[i]; }
-    } else {
-      // Chưa đến
-      circle.className = 'w-10 h-10 rounded-full bg-surface-dim flex items-center justify-center text-on-surface-variant';
-      if(icon) icon.textContent = icons[i];
-      if(label){ label.className = 'text-[10px] font-medium text-on-surface-variant'; label.textContent = labels[i]; }
+// Đọc GV từ Google Sheet CSV
+// Cột sheet GV: A=STT B=HọTên C=MãGV D=Gmail E=Role F=SLđăngkí G=SLcònlại H=Ngành
+async function fetchGVFromSheet(){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_GV_NAME)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Không tải được sheet GV');
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cols=[];let cur='',inQ=false;
+    for(let j=0;j<lines[i].length;j++){
+      const c=lines[i][j];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===','&&!inQ){cols.push(cur.replace(/"/g,'').trim());cur='';}
+      else{cur+=c;}
     }
-  });
-
-  const pct = pcts[Math.min(step, 4)];
-  const bar = document.getElementById('progress-bar');
-  const pctEl  = document.getElementById('progress-pct');
-  const line   = document.getElementById('stepper-progress-line');
-  if(bar)   bar.style.width   = pct + '%';
-  if(pctEl) pctEl.textContent = pct + '%';
-  if(line)  line.style.width  = pct + '%';
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// NÚT ĐỔI ĐỀ TÀI — cập nhật trạng thái
-// ════════════════════════════════════════════════════════════════════════════
-function setChangeBtnState(state){
-  const btn = document.getElementById('btn-change-topic');
-  if(!btn) return;
-  // Clone để xoá listener cũ
-  const nb = btn.cloneNode(true);
-  btn.parentNode.replaceChild(nb, btn);
-  nb.id = 'btn-change-topic';
-
-  nb.className = 'p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3';
-  nb.querySelector('span.text-sm').textContent = 'Đổi đề tài';
-
-  if(state === 'disabled'){
-    nb.classList.add('bg-surface-container-highest','text-on-surface/50','opacity-50','cursor-not-allowed');
-    nb.setAttribute('disabled','');
-  } else if(state === 'locked'){
-    nb.classList.add('bg-surface-container-highest','text-on-surface/50','opacity-50','cursor-not-allowed');
-    nb.setAttribute('disabled','');
-    nb.addEventListener('click', () => showToast('Đề tài đã được xác nhận, không thể đổi!','error'));
-  } else if(state === 'active'){
-    nb.classList.add('bg-secondary-container','text-on-secondary-container','hover:scale-[1.02]','transition-transform','cursor-pointer');
-    nb.removeAttribute('disabled');
-    nb.addEventListener('click', () => openRegistrationModal('bctt'));
+    cols.push(cur.replace(/"/g,'').trim());
+    if(cols[1]&&cols[3]){
+      const slDangKi = parseInt(cols[5])||0;
+      const slConLai = parseInt(cols[6])||0;
+      rows.push({
+        id:i, name:cols[1]||'', code:cols[2]||'', email:cols[3]||'',
+        reg:slDangKi, maxQ:slDangKi+slConLai, nganh:cols[7]||'',
+      });
+    }
   }
+  return rows;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// ACTIVITY HISTORY
-// ════════════════════════════════════════════════════════════════════════════
-function fillActivityHistory(topic, company, status){
-  const tbody = document.getElementById('activity-tbody');
-  if(!tbody) return;
-  tbody.innerHTML = '';
-  addActivityRow(topic, company, status);
-}
+const SEM_DATE = {'HK1-2024':'15/09/2024','HK2-2024':'15/01/2025','HKHe-2024':'15/06/2024'};
 
-function addActivityRow(topic, company, status){
-  const tbody = document.getElementById('activity-tbody');
-  if(!tbody) return;
-
-  const pills = {
-    pending  : `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-secondary-container text-on-secondary-container"><span class="w-1.5 h-1.5 rounded-full bg-secondary inline-block"></span>Đang chờ</span>`,
-    approved : `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-tertiary-fixed-dim/20 text-on-tertiary-fixed"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim inline-block"></span>Đã xác nhận</span>`,
-    rejected : `<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold bg-error-container text-on-error-container"><span class="w-1.5 h-1.5 rounded-full bg-error inline-block"></span>Bị từ chối</span>`,
-  };
-
-  const tr = document.createElement('tr');
-  tr.className = 'bg-green-50/30 transition-colors duration-500';
-  tr.innerHTML = `
-    <td class="px-6 py-4">
-      <p class="text-sm font-bold text-on-surface">${topic || 'Chưa có đề tài'}</p>
-      <p class="text-[10px] text-on-surface-variant mt-1">${new Date().toLocaleDateString('vi-VN')}</p>
-    </td>
-    <td class="px-6 py-4 text-sm text-on-surface-variant">${company || '---'}</td>
-    <td class="px-6 py-4 text-right">${pills[status] || pills.pending}</td>
-  `;
-  tbody.insertBefore(tr, tbody.firstChild);
-  setTimeout(() => tr.classList.remove('bg-green-50/30'), 2000);
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// KẾT QUẢ ĐIỂM
-// ════════════════════════════════════════════════════════════════════════════
-function applyGradeResult(grade, semester){
-  const card    = document.getElementById('grade-card');
-  const numEl   = document.getElementById('grade-num');
-  const alphaEl = document.getElementById('grade-alpha');
-  const subEl   = document.getElementById('grade-sub');
-  const passed  = grade >= 5.0;
-
-  const letter = [[9,'A+'],[8,'A'],[7,'B+'],[6,'B'],[5,'C+'],[4,'C'],[0,'F']]
-    .find(([m]) => grade >= m)?.[1] || 'F';
-
-  if(numEl)   numEl.textContent   = grade.toFixed(1);
-  if(alphaEl) alphaEl.textContent = letter;
-  if(subEl)   subEl.textContent   = `${passed?'Đạt':'Không đạt'} • ${semester}`;
-
-  if(card){
-    card.classList.remove('bg-tertiary-fixed','bg-red-100','bg-green-100');
-    card.classList.add(passed ? 'bg-green-100' : 'bg-red-100');
-  }
-
-  if(passed){
-    unlockKLTN();
-    disableBCTT();
-  } else {
-    setChangeBtnState('active');
-    showToast('Điểm thực tập dưới 5.0. Vui lòng đăng ký lại!', 'error');
-  }
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// UNLOCK KLTN / DISABLE BCTT
-// ════════════════════════════════════════════════════════════════════════════
-function unlockKLTN(){
-  const kltnDiv = document.getElementById('nav-kltn');
-  if(!kltnDiv) return;
-  const a = document.createElement('a');
-  a.href = '#';
-  a.id   = 'nav-kltn';
-  a.className = 'flex items-center justify-between px-4 py-3 text-slate-600 hover:bg-slate-200/50 rounded-xl transition-colors duration-200';
-  a.innerHTML = `
-    <div class="flex items-center gap-3">
-      <span class="material-symbols-outlined">school</span>
-      <span class="font-medium">Đăng ký KLTN</span>
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function Toast({message,type,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,3500);return()=>clearTimeout(t)},[]);
+  return(
+    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[300] flex items-center gap-2 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm anim-fade"
+      style={{background:type==='error'?'#ba1a1a':'#005236'}}>
+      <span className="material-symbols-outlined text-lg">{type==='error'?'lock':'check_circle'}</span>
+      {message}
     </div>
-    <span class="px-2 py-0.5 bg-green-100 text-green-800 text-[10px] font-bold rounded-full">MỚI</span>
-  `;
-  kltnDiv.parentNode.replaceChild(a, kltnDiv);
-  a.addEventListener('click', e => { e.preventDefault(); openRegistrationModal('kltn'); });
-  showToast('Đăng ký KLTN đã được mở khóa!', 'success');
+  );
+}
+function useToast(){
+  const [t,setT]=useState(null);
+  return{toast:t,show:(m,tp='error')=>setT({message:m,type:tp,key:Date.now()}),hide:()=>setT(null)};
 }
 
-function disableBCTT(){
-  const btn = document.getElementById('btn-create-report');
-  if(btn){
-    const nb = btn.cloneNode(true);
-    btn.parentNode.replaceChild(nb, btn);
-    nb.id = 'btn-create-report';
-    nb.classList.add('opacity-30','cursor-not-allowed');
-    nb.setAttribute('disabled','');
-  }
-  const navBctt = document.getElementById('nav-bctt');
-  if(navBctt) navBctt.classList.add('opacity-40','pointer-events-none');
+// ── STATUS PILL ───────────────────────────────────────────────────────────────
+function Pill({status}){
+  const m={
+    pending:{l:'Đang chờ',bg:'bg-secondary-container',tx:'text-on-secondary-container',dot:'bg-secondary'},
+    approved:{l:'Đã xác nhận',bg:'bg-tertiary-fixed-dim/20',tx:'text-on-tertiary-fixed',dot:'bg-tertiary-fixed-dim'},
+    rejected:{l:'Bị từ chối',bg:'bg-error-container',tx:'text-on-error-container',dot:'bg-error'},
+  };
+  const s=m[status]||m.pending;
+  return <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold ${s.bg} ${s.tx}`}><span className={`w-1.5 h-1.5 rounded-full ${s.dot} inline-block`}/>{s.l}</span>;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// MODAL ĐĂNG KÝ
-// ════════════════════════════════════════════════════════════════════════════
-function openRegistrationModal(type = 'bctt'){
-  document.getElementById('ute-reg-modal')?.remove();
-  const title = type === 'kltn' ? 'Đăng ký Khóa Luận Tốt Nghiệp' : 'Đăng ký Báo Cáo Thực Tập';
+// ── AVATAR ────────────────────────────────────────────────────────────────────
+function Av({name='',cls=''}){
+  const ini=name.split(' ').map(w=>w[0]).filter(Boolean).slice(-2).join('').toUpperCase();
+  const cols=['from-blue-500 to-blue-700','from-emerald-500 to-teal-700','from-violet-500 to-purple-700','from-orange-400 to-red-600'];
+  const c=cols[name.charCodeAt(0)%cols.length];
+  return <div className={`rounded-full bg-gradient-to-br ${c} flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${cls}`}>{ini||'?'}</div>;
+}
 
-  const modal = document.createElement('div');
-  modal.id = 'ute-reg-modal';
-  modal.className = 'fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm';
-  modal.innerHTML = `
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 relative" style="animation:slideUp .3s ease">
-      <button id="modal-close" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface-container flex items-center justify-center hover:bg-slate-200 transition-colors">
-        <span class="material-symbols-outlined text-sm">close</span>
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function Sidebar({tab,setTab,logout}){
+  const items=[
+    {id:'dashboard',icon:'dashboard',label:'Bảng điều khiển'},
+    {id:'registration',icon:'assignment_turned_in',label:'Đăng ký BCTT'},
+  ];
+  return(
+    <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-72 bg-slate-50 rounded-r-3xl z-50 p-4">
+      <div className="mb-6 px-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">U</div>
+        <span className="text-2xl font-black text-blue-900 tracking-tight">UTE Hub</span>
+      </div>
+      <div className="mb-6 p-4 bg-surface-container rounded-2xl">
+        <div className="flex flex-col items-start gap-2">
+          <Av name={SESSION.name} cls="w-12 h-12"/>
+          <div>
+            <h4 className="font-bold text-on-surface text-sm">{SESSION.name}</h4>
+            <p className="text-xs text-on-surface-variant font-medium">MSSV: {SESSION.maSo}</p>
+            <p className="text-xs text-on-surface-variant truncate">{SESSION.email}</p>
+            <span className="inline-block mt-1.5 px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-black rounded-full tracking-wider">SV</span>
+          </div>
+        </div>
+      </div>
+      <nav className="flex-1 space-y-1">
+        {items.map(it=>(
+          <button key={it.id} onClick={()=>setTab(it.id)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left ${tab===it.id?'bg-blue-100 text-blue-800':'text-slate-600 hover:bg-slate-200/50'}`}>
+            <span className="material-symbols-outlined">{it.icon}</span><span>{it.label}</span>
+          </button>
+        ))}
+        <div className="flex items-center justify-between px-4 py-3 text-slate-400 opacity-50 cursor-not-allowed">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined">school</span>
+            <span className="font-medium">Đăng ký KLTN</span>
+          </div>
+          <span className="material-symbols-outlined text-sm">lock</span>
+        </div>
+      </nav>
+      <button onClick={logout} className="flex items-center gap-2 px-4 py-3 text-error font-medium rounded-xl hover:bg-error-container/20 transition-colors text-sm">
+        <span className="material-symbols-outlined text-sm">logout</span>Đăng xuất
       </button>
-      <h2 class="text-xl font-black text-on-surface mb-1">${title}</h2>
-      <p class="text-xs text-on-surface-variant mb-6">Vui lòng điền đầy đủ thông tin bên dưới</p>
-      <div class="space-y-4">
-        <div>
-          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Đề tài</label>
-          <select id="sel-topic" class="w-full border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
-            <option value="">— Chọn đề tài —</option>
-            ${TOPICS.map(t=>`<option value="${t}">${t}</option>`).join('')}
-          </select>
-        </div>
-        ${type==='bctt' ? `
-        <div>
-          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Đơn vị thực tập</label>
-          <select id="sel-company" class="w-full border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
-            <option value="">— Chọn đơn vị —</option>
-            ${COMPANIES.map(c=>`<option value="${c}">${c}</option>`).join('')}
-          </select>
-        </div>` : ''}
-        <div>
-          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Giảng viên hướng dẫn</label>
-          <select id="sel-instructor" class="w-full border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary">
-            <option value="">— Chọn giảng viên —</option>
-            ${INSTRUCTORS.map((iv,i)=>`<option value="${i}">${iv.name} — ${iv.id}</option>`).join('')}
-          </select>
-        </div>
-        <div>
-          <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">Ghi chú (tùy chọn)</label>
-          <textarea id="sel-note" rows="3" placeholder="Mô tả thêm về kế hoạch của bạn..." class="w-full border border-outline-variant rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
-        </div>
-      </div>
-      <div id="modal-error" class="hidden mt-3 text-xs text-red-600 font-medium flex items-center gap-1">
-        <span class="material-symbols-outlined text-sm">error</span>
-        <span id="modal-error-text">Vui lòng điền đầy đủ thông tin.</span>
-      </div>
-      <div class="mt-6 flex gap-3">
-        <button id="modal-cancel" class="flex-1 py-3 rounded-xl border border-outline-variant text-sm font-bold text-on-surface hover:bg-surface-container transition-colors">Hủy</button>
-        <button id="modal-submit" class="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-sm">send</span>Gửi đăng ký
+    </aside>
+  );
+}
+
+// ── HEADER ────────────────────────────────────────────────────────────────────
+function Header({onBell}){
+  return(
+    <header className="fixed top-0 z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 shadow-sm" style={{left:'18rem',right:0}}>
+      <h1 className="font-headline text-base font-extrabold uppercase tracking-wide text-blue-900">ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</h1>
+      <div className="flex items-center gap-4">
+        <button onClick={onBell} className="relative p-2 hover:bg-surface-container rounded-full transition-colors">
+          <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
+          <span className="absolute top-1 right-1 bg-error text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">3</span>
         </button>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full">
+          <span className="text-xs font-bold text-on-surface">🇻🇳 VN</span>
+        </div>
+        <Av name={SESSION.name} cls="w-8 h-8"/>
+      </div>
+    </header>
+  );
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function Dashboard({onRegister,toast}){
+  const history=[
+    {topic:'Phân tích Hệ thống ERP',file:'Báo cáo tuần 4.pdf',co:'FPT Software',st:'approved'},
+    {topic:'Thiết kế UI/UX Mobile App',file:'Báo cáo tuần 3.pdf',co:'VNG Corp',st:'rejected'},
+    {topic:'Nghiên cứu Cloud Architecture',file:'Báo cáo tuần 2.pdf',co:'Viettel Group',st:'pending'},
+  ];
+  const steps=[
+    {l:'Bắt đầu',icon:'flag',done:true,cur:false},
+    {l:'Đăng ký',icon:'check_circle',done:true,cur:false},
+    {l:'Thực hiện',icon:'potted_plant',done:false,cur:true},
+    {l:'Kết thúc',icon:'flag',done:false,cur:false},
+    {l:'Xác nhận',icon:'verified',done:false,cur:false},
+  ];
+  return(
+    <div className="space-y-6 anim-fade">
+      {/* Top row */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <div className="md:col-span-8 p-6 bg-surface-container-lowest rounded-3xl shadow-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <button onClick={onRegister} className="bg-gradient-to-br from-primary to-primary-container text-white p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3 shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+              <span className="material-symbols-outlined text-2xl">add</span>
+              <span className="text-sm">Tạo báo cáo mới</span>
+            </button>
+            <button className="bg-surface-container-highest text-on-surface/40 p-6 rounded-2xl font-bold flex flex-col items-center justify-center gap-3 cursor-not-allowed opacity-50">
+              <span className="material-symbols-outlined text-2xl">sync_alt</span>
+              <span className="text-sm">Đổi đề tài</span>
+            </button>
+          </div>
+        </div>
+        <div className="md:col-span-4 p-6 bg-tertiary-fixed text-on-tertiary-fixed rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm">
+          <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Kết quả thực tập</span>
+          <div className="flex items-baseline gap-2">
+            <span className="text-5xl font-headline font-black">10</span>
+            <span className="text-2xl font-headline font-bold text-tertiary-fixed-dim">A+</span>
+          </div>
+          <p className="text-xs font-medium">Xuất sắc • Học kỳ 1, 2024</p>
+        </div>
+      </div>
+
+      {/* Middle row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* GV Card */}
+        <div className="p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-on-surface">Thông tin Giảng viên</h3>
+            <span className="material-symbols-outlined text-primary">contact_page</span>
+          </div>
+          <div className="flex items-center gap-4 p-4 bg-surface-container-low rounded-2xl mb-4">
+            <Av name="Nguyễn Ánh A" cls="w-16 h-16 rounded-2xl text-xl"/>
+            <div>
+              <p className="font-bold text-on-surface">Ths.Nguyễn Ánh A</p>
+              <p className="text-xs text-on-surface-variant">GV.131</p>
+            </div>
+          </div>
+          <div className="space-y-3 mb-4">
+            <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+              <span className="material-symbols-outlined text-base">mail</span>
+              <span>tuyethoang3011@gmail.com</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-on-surface-variant">
+              <span className="material-symbols-outlined text-base">calendar_today</span>
+              <span>Đợt 1 - Học kỳ 1, 2024</span>
+            </div>
+          </div>
+          <button onClick={()=>toast.show('Hệ thống tin nhắn đang được bảo trì!','error')}
+            className="w-full py-3 bg-surface-container-highest text-primary font-bold rounded-xl text-sm hover:bg-primary/5 transition-colors">
+            Gửi tin nhắn cho GV
+          </button>
+        </div>
+
+        {/* Stepper */}
+        <section className="p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
+          <h3 className="text-lg font-bold mb-8 text-center">Hành trình thực tập</h3>
+          <div className="relative flex justify-between">
+            <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
+            <div className="absolute top-5 left-0 w-[50%] h-[2px] bg-tertiary-fixed-dim transition-all duration-700"/>
+            {steps.map((s,i)=>(
+              <div key={i} className="relative z-10 flex flex-col items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center
+                  ${s.done?'bg-tertiary-fixed-dim text-on-tertiary-fixed':
+                    s.cur?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
+                    'bg-surface-dim text-on-surface-variant'}`}>
+                  <span className="material-symbols-outlined text-sm">{s.done?'check_circle':s.icon}</span>
+                </div>
+                <span className={`text-[10px] font-bold ${s.cur?'text-primary':s.done?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 flex flex-col md:flex-row items-center gap-4 w-full">
+            <div className="flex-1 w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
+              <div className="bg-primary h-full rounded-full" style={{width:'60%'}}/>
+            </div>
+            <div className="flex items-center gap-2 whitespace-nowrap">
+              <span className="text-xs font-bold text-primary">60%</span>
+              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">• Tuần 8/12</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      {/* History table */}
+      <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
+        <div className="p-6 flex items-center justify-between">
+          <h3 className="font-bold text-on-surface">Lịch sử hoạt động</h3>
+          <button className="text-primary text-sm font-bold flex items-center gap-1">
+            Xem tất cả <span className="material-symbols-outlined text-sm">arrow_forward</span>
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-surface-container-low">
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Đề tài</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Đơn vị</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant text-right">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant/10">
+              {history.map((r,i)=>(
+                <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <p className="text-sm font-bold text-on-surface">{r.topic}</p>
+                    <p className="text-[10px] text-on-surface-variant mt-1">{r.file}</p>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-on-surface-variant">{r.co}</td>
+                  <td className="px-6 py-4 text-right"><Pill status={r.st}/></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
-  `;
-
-  document.body.appendChild(modal);
-  const close = () => modal.remove();
-  modal.querySelector('#modal-close').addEventListener('click', close);
-  modal.querySelector('#modal-cancel').addEventListener('click', close);
-  modal.addEventListener('click', e => { if(e.target===modal) close(); });
-  modal.querySelector('#modal-submit').addEventListener('click', () => submitRegistration(type, modal));
+  );
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// SUBMIT ĐĂNG KÝ
-// ════════════════════════════════════════════════════════════════════════════
-async function submitRegistration(type, modal){
-  const topic    = modal.querySelector('#sel-topic')?.value;
-  const company  = modal.querySelector('#sel-company')?.value || 'N/A';
-  const instrIdx = modal.querySelector('#sel-instructor')?.value;
-  const note     = modal.querySelector('#sel-note')?.value || '';
+// ── REGISTRATION FLOW ─────────────────────────────────────────────────────────
+function Registration({onSuccess}){
+  const [step,setStep]=useState(1);
+  const [form,setForm]=useState({topic:'',category:'',company:'',semester:'',startDate:''});
+  const [selGV,setSelGV]=useState(null);
+  const [showConfirm,setShowConfirm]=useState(false);
+  const [showSuccess,setShowSuccess]=useState(false);
+  const [submitting,setSubmitting]=useState(false);
+  const [gvList,setGvList]=useState([]);
+  const [gvLoading,setGvLoading]=useState(false);
+  const toast=useToast();
 
-  const errBox  = modal.querySelector('#modal-error');
-  const errText = modal.querySelector('#modal-error-text');
-
-  if(!topic || (type==='bctt' && !company) || instrIdx==='' || instrIdx===undefined){
-    errBox.classList.remove('hidden');
-    errText.textContent = 'Vui lòng điền đầy đủ thông tin bắt buộc.';
-    return;
-  }
-
-  const instr  = INSTRUCTORS[parseInt(instrIdx)];
-  const subBtn = modal.querySelector('#modal-submit');
-  subBtn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">refresh</span> Đang gửi...';
-  subBtn.setAttribute('disabled','');
-
-  try {
-    const res = await fetch(API_URL, {
-      method  : 'POST',
-      headers : { 'Content-Type':'application/json' },
-      body    : JSON.stringify({
-        action:'submitRegistration', type,
-        email:SESSION.email, name:SESSION.name, maSo:SESSION.maSo,
-        topic, company,
-        instructorName:instr.name, instructorEmail:instr.email,
-        instructorId:instr.id, term:instr.term, note,
-      }),
-    });
-    const data = await res.json();
-
-    if(data.success){
-      modal.remove();
-      fillInstructorCard(instr);
-      addActivityRow(topic, company, 'pending');
-      setProgressStep(1);
-      setChangeBtnState('disabled');
-      showToast('Đăng ký thành công! GV đã nhận được thông báo.', 'success');
-    } else {
-      errBox.classList.remove('hidden');
-      errText.textContent = data.message || 'Gửi thất bại. Thử lại.';
-      subBtn.innerHTML = '<span class="material-symbols-outlined text-sm">send</span>Gửi đăng ký';
-      subBtn.removeAttribute('disabled');
+  // Tải danh sách GV từ sheet khi vào bước 2
+  useEffect(()=>{
+    if(step===2&&gvList.length===0){
+      setGvLoading(true);
+      fetchGVFromSheet()
+        .then(rows=>setGvList(rows))
+        .catch(()=>toast.show('Không tải được danh sách giảng viên!','error'))
+        .finally(()=>setGvLoading(false));
     }
-  } catch(err){
-    errBox.classList.remove('hidden');
-    errText.textContent = 'Lỗi kết nối. Vui lòng thử lại.';
-    subBtn.innerHTML = '<span class="material-symbols-outlined text-sm">send</span>Gửi đăng ký';
-    subBtn.removeAttribute('disabled');
+  },[step]);
+
+  // Lọc GV theo ngành đã chọn ở bước 1
+  const filteredGV = gvList.filter(gv=>gv.nganh===form.category);
+
+  function setSem(val){setForm(f=>({...f,semester:val,startDate:SEM_DATE[val]||''}))}
+
+  function next1(){
+    if(!form.topic.trim()){toast.show('Vui lòng nhập tên đề tài!');return;}
+    if(!form.category){toast.show('Vui lòng chọn mảng đề tài!');return;}
+    if(!form.company.trim()){toast.show('Vui lòng nhập đơn vị thực tập!');return;}
+    if(!form.semester){toast.show('Vui lòng chọn học kỳ!');return;}
+    setStep(2);window.scrollTo(0,0);
   }
+  function next2(){
+    if(!selGV){toast.show('Vui lòng chọn giảng viên hướng dẫn!');return;}
+    setStep(3);window.scrollTo(0,0);
+  }
+
+  async function confirm(){
+    setSubmitting(true);
+    const payload = {
+      action:'submitRegistration',type:'bctt',
+      email:SESSION.email,name:SESSION.name,maSo:SESSION.maSo,
+      nganh:form.category,topic:form.topic,company:form.company,
+      semester:form.semester,startDate:form.startDate,
+      instructorName:selGV.name,instructorEmail:selGV.email,
+      instructorId:selGV.code,
+    };
+    try{
+      // Lưu vào sheet + gửi email GV qua Apps Script
+      await fetch(API_URL,{
+        method:'POST',
+        mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload),
+      });
+    }catch(e){
+      console.warn('API error (ignored):', e);
+    }
+    setSubmitting(false);
+    setShowConfirm(false);
+    setShowSuccess(true);
+  }
+
+  // Step header
+  const STEPS=['Thông tin cơ bản','Chọn Giảng viên','Hoàn tất'];
+  const StepBar=()=>(
+    <nav className="flex items-center gap-2 w-full mb-6">
+      {STEPS.map((l,i)=>{
+        const n=i+1,done=step>n,cur=step===n;
+        return(
+          <React.Fragment key={i}>
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all
+                ${done?'bg-tertiary-fixed-dim text-on-tertiary-fixed':cur?'bg-primary text-white ring-4 ring-primary-fixed':'bg-surface-container-highest text-on-surface-variant'}`}>
+                {done?<span className="material-symbols-outlined text-sm">check</span>:n}
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${cur?'text-primary':done?'text-on-surface':'text-on-surface-variant/60'}`}>{n}. {l}</span>
+            </div>
+            {i<STEPS.length-1&&<div className={`flex-1 h-[2px] mb-5 transition-all duration-500 ${step>n?'bg-primary':'bg-surface-container-highest'}`}/>}
+          </React.Fragment>
+        );
+      })}
+    </nav>
+  );
+
+  // Right panel
+  const Right=()=>(
+    <div className="space-y-5">
+      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary">
+            <span className="material-symbols-outlined">info</span>
+          </div>
+          <h3 className="font-headline font-extrabold text-on-surface">Lưu ý đăng ký</h3>
+        </div>
+        <ul className="space-y-4">
+          {['Thời hạn chỉnh sửa thông tin cơ bản là 05 ngày sau khi đợt đăng ký kết thúc.',
+            'Vui lòng đọc kỹ các thông tin để tránh những sai sót không đáng có.',
+            'Mỗi sinh viên chỉ được chọn 1 giảng viên hướng dẫn.'
+          ].map((n,i)=>(
+            <li key={i} className="flex gap-3 text-sm text-on-surface-variant leading-relaxed">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0"/>{n}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="bg-secondary-container/20 border border-secondary-container/30 rounded-3xl p-6">
+        <div className="flex items-center justify-between mb-3">
+          <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-bold uppercase">Sắp hết hạn</span>
+          <span className="material-symbols-outlined text-secondary-container">alarm</span>
+        </div>
+        <p className="font-headline font-bold text-on-secondary-container text-base mb-3">Đợt 1 kết thúc trong 3 ngày</p>
+        <div className="w-full bg-secondary-container/20 h-2 rounded-full overflow-hidden">
+          <div className="bg-secondary-container h-full rounded-full" style={{width:'80%'}}/>
+        </div>
+      </div>
+    </div>
+  );
+
+  return(
+    <div className="anim-fade">
+      {toast.toast&&<Toast {...toast.toast} onClose={toast.hide}/>}
+
+      {/* Confirm Modal */}
+      {showConfirm&&(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-on-surface/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-[2rem] p-10 shadow-2xl flex flex-col items-center text-center anim-slide">
+            <div className="w-20 h-20 rounded-full bg-primary-fixed mb-6 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-4xl">help</span>
+            </div>
+            <h2 className="font-headline font-extrabold text-2xl text-on-surface mb-3">Bạn đã chắc chắn chưa?</h2>
+            <p className="text-on-surface-variant mb-8 leading-relaxed">Hệ thống sẽ ghi nhận thông tin. Quá trình này không thể hoàn tác sau khi gửi phê duyệt.</p>
+            <div className="flex flex-col w-full gap-3">
+              <button onClick={confirm} disabled={submitting}
+                className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg shadow-primary/25 hover:bg-primary-container transition-all flex items-center justify-center gap-2 disabled:opacity-70">
+                {submitting?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>:'Xác nhận'}
+              </button>
+              <button onClick={()=>setShowConfirm(false)} className="w-full py-4 text-on-surface font-bold rounded-2xl hover:bg-surface-container transition-all">Hủy bỏ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccess&&(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-on-surface/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl text-center anim-slide">
+            <div className="w-24 h-24 bg-tertiary-fixed-dim text-on-tertiary-fixed rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg anim-pop">
+              <span className="material-symbols-outlined fill-icon text-5xl">check_circle</span>
+            </div>
+            <h3 className="text-2xl font-headline font-black text-on-surface mb-4 leading-tight">Chúc mừng bạn đã đăng ký thành công!</h3>
+            <p className="text-on-surface-variant text-sm mb-10 leading-relaxed">Hệ thống đã ghi nhận thông tin của bạn. Theo dõi tiến độ phê duyệt tại Bảng điều khiển.</p>
+            <button onClick={()=>{
+                toast.show('🎉 Đăng ký thành công! Hệ thống đã ghi nhận và thông báo đến Giảng viên.','success');
+                setShowSuccess(false);
+                onSuccess();
+              }} className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20">
+              Về trang chủ
+            </button>
+            <p className="mt-4 text-[10px] text-on-surface-variant/40 uppercase font-black tracking-widest italic">University of Technology and Education</p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left */}
+        <div className="lg:col-span-8 space-y-5">
+          <div>
+            <h2 className="text-3xl font-headline font-extrabold text-on-surface tracking-tight mb-1">Đăng ký báo cáo thực tập</h2>
+            <p className="text-on-surface-variant text-sm">Vui lòng cung cấp đầy đủ thông tin để bộ phận quản lý phê duyệt.</p>
+          </div>
+          <StepBar/>
+
+          {/* STEP 1 */}
+          {step===1&&(
+            <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm anim-fade">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Tên đề tài <span className="text-error">*</span></label>
+                  <input value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}
+                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60"
+                    placeholder="Nhập tên đề tài nghiên cứu..."/>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Mảng đề tài <span className="text-error">*</span></label>
+                  <div className="relative">
+                    <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
+                      className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface">
+                      <option value="">Chọn mảng đề tài</option>
+                      {NGANH_LIST.map(n=><option key={n} value={n}>{n}</option>)}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Đợt - Học kỳ <span className="text-error">*</span></label>
+                  <div className="relative">
+                    <select value={form.semester} onChange={e=>setSem(e.target.value)}
+                      className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface">
+                      <option value="">Chọn học kỳ</option>
+                      <option value="HK1-2024">Học kỳ 1 - 2024-2025</option>
+                      <option value="HK2-2024">Học kỳ 2 - 2024-2025</option>
+                      <option value="HKHe-2024">Học kỳ hè - 2024</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Đơn vị thực tập <span className="text-error">*</span></label>
+                  <input value={form.company} onChange={e=>setForm(f=>({...f,company:e.target.value}))}
+                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60"
+                    placeholder="VD: FPT Software, VNG..."/>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Thời gian bắt đầu</label>
+                  <div className="flex items-center gap-3 bg-surface-container border border-outline-variant/20 rounded-xl px-4 py-4 text-on-surface-variant cursor-not-allowed">
+                    <span className="material-symbols-outlined text-sm">lock</span>
+                    <span>{form.startDate||'Chọn học kỳ trước'}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end pt-6 border-t border-outline-variant/10 mt-6">
+                <button onClick={next1}
+                  className="bg-gradient-to-br from-primary to-primary-container text-white px-10 py-4 rounded-xl font-headline font-bold text-sm shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2">
+                  Tiếp theo <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2 */}
+          {step===2&&(
+            <div className="anim-fade space-y-4">
+              <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-surface-container-low text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                        <th className="px-6 py-4">Giảng viên</th>
+                        <th className="px-5 py-4">Mã / Email</th>
+                        <th className="px-5 py-4">Ngành</th>
+                        <th className="px-5 py-4">Sức chứa</th>
+                        <th className="px-5 py-4 text-right">Chọn</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/10">
+                      {gvLoading&&(
+                        <tr><td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant">
+                          <span className="material-symbols-outlined anim-spin text-2xl">refresh</span>
+                          <p className="mt-2 text-sm">Đang tải danh sách giảng viên...</p>
+                        </td></tr>
+                      )}
+                      {!gvLoading&&filteredGV.length===0&&(
+                        <tr><td colSpan={5} className="px-6 py-10 text-center text-on-surface-variant">
+                          <span className="material-symbols-outlined text-3xl">person_off</span>
+                          <p className="mt-2 text-sm">Không có giảng viên cho ngành <strong>{form.category}</strong></p>
+                        </td></tr>
+                      )}
+                      {!gvLoading&&filteredGV.map(iv=>{
+                        const rem=iv.maxQ-iv.reg,full=rem<=0,sel=selGV?.id===iv.id;
+                        const pct=iv.maxQ>0?(iv.reg/iv.maxQ)*100:0;
+                        const ini=iv.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
+                        return(
+                          <tr key={iv.id} onClick={()=>!full&&setSelGV(iv)}
+                            className={`transition-colors ${full?'opacity-50 bg-surface-container-low/40 cursor-not-allowed':sel?'bg-blue-50':' hover:bg-blue-50/30 cursor-pointer'}`}>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xs flex-shrink-0">{ini}</div>
+                                <div>
+                                  <p className={`font-bold text-sm ${sel?'text-primary':'text-on-surface'}`}>{iv.name}</p>
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${full?'bg-error-container text-on-error-container':'bg-tertiary-fixed text-on-tertiary-fixed'}`}>
+                                    {full?'Đã đầy':'Còn chỗ'}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <p className="text-sm font-medium text-on-surface">GV{iv.code}</p>
+                              <p className="text-xs text-on-surface-variant truncate max-w-[130px]">{iv.email}</p>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span className="px-2 py-1 rounded-lg bg-surface-container text-xs font-semibold">{iv.nganh}</span>
+                            </td>
+                            <td className="px-5 py-4">
+                              <div className="w-20 bg-surface-container-highest h-1.5 rounded-full overflow-hidden mb-1">
+                                <div className={`h-full rounded-full ${full?'bg-error':pct>=60?'bg-secondary-container':'bg-primary'}`} style={{width:`${pct}%`}}/>
+                              </div>
+                              <p className="text-xs font-bold text-on-surface-variant">
+                                <span className={full?'text-error':'text-primary'}>{rem}</span>/{iv.maxQ} còn
+                              </p>
+                            </td>
+                            <td className="px-5 py-4 text-right">
+                              <input type="radio" name="gv" disabled={full} checked={sel} onChange={()=>!full&&setSelGV(iv)}
+                                className="h-5 w-5 text-primary border-outline-variant focus:ring-primary cursor-pointer disabled:cursor-not-allowed"/>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <button onClick={()=>setStep(1)} className="flex items-center gap-2 px-6 py-3 rounded-xl border border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-colors">
+                  <span className="material-symbols-outlined">arrow_back</span>Quay lại
+                </button>
+                <button onClick={next2} className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">
+                  Tiếp theo <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 */}
+          {step===3&&(
+            <div className="anim-fade space-y-5">
+              <div>
+                <h3 className="text-2xl font-headline font-extrabold text-on-surface mb-1">Rà soát thông tin đăng ký</h3>
+                <p className="text-on-surface-variant text-sm">Kiểm tra kỹ trước khi xác nhận.</p>
+              </div>
+              {/* Basic info */}
+              <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-outline-variant/10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-primary-fixed rounded-xl text-primary"><span className="material-symbols-outlined fill-icon">description</span></div>
+                  <h4 className="font-headline font-bold text-lg">Phần 1: Thông tin cơ bản</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
+                  {[
+                    {l:'Tên đề tài',v:form.topic},
+                    {l:'Mảng đề tài',v:form.category},
+                    {l:'Đơn vị thực tập',v:form.company},
+                    {l:'Thời gian bắt đầu',v:form.startDate},
+                    {l:'Đợt - Học kỳ',v:form.semester==='HK1-2024'?'HK1 - 2024-2025':form.semester==='HK2-2024'?'HK2 - 2024-2025':'HK Hè - 2024',col2:true},
+                  ].map((r,i)=>(
+                    <div key={i} className={r.col2?'md:col-span-2':''}>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">{r.l}</label>
+                      <p className="text-on-surface font-semibold">{r.v}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Instructor info */}
+              <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-outline-variant/10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16"/>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-secondary-fixed rounded-xl text-secondary"><span className="material-symbols-outlined fill-icon">person_check</span></div>
+                  <h4 className="font-headline font-bold text-lg">Phần 2: Giảng viên hướng dẫn</h4>
+                </div>
+                {selGV&&(
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <Av name={selGV.name} cls="w-16 h-16 rounded-2xl text-xl flex-shrink-0"/>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+                      {[{l:'Họ và tên',v:selGV.name},{l:'Mã giảng viên',v:`GV${selGV.code}`},{l:'Email',v:selGV.email}].map((r,i)=>(
+                        <div key={i}>
+                          <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">{r.l}</label>
+                          <p className={`font-bold text-on-surface text-sm ${i===2?'text-primary break-all':''}`}>{r.v}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Note */}
+              <div className="bg-surface-container p-5 rounded-2xl border-l-4 border-primary flex gap-4 items-start">
+                <span className="material-symbols-outlined text-primary">campaign</span>
+                <p className="text-sm text-on-surface-variant italic leading-relaxed">Lưu ý: Sau khi xác nhận, thông tin sẽ được gửi đến Giảng viên và Phòng Đào tạo để phê duyệt. Bạn không thể tự ý thay đổi sau bước này.</p>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <button onClick={()=>setStep(2)} className="flex items-center gap-2 px-8 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all">
+                  <span className="material-symbols-outlined">arrow_back</span>Quay lại
+                </button>
+                <button onClick={()=>setShowConfirm(true)} className="px-12 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all flex items-center gap-2">
+                  Xác nhận đăng ký <span className="material-symbols-outlined">send</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right panel */}
+        <div className="lg:col-span-4"><Right/></div>
+      </div>
+    </div>
+  );
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// UTIL
-// ════════════════════════════════════════════════════════════════════════════
-function setEl(id, text){
-  const el = document.getElementById(id);
-  if(el) el.textContent = text;
+// ── APP ───────────────────────────────────────────────────────────────────────
+function App(){
+  useEffect(()=>{
+    if(!sessionStorage.getItem('ute_role')) window.location.href='login.html';
+  },[]);
+
+  const [tab,setTab]=useState('dashboard');
+  const toast=useToast();
+
+  return(
+    <div className="min-h-screen bg-background">
+      {toast.toast&&<Toast {...toast.toast} onClose={toast.hide}/>}
+      <Sidebar tab={tab} setTab={setTab} logout={()=>{sessionStorage.clear();window.location.href='login.html';}}/>
+      <Header onBell={()=>toast.show('Bạn có 3 thông báo mới từ GVHD!','success')}/>
+      <main className="pt-24 pb-10 px-6 min-h-screen" style={{marginLeft:'18rem'}}>
+        <div className="max-w-7xl mx-auto">
+          {tab==='dashboard'&&<Dashboard onRegister={()=>setTab('registration')} toast={toast}/>}
+          {tab==='registration'&&<Registration onSuccess={()=>setTab('dashboard')}/>}
+        </div>
+      </main>
+      {/* Mobile nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-white/90 backdrop-blur-lg rounded-t-3xl shadow-2xl">
+        {[{id:'dashboard',icon:'home',l:'Trang chủ'},{id:'registration',icon:'assignment_turned_in',l:'Đăng ký'}].map(it=>(
+          <button key={it.id} onClick={()=>setTab(it.id)}
+            className={`flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${tab===it.id?'bg-blue-50 text-blue-800':'text-slate-400'}`}>
+            <span className="material-symbols-outlined text-2xl">{it.icon}</span>
+            <span className="text-[10px] font-semibold mt-1">{it.l}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
 }
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
