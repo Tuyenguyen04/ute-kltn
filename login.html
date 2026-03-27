@@ -203,6 +203,7 @@ async function handleGoogleLogin(response){
       sessionStorage.setItem('ute_role',  'sinhvien');
       sessionStorage.setItem('ute_name',  sv.name || nameGG);
       sessionStorage.setItem('ute_maSo',  sv.maSo || '');
+      sessionStorage.setItem('ute_nganh', data.nganh || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000);
       return;
@@ -215,6 +216,7 @@ async function handleGoogleLogin(response){
       sessionStorage.setItem('ute_role',  'giangvien');
       sessionStorage.setItem('ute_name',  gv.name || nameGG);
       sessionStorage.setItem('ute_maSo',  gv.maSo || '');
+      sessionStorage.setItem('ute_nganh', data.nganh || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
       return;
