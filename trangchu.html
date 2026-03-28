@@ -94,11 +94,11 @@ async function fetchGVFromCSV(){
 
 // Đọc session — tên + maSo đã được lưu ĐÚNG từ login.html (đọc từ sheet)
 const SESSION = {
-  email: sessionStorage.getItem('ute_email') || '',
-  role:  sessionStorage.getItem('ute_role')  || '',
-  name:  sessionStorage.getItem('ute_name')  || '',   // Họ và Tên từ sheet, VD: "Nguyễn Thị Tuyết"
-  maSo:  sessionStorage.getItem('ute_maSo')  || '',   // MSSV từ sheet, VD: "23124153"
-  nganh: sessionStorage.getItem('ute_nganh') || '',
+  email: localStorage.getItem('ute_email') || '',
+  role:  localStorage.getItem('ute_role')  || '',
+  name:  localStorage.getItem('ute_name')  || '',   // Họ và Tên từ sheet, VD: "Nguyễn Thị Tuyết"
+  maSo:  localStorage.getItem('ute_maSo')  || '',   // MSSV từ sheet, VD: "23124153"
+  nganh: localStorage.getItem('ute_nganh') || '',
 };
 
 const SEM_DATE = {
@@ -356,7 +356,7 @@ function AvatarMenu(){
             </div>
           </div>
           {/* Đăng xuất */}
-          <button onClick={()=>{sessionStorage.clear();window.location.href='login.html';}}
+          <button onClick={()=>{localStorage.clear();window.location.href='login.html';}}
             className="w-full flex items-center gap-3 px-4 py-3 text-error font-semibold hover:bg-error-container/20 transition-colors text-sm">
             <span className="material-symbols-outlined text-base">logout</span>
             Đăng xuất
@@ -1254,8 +1254,8 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
 function App(){
   // ── Auth guard + role routing ──────────────────────────────────
   useEffect(()=>{
-    const role=sessionStorage.getItem('ute_role');
-    const email=sessionStorage.getItem('ute_email');
+    const role=localStorage.getItem('ute_role');
+    const email=localStorage.getItem('ute_email');
     if(!role||!email){
       window.location.href='login.html';
       return;
@@ -1360,7 +1360,7 @@ function App(){
         tab={tab} setTab={setTab}
         kltnUnlocked={kltnUnlocked}
         bcttDisabled={bcttDisabled}
-        logout={()=>{sessionStorage.clear();window.location.href='login.html';}}
+        logout={()=>{localStorage.clear();window.location.href='login.html';}}
         notifCount={notifications.length}
       />
 
