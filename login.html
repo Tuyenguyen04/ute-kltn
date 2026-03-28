@@ -166,10 +166,10 @@ function doLogin(){
   if(!ok) return;
 
   if(u === ADMIN_USER && p === ADMIN_PASS){
-    sessionStorage.setItem('ute_email', 'admin');
-    sessionStorage.setItem('ute_role',  'admin');
-    sessionStorage.setItem('ute_name',  'Administrator');
-    sessionStorage.setItem('ute_maSo',  'ADMIN');
+    localStorage.setItem('ute_email', 'admin');
+    localStorage.setItem('ute_role',  'admin');
+    localStorage.setItem('ute_name',  'Administrator');
+    localStorage.setItem('ute_maSo',  'ADMIN');
     showOverlay('success','✅','Đăng nhập thành công!','Đang chuyển hướng...');
     setTimeout(()=>{ window.location.href = 'admin.html'; }, 2000);
   } else {
@@ -200,11 +200,11 @@ async function handleGoogleLogin(response){
     // Kiểm tra sheet Sinh viên trước
     const sv = findEmailInRows(rowsSV, email);
     if(sv){
-      sessionStorage.setItem('ute_email', email);
-      sessionStorage.setItem('ute_role',  'sinhvien');
-      sessionStorage.setItem('ute_name',  sv.name || nameGG);
-      sessionStorage.setItem('ute_maSo',  sv.maSo || '');
-      sessionStorage.setItem('ute_nganh', sv.nganh || '');
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'sinhvien');
+      localStorage.setItem('ute_name',  sv.name || nameGG);
+      localStorage.setItem('ute_maSo',  sv.maSo || '');
+      localStorage.setItem('ute_nganh', sv.nganh || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000);
       return;
@@ -213,11 +213,11 @@ async function handleGoogleLogin(response){
     // Kiểm tra sheet Giảng viên
     const gv = findEmailInRows(rowsGV, email);
     if(gv){
-      sessionStorage.setItem('ute_email', email);
-      sessionStorage.setItem('ute_role',  'giangvien');
-      sessionStorage.setItem('ute_name',  gv.name || nameGG);
-      sessionStorage.setItem('ute_maSo',  gv.maSo || '');
-      sessionStorage.setItem('ute_nganh', gv.nganh || '');
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'giangvien');
+      localStorage.setItem('ute_name',  gv.name || nameGG);
+      localStorage.setItem('ute_maSo',  gv.maSo || '');
+      localStorage.setItem('ute_nganh', gv.nganh || '');
       showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
       return;
