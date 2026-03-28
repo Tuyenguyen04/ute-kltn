@@ -380,15 +380,6 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,toa
   const sem    = dashData?.semester||'';
   const locked = dashData?.gradeLocked||false;  // GV đã khoá điểm
 
-  // ── Tính step tiến độ ─────────────────────────────────────────
-  // 0=Bắt đầu | 1=Đăng ký | 2=Thực hiện | 3=Kết thúc | 4=Xác nhận
-  let curStep=0;
-  if(reg){
-    if(status==='pending')   curStep=1;
-    if(status==='approved')  curStep=2;
-    if(grade!==null)         curStep=3;
-    if(locked)               curStep=4;
-  }
   const pcts=[0,25,50,75,100];
   const stepDefs=[
     {l:'Bắt đầu',icon:'flag'},
