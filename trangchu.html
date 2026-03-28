@@ -651,6 +651,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,toa
               <tr className="bg-surface-container-low">
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Đề tài</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Đơn vị thực tập</th>
+                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant">Vị trí thực tập</th>
                 <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-on-surface-variant text-right">Trạng thái</th>
               </tr>
             </thead>
@@ -663,12 +664,13 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,toa
                     <p className="text-[10px] text-on-surface-variant mt-1">{instr?.term||'--'}</p>
                   </td>
                   <td className="px-6 py-4 text-sm text-on-surface-variant">{co||'--'}</td>
+                  <td className="px-6 py-4 text-sm text-on-surface-variant">{dashData?.position||'--'}</td>
                   <td className="px-6 py-4 text-right"><Pill status={status||'pending'}/></td>
                 </tr>
               ):(
                 /* Chưa đăng ký → trống */
                 <tr>
-                  <td colSpan={3} className="px-6 py-14 text-center">
+                  <td colSpan={4} className="px-6 py-14 text-center">
                     <span className="material-symbols-outlined text-4xl block mb-3 opacity-15">inbox</span>
                     <p className="text-sm text-on-surface-variant font-medium">Chưa có dữ liệu hoạt động</p>
                     <p className="text-xs text-on-surface-variant/60 mt-1">Đăng ký BCTT để bắt đầu hành trình</p>
@@ -686,7 +688,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,toa
 // ── REGISTRATION FLOW ─────────────────────────────────────────────────────────
 function Registration({onSuccess,instructorList,loadingGV}){
   const [step,setStep]=useState(1);
-  const [form,setForm]=useState({topic:'',category:'',company:'',semester:'',startDate:'',note:''});
+  const [form,setForm]=useState({topic:'',category:'',company:'',semester:'',startDate:'',position:'',internDuration:'',note:''});
   const [selGV,setSelGV]=useState(null);
   const [showConfirm,setShowConfirm]=useState(false);
   const [showSuccess,setShowSuccess]=useState(false);
@@ -700,6 +702,8 @@ function Registration({onSuccess,instructorList,loadingGV}){
     if(!form.category){toast.show('Vui lòng chọn mảng đề tài!','error');return;}
     if(!form.company.trim()){toast.show('Vui lòng nhập đơn vị thực tập!','error');return;}
     if(!form.semester){toast.show('Vui lòng chọn học kỳ!','error');return;}
+    if(!form.position.trim()){toast.show('Vui lòng nhập vị trí thực tập!','error');return;}
+    if(!form.internDuration.trim()){toast.show('Vui lòng nhập thời gian thực tập!','error');return;}
     setStep(2);window.scrollTo(0,0);
   }
   function next2(){
@@ -723,6 +727,8 @@ function Registration({onSuccess,instructorList,loadingGV}){
         instructorId:selGV.id||selGV.code,
         term:`${form.semester==='D1-HK1-2526'?'Đợt 1 - HK1 NH25-26':form.semester==='D2-HK1-2526'?'Đợt 2 - HK1 NH25-26':form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26':'Đợt 2 - HK2 NH25-26'}`,
         note:form.note||'',
+        position:form.position||'',
+        internDuration:form.internDuration||'',
       });
       if(res.success){
         setShowConfirm(false);
@@ -897,6 +903,18 @@ function Registration({onSuccess,instructorList,loadingGV}){
                     <span>{form.startDate||'Tự động sau khi chọn học kỳ'}</span>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Vị trí thực tập <span className="text-error">*</span></label>
+                  <input value={form.position} onChange={e=>setForm(f=>({...f,position:e.target.value}))}
+                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60"
+                    placeholder="VD: Nhân viên kinh doanh, Kế toán..."/>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Thời gian thực tập <span className="text-error">*</span></label>
+                  <input value={form.internDuration} onChange={e=>setForm(f=>({...f,internDuration:e.target.value}))}
+                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60"
+                    placeholder="VD: 3 tháng, 16 tuần..."/>
+                </div>
                 <div className="md:col-span-2 space-y-2">
                   <label className="text-sm font-semibold text-on-surface-variant">Ghi chú (tùy chọn)</label>
                   <textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} rows={3}
@@ -1012,6 +1030,8 @@ function Registration({onSuccess,instructorList,loadingGV}){
                     {l:'Đơn vị thực tập',v:form.company},
                     {l:'Thời gian bắt đầu',v:form.startDate},
                     {l:'Học kỳ',v:form.semester==='D1-HK1-2526'?'Đợt 1 - HK1 NH25-26':form.semester==='D2-HK1-2526'?'Đợt 2 - HK1 NH25-26':form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26':'Đợt 2 - HK2 NH25-26'},
+                    {l:'Vị trí thực tập',v:form.position||'(không có)'},
+                    {l:'Thời gian thực tập',v:form.internDuration||'(không có)'},
                     {l:'Ghi chú',v:form.note||'(không có)'},
                   ].map((r,i)=>(
                     <div key={i}>
