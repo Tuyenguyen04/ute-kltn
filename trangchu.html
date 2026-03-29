@@ -402,7 +402,7 @@ function AvatarMenu(){
 }
 
 // ── DASHBOARD VIEW ────────────────────────────────────────────────────────────
-function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,toast,kltnUnlocked,bcttDisabled}){
+function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onRegisterKLTN,onSubmitKLTN,toast,kltnUnlocked,bcttDisabled}){
   if(loading) return <Spinner text="Đang tải dữ liệu..."/>;
 
   const reg    = dashData?.registered||false;
@@ -556,6 +556,16 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,toa
             </div>
           )}
         </div>
+
+        {/* ── KLTN Action Panel — hiện khi đủ điều kiện ─────────── */}
+        {kltnUnlocked&&(
+          <KLTNActionPanel
+            dashData={dashData}
+            onRegisterKLTN={onRegisterKLTN}
+            onSubmitKLTN={onSubmitKLTN}
+            toast={toast}
+          />
+        )}
 
         {/* Grade BCTT card */}
         <div className={`md:col-span-2 p-6 rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm transition-all duration-500
@@ -1550,6 +1560,816 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
   );
 }
 
+// ── SUBMIT KLTN MODAL (nộp khóa luận tốt nghiệp) ────────────────────────────
+function SubmitKLTNModal({dashData,onClose,onSuccess,toast}){
+  const kltn    = dashData?.kltn||null;
+  const instr   = kltn?.instructor||dashData?.instructor||null;
+  const topic   = kltn?.topic||'';
+  const sem     = kltn?.semester||dashData?.semester||'';
+  const semLabel= sem==='D1-HK1-2526'?'Đợt 1 – HK1 NH25-26':sem==='D2-HK1-2526'?'Đợt 2 – HK1 NH25-26':sem==='D1-HK2-2526'?'Đợt 1 – HK2 NH25-26':sem==='D2-HK2-2526'?'Đợt 2 – HK2 NH25-26':'--';
+
+  const [file,setFile]    = useState(null);
+  const [note,setNote]    = useState('');
+  const [submitting,setSubmitting] = useState(false);
+  const [done,setDone]    = useState(false);
+
+  function pickFile(e){
+    const f=e.target.files[0]; if(!f) return;
+    if(f.size>50*1024*1024){toast.show('File tối đa 50 MB!','error');return;}
+    setFile(f);
+  }
+  function fmtSize(b){return b>1024*1024?(b/1024/1024).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';}
+
+  async function submit(){
+    if(!file){toast.show('Vui lòng chọn file khóa luận!','error');return;}
+    setSubmitting(true);
+    try{
+      const b64=await new Promise((res,rej)=>{
+        const r=new FileReader();
+        r.onload=()=>res(r.result.split(',')[1]);
+        r.onerror=rej; r.readAsDataURL(file);
+      });
+      const result=await apiPost({
+        action:'submitKLTN',
+        email:SESSION.email, name:SESSION.name, maSo:SESSION.maSo,
+        topic, semester:sem,
+        instructorEmail:instr?.email||'',
+        instructorName:instr?.name||'',
+        note:note.trim(),
+        fileName:file.name, fileSize:file.size, fileBase64:b64,
+      });
+      if(result?.success){setDone(true);}
+      else{toast.show(result?.message||'Gửi thất bại. Thử lại.','error');setSubmitting(false);}
+    }catch(e){
+      toast.show('Lỗi kết nối. Thử lại sau.','error'); setSubmitting(false);
+    }
+  }
+
+  if(done) return(
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-on-surface/60 backdrop-blur-md">
+      <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl text-center anim-slide">
+        <div className="w-24 h-24 bg-primary-fixed text-primary rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg anim-pop">
+          <span className="material-symbols-outlined fill-icon text-5xl">school</span>
+        </div>
+        <h3 className="text-2xl font-headline font-black text-on-surface mb-3">Nộp KLTN thành công!</h3>
+        <p className="text-on-surface-variant text-sm mb-2">GV <strong>{instr?.name}</strong> đã nhận được thông báo.</p>
+        <div className="p-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant mb-8">
+          📧 {instr?.email}<br/>GV sẽ chấm điểm KLTN theo lịch bảo vệ.
+        </div>
+        <button onClick={onSuccess} className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20">
+          Về trang chủ
+        </button>
+      </div>
+    </div>
+  );
+
+  return(
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-on-surface/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[90vh] overflow-hidden">
+        <div className="flex items-center justify-between px-8 pt-8 pb-4 border-b border-outline-variant/10 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white">
+              <span className="material-symbols-outlined">school</span>
+            </div>
+            <div>
+              <h2 className="font-headline font-extrabold text-lg text-on-surface">Nộp Khóa Luận Tốt Nghiệp</h2>
+              <p className="text-xs text-on-surface-variant">{semLabel}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-surface-container rounded-full transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-5">
+          <div className="bg-surface-container-low rounded-2xl p-4 space-y-2">
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Đề tài KLTN</p>
+            <p className="font-bold text-on-surface text-sm">{topic}</p>
+            {instr&&(
+              <div className="flex items-center gap-2 pt-1">
+                <Av name={instr?.name||''} cls="w-7 h-7 text-xs flex-shrink-0"/>
+                <div>
+                  <p className="text-xs font-semibold text-on-surface">{instr?.name||'--'}</p>
+                  <p className="text-[10px] text-on-surface-variant">{instr?.email||'--'}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+              File khóa luận <span className="text-error">*</span>
+              <span className="text-xs font-normal ml-2 opacity-60">PDF / Word / ZIP · tối đa 50 MB</span>
+            </label>
+            {!file?(
+              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-primary/30 rounded-2xl bg-primary-fixed/10 cursor-pointer hover:bg-primary-fixed/20 transition-colors group">
+                <span className="material-symbols-outlined text-4xl text-primary/40 group-hover:text-primary/70 transition-colors mb-2">cloud_upload</span>
+                <span className="text-sm font-medium text-primary/60 group-hover:text-primary transition-colors">Kéo thả hoặc bấm để chọn file</span>
+                <input type="file" accept=".pdf,.doc,.docx,.zip" className="hidden" onChange={pickFile}/>
+              </label>
+            ):(
+              <div className="flex items-center gap-4 p-4 bg-primary-fixed/20 border border-primary-fixed-dim/40 rounded-2xl">
+                <div className="w-12 h-12 rounded-xl bg-primary-fixed-dim/40 flex items-center justify-center text-primary flex-shrink-0">
+                  <span className="material-symbols-outlined">description</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-on-surface text-sm truncate">{file.name}</p>
+                  <p className="text-xs text-on-surface-variant">{fmtSize(file.size)}</p>
+                </div>
+                <button onClick={()=>setFile(null)} className="p-1.5 hover:bg-error-container/30 rounded-full transition-colors">
+                  <span className="material-symbols-outlined text-sm text-on-surface-variant">close</span>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-on-surface-variant block mb-2">Ghi chú cho GV (tuỳ chọn)</label>
+            <textarea value={note} onChange={e=>setNote(e.target.value)} rows={3}
+              className="w-full bg-surface-container-low rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/50 resize-none text-sm"
+              placeholder="VD: Em đã hoàn thành đầy đủ các chương theo yêu cầu của GV..."/>
+          </div>
+
+          <div className="flex items-start gap-3 bg-secondary-container/10 border border-secondary-container/20 rounded-2xl p-4">
+            <span className="material-symbols-outlined text-secondary text-base mt-0.5">campaign</span>
+            <p className="text-xs text-on-surface-variant leading-relaxed italic">
+              Sau khi nộp, hệ thống sẽ gửi email thông báo đến GV hướng dẫn. GV sẽ chấm điểm KLTN theo lịch bảo vệ <strong>{semLabel}</strong>. Bạn chỉ được nộp <strong>một lần</strong>.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 px-8 pb-8 pt-4 border-t border-outline-variant/10 flex-shrink-0">
+          <button onClick={onClose} disabled={submitting}
+            className="px-6 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all text-sm disabled:opacity-50">
+            Hủy bỏ
+          </button>
+          <button onClick={submit} disabled={!file||submitting}
+            className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm">
+            {submitting
+              ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>
+              :<><span className="material-symbols-outlined text-sm">send</span>Xác nhận nộp KLTN</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── KLTN ACTION PANEL (hiển thị trong Dashboard khi kltnUnlocked) ────────────
+function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
+  const kltn         = dashData?.kltn||null;
+  const kltnStatus   = kltn?.status||null;        // null|pending|approved|rejected
+  const kltnTopic    = kltn?.topic||'';
+  const kltnReg      = !!kltnTopic;               // đã đăng ký KLTN chưa
+  const decuongStatus= kltn?.decuongStatus||null; // null|pending|approved|rejected
+  const kltnSubmitted= kltn?.submitted||false;     // đã nộp luận văn chưa
+
+  // Logic các nút
+  // 1. Đăng ký KLTN: chỉ mở khi chưa đăng ký
+  const canRegKLTN   = !kltnReg;
+  // 2. Đổi đề tài KLTN: mở khi pending, đóng khi approved hoặc rejected
+  const canChangeKLTN= kltnReg && kltnStatus==='pending';
+  // 3. Chỉnh sửa đề cương: hiện khi đề cương bị rejected, disabled khi approved
+  const showEditDecu = kltnReg && kltnStatus==='approved' && decuongStatus!==null;
+  const canEditDecu  = showEditDecu && decuongStatus==='rejected';
+  // 4. Nộp KLTN: mở khi đề cương approved và chưa nộp
+  const canSubmitKLTN= kltnReg && decuongStatus==='approved' && !kltnSubmitted;
+
+  // Upload đề cương state
+  const [showUploadDecu,setShowUploadDecu]=useState(false);
+  const [decuFile,setDecuFile]=useState(null);
+  const [decuNote,setDecuNote]=useState('');
+  const [uploadingDecu,setUploadingDecu]=useState(false);
+
+  function pickDecu(e){
+    const f=e.target.files[0]; if(!f) return;
+    if(f.size>30*1024*1024){toast.show('File tối đa 30 MB!','error');return;}
+    setDecuFile(f);
+  }
+  function fmtSize(b){return b>1024*1024?(b/1024/1024).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';}
+
+  async function submitDecu(){
+    if(!decuFile){toast.show('Vui lòng chọn file đề cương!','error');return;}
+    setUploadingDecu(true);
+    try{
+      const b64=await new Promise((res,rej)=>{
+        const r=new FileReader();
+        r.onload=()=>res(r.result.split(',')[1]);
+        r.onerror=rej; r.readAsDataURL(decuFile);
+      });
+      const result=await apiPost({
+        action:'submitDecuong',type:'kltn',
+        email:SESSION.email, name:SESSION.name, maSo:SESSION.maSo,
+        topic:kltnTopic,
+        note:decuNote.trim(),
+        fileName:decuFile.name, fileSize:decuFile.size, fileBase64:b64,
+      });
+      if(result?.success){
+        toast.show('Nộp đề cương thành công! GV sẽ xem xét.','success');
+        setShowUploadDecu(false); setDecuFile(null); setDecuNote('');
+      } else {
+        toast.show(result?.message||'Gửi thất bại. Thử lại.','error');
+      }
+    }catch(e){ toast.show('Lỗi kết nối. Thử lại sau.','error'); }
+    setUploadingDecu(false);
+  }
+
+  return(
+    <div className="p-6 bg-surface-container-lowest rounded-3xl shadow-sm border-l-4 border-primary anim-fade">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white flex-shrink-0">
+          <span className="material-symbols-outlined">school</span>
+        </div>
+        <div>
+          <h3 className="font-headline font-extrabold text-on-surface">Khóa Luận Tốt Nghiệp</h3>
+          <p className="text-xs text-on-surface-variant">
+            {!kltnReg?'Bạn đủ điều kiện — hãy đăng ký KLTN ngay!':
+             kltnTopic?`Đề tài: ${kltnTopic}`:''}
+          </p>
+        </div>
+        {kltnReg&&kltnStatus&&(
+          <span className={`ml-auto px-3 py-1 rounded-full text-[10px] font-black flex-shrink-0
+            ${kltnStatus==='approved'?'bg-tertiary-fixed text-on-tertiary-fixed':
+              kltnStatus==='rejected'?'bg-error-container text-on-error-container':
+              'bg-secondary-container/30 text-on-secondary-container'}`}>
+            {kltnStatus==='approved'?'Đã duyệt':kltnStatus==='rejected'?'Bị từ chối':'Chờ duyệt'}
+          </span>
+        )}
+      </div>
+
+      {/* 4 nút */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+        {/* 1. Đăng ký KLTN */}
+        <button onClick={canRegKLTN?onRegisterKLTN:undefined} disabled={!canRegKLTN}
+          title={kltnReg?'Bạn đã đăng ký KLTN rồi':'Đăng ký đề tài Khóa Luận Tốt Nghiệp'}
+          className={`p-5 rounded-2xl font-bold flex flex-col items-center justify-center gap-2.5 transition-all relative text-center
+            ${canRegKLTN
+              ?'bg-gradient-to-br from-primary to-primary-container text-white shadow-lg hover:scale-[1.02]'
+              :'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-50'}`}>
+          {canRegKLTN&&<span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/70 animate-pulse"/>}
+          <span className="material-symbols-outlined text-2xl">how_to_reg</span>
+          <span className="text-xs leading-tight">Đăng ký KLTN</span>
+          {kltnReg&&<span className="text-[9px] font-normal opacity-60">Đã đăng ký</span>}
+        </button>
+
+        {/* 2. Đổi đề tài KLTN */}
+        <button onClick={canChangeKLTN?onRegisterKLTN:undefined} disabled={!canChangeKLTN}
+          title={
+            !kltnReg?'Đăng ký KLTN trước':
+            kltnStatus==='approved'?'Đề tài đã được duyệt, không thể đổi':
+            kltnStatus==='rejected'?'Đề tài bị từ chối — không thể đổi':
+            'Đổi sang đề tài KLTN khác'
+          }
+          className={`p-5 rounded-2xl font-bold flex flex-col items-center justify-center gap-2.5 transition-all text-center
+            ${canChangeKLTN
+              ?'bg-secondary-container text-on-secondary-container hover:scale-[1.02] shadow-md'
+              :'bg-surface-container-highest text-on-surface/40 cursor-not-allowed opacity-50'}`}>
+          <span className="material-symbols-outlined text-2xl">sync_alt</span>
+          <span className="text-xs leading-tight">Đổi đề tài</span>
+        </button>
+
+        {/* 3. Chỉnh sửa đề cương */}
+        <button
+          onClick={canEditDecu?()=>setShowUploadDecu(v=>!v):undefined}
+          disabled={!showEditDecu||!canEditDecu}
+          title={
+            !kltnReg?'Đăng ký KLTN trước':
+            !showEditDecu?'Chưa có đề cương để chỉnh sửa':
+            decuongStatus==='approved'?'Đề cương đã được duyệt':
+            'Upload lại đề cương đã chỉnh sửa'
+          }
+          className={`p-5 rounded-2xl font-bold flex flex-col items-center justify-center gap-2.5 transition-all text-center
+            ${!showEditDecu
+              ?'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-40':
+             decuongStatus==='approved'||decuongStatus==='approved'
+              ?'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-40':
+             canEditDecu
+              ?'bg-gradient-to-br from-secondary to-secondary-container text-white shadow-lg hover:scale-[1.02]'
+              :'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-40'}`}>
+          <span className="material-symbols-outlined text-2xl">edit_document</span>
+          <span className="text-xs leading-tight">Chỉnh sửa đề cương</span>
+          {showEditDecu&&decuongStatus==='approved'&&(
+            <span className="text-[9px] font-normal opacity-60">Đã duyệt</span>
+          )}
+          {showEditDecu&&decuongStatus==='rejected'&&(
+            <span className="text-[9px] font-normal opacity-80">Cần chỉnh sửa</span>
+          )}
+        </button>
+
+        {/* 4. Nộp KLTN */}
+        <button onClick={canSubmitKLTN?onSubmitKLTN:undefined} disabled={!canSubmitKLTN}
+          title={
+            !kltnReg?'Đăng ký KLTN trước':
+            decuongStatus!=='approved'?'Cần đề cương được duyệt trước':
+            kltnSubmitted?'Đã nộp khóa luận':'Nộp file khóa luận tốt nghiệp'
+          }
+          className={`p-5 rounded-2xl font-bold flex flex-col items-center justify-center gap-2.5 transition-all relative text-center
+            ${canSubmitKLTN
+              ?'bg-gradient-to-br from-tertiary-container to-tertiary text-white shadow-lg hover:scale-[1.02]'
+              :kltnSubmitted
+                ?'bg-tertiary-fixed/30 text-on-tertiary-fixed/50 cursor-not-allowed opacity-70'
+                :'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-40'}`}>
+          {canSubmitKLTN&&<span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/70 animate-pulse"/>}
+          <span className="material-symbols-outlined text-2xl">{kltnSubmitted?'task_alt':'upload_file'}</span>
+          <span className="text-xs leading-tight">{kltnSubmitted?'Đã nộp KLTN':'Nộp KLTN'}</span>
+        </button>
+      </div>
+
+      {/* Upload đề cương panel (toggle) */}
+      {showUploadDecu&&canEditDecu&&(
+        <div className="mt-4 p-5 bg-surface-container-low rounded-2xl border border-outline-variant/20 anim-fade space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="font-bold text-sm text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-base text-primary">edit_document</span>
+              Upload đề cương đã chỉnh sửa
+            </p>
+            <button onClick={()=>{setShowUploadDecu(false);setDecuFile(null);setDecuNote('');}}
+              className="p-1 hover:bg-surface-container rounded-full transition-colors">
+              <span className="material-symbols-outlined text-sm text-on-surface-variant">close</span>
+            </button>
+          </div>
+
+          {/* Lý do từ chối (nếu có) */}
+          {kltn?.decuongNote&&(
+            <div className="flex items-start gap-3 p-3 bg-error-container/30 rounded-xl text-xs text-on-error-container leading-relaxed">
+              <span className="material-symbols-outlined text-sm flex-shrink-0 mt-0.5">report</span>
+              <span><strong>Lý do từ chối:</strong> {kltn.decuongNote}</span>
+            </div>
+          )}
+
+          {/* File picker */}
+          {!decuFile?(
+            <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-primary/30 rounded-2xl bg-primary-fixed/10 cursor-pointer hover:bg-primary-fixed/20 transition-colors group">
+              <span className="material-symbols-outlined text-3xl text-primary/40 group-hover:text-primary/70 transition-colors mb-1">cloud_upload</span>
+              <span className="text-sm font-medium text-primary/60 group-hover:text-primary transition-colors">Kéo thả hoặc bấm chọn file</span>
+              <span className="text-xs text-on-surface-variant/50 mt-0.5">PDF / Word / ZIP · tối đa 30 MB</span>
+              <input type="file" accept=".pdf,.doc,.docx,.zip" className="hidden" onChange={pickDecu}/>
+            </label>
+          ):(
+            <div className="flex items-center gap-3 p-3 bg-tertiary-fixed/20 border border-tertiary-fixed-dim/40 rounded-xl">
+              <span className="material-symbols-outlined text-on-tertiary-fixed">description</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-on-surface text-sm truncate">{decuFile.name}</p>
+                <p className="text-xs text-on-surface-variant">{fmtSize(decuFile.size)}</p>
+              </div>
+              <button onClick={()=>setDecuFile(null)} className="p-1 hover:bg-error-container/30 rounded-full">
+                <span className="material-symbols-outlined text-sm text-on-surface-variant">close</span>
+              </button>
+            </div>
+          )}
+
+          <textarea value={decuNote} onChange={e=>setDecuNote(e.target.value)} rows={2}
+            className="w-full bg-surface-container rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/50 resize-none text-sm"
+            placeholder="Ghi chú cho GV về những gì đã chỉnh sửa (tuỳ chọn)..."/>
+
+          <div className="flex justify-end gap-3">
+            <button onClick={()=>{setShowUploadDecu(false);setDecuFile(null);setDecuNote('');}}
+              disabled={uploadingDecu}
+              className="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface font-bold text-sm hover:bg-surface-container transition-all disabled:opacity-50">
+              Hủy
+            </button>
+            <button onClick={submitDecu} disabled={!decuFile||uploadingDecu}
+              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-bold text-sm shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+              {uploadingDecu
+                ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>
+                :<><span className="material-symbols-outlined text-sm">send</span>Gửi đề cương</>}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Banner trạng thái KLTN */}
+      {kltnReg&&kltnStatus==='pending'&&(
+        <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-secondary-container/20 border border-secondary-container/30 rounded-2xl text-on-secondary-container text-sm font-medium">
+          <span className="material-symbols-outlined text-base">hourglass_top</span>
+          Đề tài KLTN đang chờ GV duyệt.
+        </div>
+      )}
+      {kltnReg&&kltnStatus==='approved'&&decuongStatus==='rejected'&&(
+        <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-error-container rounded-2xl text-on-error-container text-sm font-medium">
+          <span className="material-symbols-outlined text-base">report</span>
+          Đề cương bị từ chối. Nhấn <strong className="mx-1">"Chỉnh sửa đề cương"</strong> để upload lại.
+        </div>
+      )}
+      {kltnReg&&decuongStatus==='approved'&&!kltnSubmitted&&(
+        <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-primary-fixed/40 rounded-2xl text-on-primary-fixed text-sm font-medium">
+          <span className="material-symbols-outlined text-base">check_circle</span>
+          Đề cương đã được duyệt! Hãy <strong className="mx-1">"Nộp KLTN"</strong> khi hoàn thành khóa luận.
+        </div>
+      )}
+      {kltnSubmitted&&(
+        <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-tertiary-fixed/30 rounded-2xl text-on-tertiary-fixed text-sm font-medium">
+          <span className="material-symbols-outlined text-base">mark_email_read</span>
+          Khóa luận đã nộp! GV đang chấm điểm.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── KLTN REGISTRATION FLOW ───────────────────────────────────────────────────
+function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
+  const [step,setStep]=useState(1);
+  const [form,setForm]=useState({topic:'',category:'',semester:'',startDate:'',note:''});
+  const [selGV,setSelGV]=useState(null);
+  const [showConfirm,setShowConfirm]=useState(false);
+  const [showSuccess,setShowSuccess]=useState(false);
+  const [submitting,setSubmitting]=useState(false);
+  const toast=useToast();
+
+  // Lấy GV hướng dẫn BCTT làm gợi ý mặc định (SV có thể chọn lại)
+  const bcttInstr = dashData?.instructor||null;
+
+  function setSem(v){setForm(f=>({...f,semester:v,startDate:SEM_DATE[v]||''}))}
+
+  function next1(){
+    if(!form.topic.trim()){toast.show('Vui lòng nhập tên đề tài KLTN!','error');return;}
+    if(!form.category){toast.show('Vui lòng chọn ngành!','error');return;}
+    if(!form.semester){toast.show('Vui lòng chọn học kỳ!','error');return;}
+    setStep(2);window.scrollTo(0,0);
+  }
+  function next2(){
+    if(!selGV){toast.show('Vui lòng chọn giảng viên hướng dẫn!','error');return;}
+    setStep(3);window.scrollTo(0,0);
+  }
+
+  async function confirm(){
+    setSubmitting(true);
+    try{
+      const termLabel = form.semester==='D1-HK1-2526'?'Đợt 1 - HK1 NH25-26'
+        :form.semester==='D2-HK1-2526'?'Đợt 2 - HK1 NH25-26'
+        :form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26'
+        :'Đợt 2 - HK2 NH25-26';
+      const res=await apiPost({
+        action:'submitRegistration',type:'kltn',
+        email:SESSION.email,
+        name:SESSION.name,
+        maSo:SESSION.maSo,
+        nganh:SESSION.nganh,
+        topic:form.topic,
+        company:'',               // KLTN không có đơn vị thực tập
+        instructorName:selGV.name,
+        instructorEmail:selGV.email,
+        instructorId:selGV.id||selGV.code,
+        term:termLabel,
+        note:form.note||'',
+        position:'',
+        internDuration:'',
+      });
+      if(res.success){
+        setShowConfirm(false);
+        setShowSuccess(true);
+      } else {
+        toast.show(res.message||'Gửi thất bại. Thử lại.','error');
+        setSubmitting(false);
+      }
+    }catch(e){
+      toast.show('Lỗi kết nối. Thử lại sau.','error');
+      setSubmitting(false);
+    }
+  }
+
+  const STEPS=['Thông tin KLTN','Chọn Giảng viên','Hoàn tất'];
+  const StepBar=()=>(
+    <nav className="flex items-center gap-2 w-full mb-6">
+      {STEPS.map((l,i)=>{
+        const n=i+1,done=step>n,cur=step===n;
+        return(
+          <React.Fragment key={i}>
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-all
+                ${done?'bg-primary-fixed-dim text-on-primary-fixed':cur?'bg-primary text-white ring-4 ring-primary-fixed':'bg-surface-container-highest text-on-surface-variant'}`}>
+                {done?<span className="material-symbols-outlined text-sm">check</span>:n}
+              </div>
+              <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${cur?'text-primary':done?'text-on-surface':'text-on-surface-variant/60'}`}>{n}. {l}</span>
+            </div>
+            {i<STEPS.length-1&&<div className={`flex-1 h-[2px] mb-5 transition-all duration-500 ${step>n?'bg-primary':'bg-surface-container-highest'}`}/>}
+          </React.Fragment>
+        );
+      })}
+    </nav>
+  );
+
+  const RightPanel=()=>(
+    <div className="space-y-5">
+      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary"><span className="material-symbols-outlined">info</span></div>
+          <h3 className="font-headline font-extrabold text-on-surface">Lưu ý đăng ký KLTN</h3>
+        </div>
+        <ul className="space-y-4">
+          {[
+            'Đề tài KLTN phải phù hợp với ngành đào tạo và có tính ứng dụng thực tiễn.',
+            'Mỗi sinh viên chỉ được đăng ký 1 giảng viên hướng dẫn KLTN.',
+            'Bạn có thể giữ lại GV hướng dẫn BCTT hoặc chọn GV mới cho KLTN.',
+          ].map((n,i)=>(
+            <li key={i} className="flex gap-3 text-sm text-on-surface-variant leading-relaxed">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0"/>{n}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {/* Nhắc BCTT đã pass */}
+      <div className="bg-primary-fixed/40 border border-primary-fixed-dim/30 rounded-3xl p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="material-symbols-outlined text-primary">verified</span>
+          <span className="font-bold text-on-primary-fixed text-sm">Điều kiện đã đạt</span>
+        </div>
+        <p className="text-xs text-on-primary-fixed/80 leading-relaxed">
+          Bạn đã hoàn thành BCTT với điểm đạt yêu cầu. Bây giờ bạn có thể đăng ký Khóa Luận Tốt Nghiệp.
+        </p>
+      </div>
+    </div>
+  );
+
+  return(
+    <div className="anim-fade">
+      {toast.toast&&<Toast {...toast.toast} onClose={toast.hide}/>}
+
+      {/* Confirm Modal */}
+      {showConfirm&&(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-on-surface/40 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-[2rem] p-10 shadow-2xl flex flex-col items-center text-center anim-slide">
+            <div className="w-20 h-20 rounded-full bg-primary-fixed mb-6 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-4xl">school</span>
+            </div>
+            <h2 className="font-headline font-extrabold text-2xl text-on-surface mb-3">Xác nhận đăng ký KLTN?</h2>
+            <p className="text-on-surface-variant mb-2 leading-relaxed">Hệ thống sẽ ghi nhận và gửi thông báo đến:</p>
+            <div className="mb-6 px-4 py-3 bg-surface-container-low rounded-xl w-full text-sm">
+              <p className="font-bold text-on-surface">{selGV?.name}</p>
+              <p className="text-on-surface-variant text-xs mt-1">📧 {selGV?.email}</p>
+            </div>
+            <div className="flex flex-col w-full gap-3">
+              <button onClick={confirm} disabled={submitting}
+                className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg hover:bg-primary-container transition-all flex items-center justify-center gap-2 disabled:opacity-70">
+                {submitting?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>:'Xác nhận & Gửi'}
+              </button>
+              <button onClick={()=>setShowConfirm(false)} className="w-full py-4 text-on-surface font-bold rounded-2xl hover:bg-surface-container transition-all">Hủy bỏ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccess&&(
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-on-surface/60 backdrop-blur-md">
+          <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-10 shadow-2xl text-center anim-slide">
+            <div className="w-24 h-24 bg-primary-fixed text-primary rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg anim-pop">
+              <span className="material-symbols-outlined fill-icon text-5xl">school</span>
+            </div>
+            <h3 className="text-2xl font-headline font-black text-on-surface mb-3 leading-tight">Đăng ký KLTN thành công!</h3>
+            <p className="text-on-surface-variant text-sm mb-2 leading-relaxed">
+              Yêu cầu đã được gửi đến giảng viên <strong>{selGV?.name}</strong>.
+            </p>
+            <div className="p-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant mb-8">
+              📧 Email thông báo đã gửi tới {selGV?.email}
+            </div>
+            <button onClick={onSuccess} className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20">
+              Về trang chủ
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-8 space-y-5">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <span className="px-3 py-1 bg-primary-fixed text-on-primary-fixed text-[10px] font-black rounded-full tracking-wider">KLTN</span>
+              <h2 className="text-3xl font-headline font-extrabold text-on-surface tracking-tight">Đăng ký Khóa Luận Tốt Nghiệp</h2>
+            </div>
+            <p className="text-on-surface-variant text-sm">Vui lòng cung cấp đầy đủ thông tin đề tài và giảng viên hướng dẫn.</p>
+          </div>
+          <StepBar/>
+
+          {/* STEP 1 — Thông tin KLTN */}
+          {step===1&&(
+            <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm anim-fade">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Tên đề tài KLTN <span className="text-error">*</span></label>
+                  <input value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}
+                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60"
+                    placeholder="Nhập tên đề tài khóa luận tốt nghiệp..."/>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Ngành <span className="text-error">*</span></label>
+                  <div className="relative">
+                    <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
+                      className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface">
+                      <option value="">Chọn ngành</option>
+                      {NGANH_LIST.map(n=><option key={n} value={n}>{n}</option>)}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Đợt - Học kỳ <span className="text-error">*</span></label>
+                  <div className="relative">
+                    <select value={form.semester} onChange={e=>setSem(e.target.value)}
+                      className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface">
+                      <option value="">Chọn học kỳ</option>
+                      <option value="D1-HK1-2526">Đợt 1 - HK1 NH25-26</option>
+                      <option value="D2-HK1-2526">Đợt 2 - HK1 NH25-26</option>
+                      <option value="D1-HK2-2526">Đợt 1 - HK2 NH25-26</option>
+                      <option value="D2-HK2-2526">Đợt 2 - HK2 NH25-26</option>
+                    </select>
+                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Thời gian bắt đầu</label>
+                  <div className="flex items-center gap-3 bg-surface-container border border-outline-variant/20 rounded-xl px-4 py-4 text-on-surface-variant cursor-not-allowed">
+                    <span className="material-symbols-outlined text-sm">lock</span>
+                    <span>{form.startDate||'Tự động sau khi chọn học kỳ'}</span>
+                  </div>
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-semibold text-on-surface-variant">Ghi chú (tùy chọn)</label>
+                  <textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} rows={3}
+                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60 resize-none"
+                    placeholder="Mô tả tóm tắt đề tài, hướng nghiên cứu..."/>
+                </div>
+              </div>
+              <div className="flex justify-end pt-6 border-t border-outline-variant/10 mt-6">
+                <button onClick={next1}
+                  className="bg-gradient-to-br from-primary to-primary-container text-white px-10 py-4 rounded-xl font-headline font-bold text-sm shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2">
+                  Tiếp theo <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 2 — Chọn Giảng viên */}
+          {step===2&&(
+            <div className="anim-fade space-y-4">
+              {/* Gợi ý GV BCTT cũ */}
+              {bcttInstr&&bcttInstr.name&&(
+                <div className="flex items-center gap-4 p-4 bg-primary-fixed/20 border border-primary-fixed-dim/30 rounded-2xl">
+                  <span className="material-symbols-outlined text-primary text-xl">tips_and_updates</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-on-surface">Gợi ý: GV hướng dẫn BCTT của bạn</p>
+                    <p className="text-xs text-on-surface-variant truncate">{bcttInstr.name} — {bcttInstr.email}</p>
+                  </div>
+                  <button onClick={()=>{
+                    // Tìm GV này trong instructorList để set đúng object
+                    const found=instructorList.find(iv=>iv.email===bcttInstr.email);
+                    if(found)setSelGV(found);
+                    else setSelGV({name:bcttInstr.name,email:bcttInstr.email,id:bcttInstr.id,code:bcttInstr.id,nganh:SESSION.nganh,slConLai:1,slDangKi:0});
+                  }}
+                    className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container transition-all flex-shrink-0">
+                    Chọn GV này
+                  </button>
+                </div>
+              )}
+
+              {loadingGV?(
+                <Spinner text="Đang tải danh sách giảng viên..."/>
+              ):(
+                <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="bg-surface-container-low text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
+                          <th className="px-6 py-4">Giảng viên</th>
+                          <th className="px-5 py-4">Mã / Email</th>
+                          <th className="px-5 py-4">Ngành</th>
+                          <th className="px-5 py-4">Còn nhận</th>
+                          <th className="px-5 py-4 text-right">Chọn</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/10">
+                        {instructorList.filter(iv=>!form.category||iv.nganh===form.category).length===0?(
+                          <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-on-surface-variant">Không có dữ liệu giảng viên</td></tr>
+                        ):instructorList.filter(iv=>!form.category||iv.nganh===form.category).map((iv,idx)=>{
+                          const rem=typeof iv.slConLai==='number'?iv.slConLai:parseInt(iv.slConLai)||0;
+                          const full=rem<=0;
+                          const total=rem+((typeof iv.slDangKi==='number'?iv.slDangKi:0)||0);
+                          const pct=total>0?Math.min(100,Math.round(((total-rem)/total)*100)):full?100:0;
+                          const ini=iv.name.trim().split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
+                          const sel=selGV?.email===iv.email;
+                          return(
+                            <tr key={idx} onClick={()=>!full&&setSelGV(iv)}
+                              className={`transition-colors ${full?'opacity-50 bg-surface-container-low/40 cursor-not-allowed':sel?'bg-blue-50':'hover:bg-blue-50/30 cursor-pointer'}`}>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-10 w-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xs flex-shrink-0">{ini}</div>
+                                  <div>
+                                    <p className={`font-bold text-sm ${sel?'text-primary':'text-on-surface'}`}>{iv.name}</p>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${full?'bg-error-container text-on-error-container':'bg-primary-fixed text-on-primary-fixed'}`}>
+                                      {full?'Đã đầy':'Còn chỗ'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-5 py-4">
+                                <p className="text-sm font-medium text-on-surface">GV{iv.id||iv.code}</p>
+                                <p className="text-xs text-on-surface-variant truncate max-w-[140px]">{iv.email}</p>
+                              </td>
+                              <td className="px-5 py-4"><span className="px-2 py-1 rounded-lg bg-surface-container text-xs font-semibold">{iv.nganh}</span></td>
+                              <td className="px-5 py-4">
+                                <div className="w-20 bg-surface-container-highest h-1.5 rounded-full overflow-hidden mb-1">
+                                  <div className={`h-full rounded-full ${full?'bg-error':pct>=70?'bg-secondary-container':'bg-primary'}`} style={{width:`${pct}%`}}/>
+                                </div>
+                                <p className="text-xs font-bold text-on-surface-variant">
+                                  <span className={full?'text-error':'text-primary'}>{rem}</span> còn lại
+                                </p>
+                              </td>
+                              <td className="px-5 py-4 text-right">
+                                <input type="radio" name="gv_kltn" disabled={full} checked={sel}
+                                  onChange={()=>!full&&setSelGV(iv)}
+                                  className="h-5 w-5 text-primary border-outline-variant focus:ring-primary cursor-pointer disabled:cursor-not-allowed"/>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <button onClick={()=>setStep(1)} className="flex items-center gap-2 px-6 py-3 rounded-xl border border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-colors">
+                  <span className="material-symbols-outlined">arrow_back</span>Quay lại
+                </button>
+                <button onClick={next2} className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold shadow-lg hover:scale-[1.02] transition-all">
+                  Tiếp theo <span className="material-symbols-outlined">arrow_forward</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3 — Rà soát */}
+          {step===3&&(
+            <div className="anim-fade space-y-5">
+              <div>
+                <h3 className="text-2xl font-headline font-extrabold text-on-surface mb-1">Rà soát thông tin đăng ký KLTN</h3>
+                <p className="text-on-surface-variant text-sm">Kiểm tra kỹ trước khi xác nhận gửi yêu cầu.</p>
+              </div>
+              <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-outline-variant/10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-primary-fixed rounded-xl text-primary"><span className="material-symbols-outlined fill-icon">school</span></div>
+                  <h4 className="font-headline font-bold text-lg">Phần 1: Thông tin KLTN</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
+                  {[
+                    {l:'Tên đề tài KLTN',v:form.topic},
+                    {l:'Ngành',v:form.category},
+                    {l:'Thời gian bắt đầu',v:form.startDate},
+                    {l:'Học kỳ',v:form.semester==='D1-HK1-2526'?'Đợt 1 - HK1 NH25-26':form.semester==='D2-HK1-2526'?'Đợt 2 - HK1 NH25-26':form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26':'Đợt 2 - HK2 NH25-26'},
+                    {l:'Ghi chú',v:form.note||'(không có)'},
+                  ].map((r,i)=>(
+                    <div key={i} className={r.l.includes('đề tài')?'md:col-span-2':''}>
+                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">{r.l}</label>
+                      <p className="text-on-surface font-semibold">{r.v}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-outline-variant/10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-primary-fixed rounded-xl text-primary"><span className="material-symbols-outlined fill-icon">person_check</span></div>
+                  <h4 className="font-headline font-bold text-lg">Phần 2: Giảng viên hướng dẫn KLTN</h4>
+                </div>
+                {selGV&&(
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    <Av name={selGV.name} cls="w-16 h-16 rounded-2xl text-xl flex-shrink-0"/>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+                      {[{l:'Họ và tên',v:selGV.name},{l:'Mã GV',v:`GV${selGV.id||selGV.code}`},{l:'Email',v:selGV.email}].map((r,i)=>(
+                        <div key={i}>
+                          <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">{r.l}</label>
+                          <p className={`font-bold text-on-surface text-sm ${i===2?'text-primary break-all':''}`}>{r.v}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="bg-surface-container p-5 rounded-2xl border-l-4 border-primary flex gap-4 items-start">
+                <span className="material-symbols-outlined text-primary">campaign</span>
+                <p className="text-sm text-on-surface-variant italic leading-relaxed">
+                  Sau khi xác nhận, hệ thống sẽ gửi email thông báo đến <strong>{selGV?.email}</strong>. Giảng viên sẽ duyệt hoặc từ chối đề tài KLTN.
+                </p>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <button onClick={()=>setStep(2)} className="flex items-center gap-2 px-8 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all">
+                  <span className="material-symbols-outlined">arrow_back</span>Quay lại
+                </button>
+                <button onClick={()=>setShowConfirm(true)} className="px-12 py-3 rounded-xl bg-primary text-white font-bold shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2">
+                  Xác nhận đăng ký <span className="material-symbols-outlined">send</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="lg:col-span-4"><RightPanel/></div>
+      </div>
+    </div>
+  );
+}
+
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
 function App(){
   // ── Auth guard + role routing ──────────────────────────────────
@@ -1575,6 +2395,9 @@ function App(){
   const [loadingGV,setLoadingGV]=useState(false);
   const [notifications,setNotifications]=useState([]);
   const [showSubmitReport,setShowSubmitReport]=useState(false);
+  const [showSubmitKLTN,setShowSubmitKLTN]=useState(false);
+  const [kltnInstructorList,setKltnInstructorList]=useState([]);
+  const [loadingKltnGV,setLoadingKltnGV]=useState(false);
   const toast=useToast();
 
   // ── Tính unlock/disable trạng thái KLTN ────────────────────────
@@ -1631,6 +2454,14 @@ function App(){
         .catch(()=>console.warn('Không tải được GV từ Sheet'))
         .finally(()=>setLoadingGV(false));
     }
+    // Load GV cho tab kltn
+    if(tab==='kltn'&&kltnInstructorList.length===0){
+      setLoadingKltnGV(true);
+      fetchGVFromCSV()
+        .then(rows=>setKltnInstructorList(rows))
+        .catch(()=>console.warn('Không tải được GV từ Sheet'))
+        .finally(()=>setLoadingKltnGV(false));
+    }
   },[tab]);
 
   function handleRegSuccess(){
@@ -1653,6 +2484,20 @@ function App(){
     toast.show('Nộp báo cáo thành công! GV sẽ chấm điểm trong 2 tuần.','success');
   }
 
+  function handleSubmitKLTNSuccess(){
+    setShowSubmitKLTN(false);
+    setDashData(null);
+    loadDash();
+    toast.show('Nộp khóa luận thành công! GV sẽ chấm điểm theo lịch bảo vệ.','success');
+  }
+
+  function handleKltnRegSuccess(){
+    setTab('dashboard');
+    setDashData(null);
+    loadDash();
+    toast.show('Đăng ký KLTN thành công! Đang chờ giảng viên xác nhận.','success');
+  }
+
   return(
     <div className="min-h-screen bg-background">
       {toast.toast&&<Toast {...toast.toast} onClose={toast.hide}/>}
@@ -1662,6 +2507,15 @@ function App(){
           dashData={dashData}
           onClose={()=>setShowSubmitReport(false)}
           onSuccess={handleSubmitReportSuccess}
+          toast={toast}
+        />
+      )}
+
+      {showSubmitKLTN&&(
+        <SubmitKLTNModal
+          dashData={dashData}
+          onClose={()=>setShowSubmitKLTN(false)}
+          onSuccess={handleSubmitKLTNSuccess}
           toast={toast}
         />
       )}
@@ -1685,6 +2539,8 @@ function App(){
               onRegister={()=>setTab('registration')}
               onChangeTopic={handleChangeTopic}
               onSubmitReport={()=>setShowSubmitReport(true)}
+              onRegisterKLTN={()=>setTab('kltn')}
+              onSubmitKLTN={()=>setShowSubmitKLTN(true)}
               toast={toast}
               kltnUnlocked={kltnUnlocked}
               bcttDisabled={bcttDisabled}
@@ -1698,14 +2554,12 @@ function App(){
             />
           )}
           {tab==='kltn'&&(
-            <div className="anim-fade flex flex-col items-center justify-center py-24 gap-6">
-              <span className="material-symbols-outlined text-7xl text-primary opacity-20">school</span>
-              <h2 className="text-2xl font-headline font-black text-on-surface">Đăng ký Khóa Luận Tốt Nghiệp</h2>
-              <p className="text-on-surface-variant">Giao diện đang được xây dựng. Vui lòng quay lại sau.</p>
-              <div className="px-6 py-4 bg-tertiary-fixed rounded-2xl text-on-tertiary-fixed text-sm font-medium">
-                🎓 Bạn đã đủ điều kiện đăng ký KLTN!
-              </div>
-            </div>
+            <KLTNRegistration
+              onSuccess={handleKltnRegSuccess}
+              instructorList={kltnInstructorList}
+              loadingGV={loadingKltnGV}
+              dashData={dashData}
+            />
           )}
         </div>
       </main>
