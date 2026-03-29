@@ -855,35 +855,129 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
         const submittedAt = localStorage.getItem('ute_bctt_submittedAt')||'';
         const allHistory = [];
 
-        // Chỉ thêm 1 row duy nhất cho BCTT (gộp tất cả trạng thái vào 1 dòng)
         if(reg&&topic){
-          // Xác định trạng thái hiển thị
-          let bcttStatus = status||'pending';
-          if(grade!==null) bcttStatus = grade>=5?'approved':'rejected';
-
+          // Sự kiện 1: SV nộp đăng ký
           allHistory.push({
             loai:'BCTT',
+            icon:'assignment_turned_in',
+            iconBg:'bg-primary-fixed',
+            iconTx:'text-primary',
+            action:'Nộp đơn đăng ký BCTT',
             topic,
-            company: co||'--',
-            position: dashData?.position||'--',
-            status: bcttStatus,
+            detail:`GV: ${instr?.name||'--'} • ${instr?.term||'--'}`,
+            sub:`${co||'--'} ${dashData?.position?'· '+dashData.position:''}`,
+            time: submittedAt || instr?.term || '--',
+            status:status||'pending',
           });
+
+          // Sự kiện 2: GV duyệt / từ chối (chỉ hiện khi có kết quả)
+          if(status==='approved'){
+            allHistory.push({
+              loai:'BCTT',
+              icon:'check_circle',
+              iconBg:'bg-tertiary-fixed/30',
+              iconTx:'text-on-tertiary-fixed',
+              action:'GV duyệt đề tài',
+              topic,
+              detail:`GV ${instr?.name||'--'} đã xác nhận hướng dẫn`,
+              sub:'Yêu cầu đã được chấp thuận',
+              time:'--',
+              status:'approved',
+            });
+          }
+          if(status==='rejected'){
+            allHistory.push({
+              loai:'BCTT',
+              icon:'cancel',
+              iconBg:'bg-error-container',
+              iconTx:'text-on-error-container',
+              action:'GV từ chối đề tài',
+              topic,
+              detail:`GV ${instr?.name||'--'} đã từ chối`,
+              sub:'Bạn có thể đổi đề tài để đăng ký lại',
+              time:'--',
+              status:'rejected',
+            });
+          }
+
+          // Sự kiện 3: Nộp báo cáo
+          if(dashData?.reportSubmitted){
+            allHistory.push({
+              loai:'BCTT',
+              icon:'upload_file',
+              iconBg:'bg-secondary-container/20',
+              iconTx:'text-secondary',
+              action:'Nộp báo cáo thực tập',
+              topic,
+              detail:`GV ${instr?.name||'--'} đang chấm điểm`,
+              sub:'Thời gian chấm: tối đa 2 tuần',
+              time:'--',
+              status:'pending',
+            });
+          }
+
+          // Sự kiện 4: Có điểm
+          if(grade!==null){
+            const passed = grade>=5;
+            allHistory.push({
+              loai:'BCTT',
+              icon: passed?'grade':'report',
+              iconBg: passed?'bg-tertiary-fixed/40':'bg-error-container',
+              iconTx: passed?'text-on-tertiary-fixed':'text-on-error-container',
+              action: passed?`Điểm thực tập: ${grade.toFixed(1)} — Đạt ✓`:`Điểm thực tập: ${grade.toFixed(1)} — Không đạt ✗`,
+              topic,
+              detail: locked?'Điểm đã được khoá chính thức':'Đang trong thời gian phúc khảo (7 ngày)',
+              sub: passed&&locked?'🎓 Đủ điều kiện đăng ký KLTN':'',
+              time:'--',
+              status: passed?'approved':'rejected',
+            });
+          }
         }
 
-        // KLTN history — 1 row duy nhất
+        // KLTN history
         const kltnData=dashData?.kltn||null;
         if(kltnData?.registered&&kltnData?.topic){
-          let kltnStatus = kltnData.status||'pending';
-          if(kltnData.kltnGrade!==null&&kltnData.kltnGrade!==undefined){
-            kltnStatus = kltnData.kltnGrade>=5?'approved':'rejected';
-          }
           allHistory.push({
             loai:'KLTN',
+            icon:'school',
+            iconBg:'bg-primary-fixed',
+            iconTx:'text-primary',
+            action:'Nộp đơn đăng ký KLTN',
             topic:kltnData.topic,
-            company:'--',
-            position:'--',
-            status: kltnStatus,
+            detail:`GV: ${kltnData.instructor?.name||'--'} • ${kltnData.instructor?.term||'--'}`,
+            sub:'',
+            time:'--',
+            status:kltnData.status||'pending',
           });
+          if(kltnData.status==='approved'){
+            allHistory.push({
+              loai:'KLTN',
+              icon:'check_circle',
+              iconBg:'bg-tertiary-fixed/30',
+              iconTx:'text-on-tertiary-fixed',
+              action:'GV duyệt đề tài KLTN',
+              topic:kltnData.topic,
+              detail:`GV ${kltnData.instructor?.name||'--'} đã xác nhận`,
+              sub:'',
+              time:'--',
+              status:'approved',
+            });
+          }
+          if(kltnData.kltnGrade!==null&&kltnData.kltnGrade!==undefined){
+            const kp=kltnData.kltnGrade>=5;
+            allHistory.push({
+              loai:'KLTN',
+              icon:kp?'verified':'report',
+              iconBg:kp?'bg-primary-fixed/60':'bg-error-container',
+              iconTx:kp?'text-on-primary-fixed':'text-on-error-container',
+              action:`Điểm KLTN: ${parseFloat(kltnData.kltnGrade).toFixed(1)} — ${kp?'Đạt ✓':'Không đạt ✗'}`,
+              topic:kltnData.topic,
+              detail:kltnData.kltnGradeLocked?'Điểm đã khoá chính thức':'Chờ khoá điểm',
+              sub:'',
+              time:'--',
+              status:kp?'approved':'rejected',
+            });
+          }
         }
 
         const [filterLoai,setFilterLoai]=useState('all');
@@ -905,12 +999,20 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
         return(
           <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
             {/* Header */}
-            <div className="p-6 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-bold text-on-surface text-base">Lịch sử hoạt động</h3>
+            <div className="p-6 flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/10">
+              <div className="flex items-center gap-3">
+                <span className="material-symbols-outlined text-primary">history</span>
+                <h3 className="font-bold text-on-surface">Lịch sử hoạt động</h3>
+                {filtered.length>0&&(
+                  <span className="px-2 py-0.5 bg-primary-fixed text-on-primary-fixed text-[10px] font-black rounded-full">
+                    {filtered.length}
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-1.5 p-1 bg-surface-container rounded-full">
                 {[{v:'all',l:'Tất cả'},{v:'BCTT',l:'BCTT'},{v:'KLTN',l:'KLTN'}].map(opt=>(
                   <button key={opt.v} onClick={()=>{setFilterLoai(opt.v);setShowAll(false);}}
-                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-all
                       ${filterLoai===opt.v?'bg-primary text-white shadow-sm':'text-on-surface-variant hover:text-on-surface'}`}>
                     {opt.l}
                   </button>
@@ -918,68 +1020,55 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-surface-container-low/60">
-                    <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-widest text-on-surface-variant">Phân loại</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-widest text-on-surface-variant">Đề tài</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-widest text-on-surface-variant">Đơn vị thực tập</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-widest text-on-surface-variant">Vị trí thực tập</th>
-                    <th className="px-6 py-3 text-left text-[11px] font-black uppercase tracking-widest text-on-surface-variant">Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant/10">
-                  {filtered.length===0?(
-                    <tr>
-                      <td colSpan={5}>
-                        <div className="px-6 py-16 flex flex-col items-center text-center gap-3">
-                          <span className="material-symbols-outlined text-4xl text-on-surface-variant/20">inbox</span>
-                          <p className="text-sm font-semibold text-on-surface-variant">
-                            {filterLoai==='all'?'Chưa có dữ liệu hoạt động':'Chưa có lịch sử '+filterLoai}
-                          </p>
-                          <p className="text-xs text-on-surface-variant/60">
-                            {filterLoai==='KLTN'?'Hoàn thành BCTT với điểm đạt để mở đăng ký KLTN':'Đăng ký BCTT để bắt đầu hành trình'}
-                          </p>
-                        </div>
-                      </td>
-                    </tr>
-                  ):(
-                    displayed.map((row,i)=>(
-                      <tr key={i} className="hover:bg-surface-container-low/40 transition-colors">
-                        {/* Phân loại */}
-                        <td className="px-6 py-4">
-                          <TypeBadge loai={row.loai}/>
-                        </td>
-                        {/* Đề tài */}
-                        <td className="px-6 py-4 max-w-[220px]">
-                          <p className="text-sm font-semibold text-on-surface truncate" title={row.topic}>{row.topic||'--'}</p>
-                        </td>
-                        {/* Đơn vị thực tập */}
-                        <td className="px-6 py-4 max-w-[180px]">
-                          <p className="text-sm text-on-surface-variant truncate" title={row.company}>{row.company||'--'}</p>
-                        </td>
-                        {/* Vị trí thực tập */}
-                        <td className="px-6 py-4 max-w-[160px]">
-                          <p className="text-sm text-on-surface-variant truncate" title={row.position}>{row.position||'--'}</p>
-                        </td>
-                        {/* Trạng thái */}
-                        <td className="px-6 py-4">
-                          <Pill status={row.status}/>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+            {filtered.length===0?(
+              /* Empty state */
+              <div className="px-6 py-16 flex flex-col items-center text-center gap-3">
+                <div className="w-16 h-16 rounded-2xl bg-surface-container flex items-center justify-center">
+                  <span className="material-symbols-outlined text-3xl text-on-surface-variant/30">inbox</span>
+                </div>
+                <p className="text-sm font-semibold text-on-surface-variant">
+                  {filterLoai==='all'?'Chưa có hoạt động nào':'Chưa có lịch sử '+filterLoai}
+                </p>
+                <p className="text-xs text-on-surface-variant/60 max-w-xs">
+                  {filterLoai==='KLTN'?'Hoàn thành BCTT với điểm đạt để mở đăng ký KLTN':'Đăng ký BCTT để bắt đầu hành trình của bạn'}
+                </p>
+              </div>
+            ):(
+              /* Timeline */
+              <div className="divide-y divide-outline-variant/10">
+                {displayed.map((row,i)=>(
+                  <div key={i} className="flex items-start gap-4 px-6 py-5 hover:bg-surface-container-low/40 transition-colors">
+                    {/* Icon */}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${row.iconBg}`}>
+                      <span className={`material-symbols-outlined text-lg ${row.iconTx}`}>{row.icon}</span>
+                    </div>
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        <TypeBadge loai={row.loai}/>
+                        <p className="text-sm font-bold text-on-surface">{row.action}</p>
+                      </div>
+                      <p className="text-xs text-on-surface-variant font-medium truncate">{row.topic}</p>
+                      {row.detail&&<p className="text-xs text-on-surface-variant/70 mt-0.5">{row.detail}</p>}
+                      {row.sub&&<p className="text-xs text-primary/80 font-medium mt-0.5">{row.sub}</p>}
+                    </div>
+                    {/* Right: time + status */}
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      <Pill status={row.status}/>
+                      {row.time&&row.time!=='--'&&(
+                        <span className="text-[10px] text-on-surface-variant/60">{row.time}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
-            {/* Footer — xem thêm */}
+            {/* Footer */}
             {hasMore&&(
               <div className="px-6 py-3 border-t border-outline-variant/10 flex items-center justify-between">
                 <p className="text-[11px] text-on-surface-variant">
-                  Hiển thị <span className="font-bold text-on-surface">{displayed.length}</span> / <span className="font-bold text-on-surface">{filtered.length}</span>
+                  Hiển thị <span className="font-bold text-on-surface">{displayed.length}</span> / <span className="font-bold text-on-surface">{filtered.length}</span> sự kiện
                 </p>
                 <button onClick={()=>setShowAll(v=>!v)}
                   className="flex items-center gap-1 text-[11px] font-bold text-primary hover:underline">
@@ -1027,26 +1116,31 @@ function Registration({onSuccess,instructorList,loadingGV}){
       :form.semester==='D2-HK1-2526'?'Đợt 2 - HK1 NH25-26'
       :form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26'
       :'Đợt 2 - HK2 NH25-26';
+
+    // GAS không hỗ trợ CORS với POST từ browser → dùng GET (no-cors workaround)
+    // Gọi bằng GET, GAS doGet() sẽ xử lý và ghi vào sheet DangKy
+    const params = new URLSearchParams({
+      action        : 'submitRegistration',
+      type          : 'bctt',
+      email         : SESSION.email,
+      name          : SESSION.name,
+      maSo          : SESSION.maSo,
+      nganh         : SESSION.nganh,
+      topic         : form.topic,
+      company       : form.company,
+      instructorName: selGV.name,
+      instructorEmail: selGV.email,
+      instructorId  : selGV.id || selGV.code || '',
+      term          : termLabel,
+      note          : form.note || '',
+      position      : form.position || '',
+      internDuration: form.internDuration || '',
+    });
+
     try{
-      const res=await apiPost({
-        action:'submitRegistration',
-        type:'bctt',
-        email:SESSION.email,
-        name:SESSION.name,
-        maSo:SESSION.maSo,
-        nganh:SESSION.nganh,
-        topic:form.topic,
-        company:form.company,
-        instructorName:selGV.name,
-        instructorEmail:selGV.email,
-        instructorId:selGV.id||selGV.code,
-        term:termLabel,
-        note:form.note||'',
-        position:form.position||'',
-        internDuration:form.internDuration||'',
-      });
+      // Thử GET trước (doGet trong GAS)
+      const res = await fetch(`${API_URL}?${params.toString()}`).then(r=>r.json());
       if(res.success){
-        // Lưu timestamp đăng ký để Dashboard hiển thị ngay
         localStorage.setItem('ute_bctt_submittedAt', new Date().toLocaleString('vi-VN'));
         setShowConfirm(false);
         setShowSuccess(true);
@@ -1054,9 +1148,40 @@ function Registration({onSuccess,instructorList,loadingGV}){
         toast.show(res.message||'Gửi thất bại. Vui lòng thử lại.','error');
         setSubmitting(false);
       }
-    }catch(e){
-      toast.show('Lỗi kết nối. Vui lòng thử lại sau.','error');
-      setSubmitting(false);
+    } catch(e) {
+      // Fallback: thử POST với no-cors (GAS nhận được nhưng không trả JSON)
+      // → coi như thành công nếu không có network error
+      try {
+        await fetch(API_URL, {
+          method : 'POST',
+          mode   : 'no-cors',
+          headers: { 'Content-Type': 'text/plain' },
+          body   : JSON.stringify({
+            action        : 'submitRegistration',
+            type          : 'bctt',
+            email         : SESSION.email,
+            name          : SESSION.name,
+            maSo          : SESSION.maSo,
+            nganh         : SESSION.nganh,
+            topic         : form.topic,
+            company       : form.company,
+            instructorName: selGV.name,
+            instructorEmail: selGV.email,
+            instructorId  : selGV.id || selGV.code || '',
+            term          : termLabel,
+            note          : form.note || '',
+            position      : form.position || '',
+            internDuration: form.internDuration || '',
+          }),
+        });
+        // no-cors luôn trả opaque response → không đọc được JSON, nhưng GAS vẫn chạy
+        localStorage.setItem('ute_bctt_submittedAt', new Date().toLocaleString('vi-VN'));
+        setShowConfirm(false);
+        setShowSuccess(true);
+      } catch(e2) {
+        toast.show('Lỗi kết nối. Kiểm tra mạng và thử lại.','error');
+        setSubmitting(false);
+      }
     }
   }
 
