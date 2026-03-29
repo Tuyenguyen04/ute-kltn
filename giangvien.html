@@ -559,7 +559,7 @@ function TabThongTinChung({toast, addGVNotification}) {
       } else {
         toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error');
       }
-    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    } catch(e) { console.error('Approve error:', e); toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setProcessingId(null);
   }
 
@@ -579,7 +579,7 @@ function TabThongTinChung({toast, addGVNotification}) {
       } else {
         toast.show(res.message || 'Từ chối thất bại. Thử lại.', 'error');
       }
-    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    } catch(e) { console.error('Reject error:', e); toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setProcessingId(null);
     setRejectTarget(null);
   }
