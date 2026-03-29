@@ -71,14 +71,14 @@ async function apiGet(params){
   return r.json();
 }
 async function apiPost(body){
+  // Google Apps Script Web App redirect POST→GET trên trình duyệt (CORS/redirect issue)
+  // Giải pháp: gửi qua GET với query string, doGet trong GAS xử lý tất cả action
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v??'')]))
+  ).toString();
   console.log('📤 apiPost params:', body);
-  const r=await fetch(API_URL,{
-    method:'POST',
-    redirect:'follow',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(body),
-  });
-  const text=await r.text();
+  const r = await fetch(`${API_URL}?${qs}`, { redirect:'follow' });
+  const text = await r.text();
   console.log('📥 apiPost response:', text);
   try{ return JSON.parse(text); }
   catch(e){ console.error('JSON parse error:', e); throw new Error('Response không phải JSON: '+text.slice(0,300)); }
