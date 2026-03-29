@@ -1,229 +1,775 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html class="light" lang="vi">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Quản lý KLTN - HCM·UTE</title>
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UTE Hub — Giảng viên</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script id="tailwind-config">
+tailwind.config={darkMode:"class",theme:{extend:{colors:{
+  "primary":"#00317e","primary-container":"#0046ad","on-primary":"#ffffff",
+  "primary-fixed":"#dae2ff","primary-fixed-dim":"#b2c5ff","on-primary-fixed":"#001847","on-primary-fixed-variant":"#0040a0",
+  "secondary":"#855300","secondary-container":"#fea619","on-secondary":"#ffffff",
+  "secondary-fixed":"#ffddb8","on-secondary-fixed":"#2a1700","on-secondary-fixed-variant":"#653e00","on-secondary-container":"#684000",
+  "tertiary":"#003f29","tertiary-container":"#00593c","on-tertiary":"#ffffff","on-tertiary-container":"#44d69b",
+  "tertiary-fixed":"#6ffbbe","tertiary-fixed-dim":"#4edea3","on-tertiary-fixed":"#002113","on-tertiary-fixed-variant":"#005236",
+  "error":"#ba1a1a","error-container":"#ffdad6","on-error":"#ffffff","on-error-container":"#93000a",
+  "background":"#faf8ff","on-background":"#191b22",
+  "surface":"#faf8ff","surface-bright":"#faf8ff","surface-dim":"#d9d9e2",
+  "surface-container-lowest":"#ffffff","surface-container-low":"#f3f3fc",
+  "surface-container":"#ededf6","surface-container-high":"#e7e7f1","surface-container-highest":"#e2e2eb",
+  "surface-variant":"#e2e2eb","on-surface":"#191b22","on-surface-variant":"#434653",
+  "outline":"#737784","outline-variant":"#c3c6d5",
+  "inverse-surface":"#2e3037","inverse-on-surface":"#f0f0f9","inverse-primary":"#b2c5ff","surface-tint":"#2559bf",
+},fontFamily:{"headline":["Manrope"],"body":["Inter"],"label":["Inter"]},
+borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"}}}}
+</script>
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh;}
-.topbar{background:#1a4fad;color:#fff;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.topbar-left{display:flex;align-items:center;gap:12px}
-.topbar-brand{font-size:16px;font-weight:800;letter-spacing:1px}
-.topbar-sub{font-size:12px;opacity:.75}
-.topbar-right{display:flex;align-items:center;gap:12px;font-size:13px}
-.user-chip{background:rgba(255,255,255,.15);padding:5px 12px;border-radius:20px;font-size:12.5px}
-.btn-logout{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:6px 14px;border-radius:4px;font-family:inherit;font-size:13px;cursor:pointer;transition:.18s}
-.btn-logout:hover{background:rgba(255,255,255,.25)}
-
-.main{padding:24px}
-.page-title{font-size:20px;font-weight:800;color:#1a3a7a;margin-bottom:4px}
-.page-sub{font-size:13px;color:#6b7280;margin-bottom:20px}
-
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
-.stat-card{background:#fff;border-radius:4px;padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,.07)}
-.stat-label{font-size:12px;color:#6b7280;margin-bottom:4px}
-.stat-val{font-size:26px;font-weight:800;color:#1a4fad}
-.stat-card.green .stat-val{color:#1a7a4a}
-.stat-card.red .stat-val{color:#c0392b}
-.stat-card.orange .stat-val{color:#d97706}
-
-.table-wrap{background:#fff;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.07);overflow:auto}
-.toolbar{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;flex-wrap:wrap;gap:10px}
-.toolbar-title{font-size:15px;font-weight:700;color:#1a3a7a}
-.search-inp{padding:8px 14px;border:1.5px solid #d1d5db;border-radius:4px;font-family:inherit;font-size:13.5px;outline:none;width:240px}
-.search-inp:focus{border-color:#1a4fad}
-.btn-refresh{padding:8px 16px;background:#e8f0fe;color:#1a4fad;border:none;border-radius:4px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer}
-.btn-refresh:hover{background:#d0e2fc}
-
-table{width:100%;border-collapse:collapse;min-width:700px}
-thead tr{background:#f8f9fb}
-th{padding:11px 14px;text-align:left;font-size:12.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;border-bottom:1.5px solid #e5e7eb;white-space:nowrap}
-td{padding:12px 14px;font-size:13.5px;color:#1a2340;border-bottom:1px solid #f0f0f0;vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#f8f9fb}
-
-.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
-.badge.wait{background:#fef3c7;color:#92400e}
-.badge.yes{background:#d1fae5;color:#065f46}
-.badge.no{background:#fee2e2;color:#991b1b}
-
-.btn-accept{padding:6px 14px;background:#1a7a4a;color:#fff;border:none;border-radius:4px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;margin-right:6px;transition:.15s}
-.btn-accept:hover{background:#145e39}
-.btn-reject{padding:6px 14px;background:#c0392b;color:#fff;border:none;border-radius:4px;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
-.btn-reject:hover{background:#992d22}
-.btn-accept:disabled,.btn-reject:disabled{opacity:.45;cursor:not-allowed}
-
-.loading{text-align:center;padding:48px;color:#9ca3af;font-size:14px}
-.empty{text-align:center;padding:48px;color:#9ca3af;font-size:14px}
-
-.overlay{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;animation:fadeIn .3s ease}
-.overlay.show{display:flex}
-.overlay.success{background:rgba(6,95,70,.92)}
-.overlay.error{background:rgba(153,27,27,.92)}
-.overlay-icon{font-size:54px;margin-bottom:14px;animation:popIn .4s ease}
-.overlay-msg{font-size:20px;font-weight:700;color:#fff;text-align:center}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+  *{box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#faf8ff;color:#191b22;margin:0;min-height:100vh}
+  h1,h2,h3,h4,.font-headline{font-family:'Manrope',sans-serif}
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+  .fill-icon{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .anim-fade{animation:fadeIn .35s ease both}
+  .anim-slide{animation:slideUp .4s cubic-bezier(.22,1,.36,1) both}
+  .anim-pop{animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both}
+  .anim-spin{animation:spin .8s linear infinite}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#c3c6d5;border-radius:99px}
+  input,select,textarea{font-family:'Inter',sans-serif}
 </style>
 </head>
 <body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef} = React;
 
-<div class="overlay" id="overlay">
-  <div class="overlay-icon" id="ov-icon"></div>
-  <div class="overlay-msg" id="ov-msg"></div>
-</div>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbzptXTukZzho3esHy5efvLJqqo62LYzmVrNrdxy2Ev3fDstmNdVkIeo6NqWw6QhvTO2/exec';
 
-<div class="topbar">
-  <div class="topbar-left">
-    <div>
-      <div class="topbar-brand">HCM·UTE</div>
-      <div class="topbar-sub">Quản lý đăng ký KLTN</div>
+// Đọc session giảng viên từ localStorage (được set bởi login.html)
+const SESSION = {
+  email: localStorage.getItem('ute_email') || '',
+  role:  localStorage.getItem('ute_role')  || '',
+  name:  localStorage.getItem('ute_name')  || 'Nguyễn Văn A',
+  maGV:  localStorage.getItem('ute_maSo')  || 'GV001',
+  nganh: localStorage.getItem('ute_nganh') || '',
+};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+async function apiGet(params){
+  const qs=new URLSearchParams(params).toString();
+  const r=await fetch(`${API_URL}?${qs}`);
+  return r.json();
+}
+async function apiPost(body){
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return r.json();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function Toast({message,type,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,4500);return()=>clearTimeout(t)},[]);
+  return(
+    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-2 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm anim-fade"
+      style={{background:type==='error'?'#ba1a1a':type==='warn'?'#855300':'#005236',minWidth:'240px',justifyContent:'center'}}>
+      <span className="material-symbols-outlined text-lg">{type==='error'?'error':type==='warn'?'warning':'check_circle'}</span>
+      {message}
     </div>
-  </div>
-  <div class="topbar-right">
-    <div class="user-chip" id="user-chip">...</div>
-    <button class="btn-logout" onclick="logout()">Đăng xuất</button>
-  </div>
-</div>
+  );
+}
+function useToast(){
+  const [t,setT]=useState(null);
+  const show=useCallback((msg,tp='success')=>setT({message:msg,type:tp,k:Date.now()}),[]);
+  return{toast:t,show,hide:()=>setT(null)};
+}
 
-<div class="main">
-  <div class="page-title">Danh sách đăng ký khóa luận</div>
-  <div class="page-sub">Xem và xác nhận đăng ký của sinh viên</div>
+// ── AVATAR (giống trangchu.html) ──────────────────────────────────────────────
+function Av({name='',cls=''}){
+  const parts=name.trim().split(' ').filter(Boolean);
+  const ini=parts.length>=2
+    ?( parts[parts.length-2][0]+parts[parts.length-1][0] ).toUpperCase()
+    :( parts[0]?.[0]||'?' ).toUpperCase();
+  const cols=['from-blue-500 to-blue-700','from-emerald-500 to-teal-600','from-violet-500 to-purple-700','from-orange-400 to-red-500'];
+  const idx=name.charCodeAt(0)%4||0;
+  return <div className={`rounded-full bg-gradient-to-br ${cols[idx]} flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${cls}`}>{ini}</div>;
+}
 
-  <div class="stats">
-    <div class="stat-card"><div class="stat-label">Tổng đăng ký</div><div class="stat-val" id="st-total">–</div></div>
-    <div class="stat-card orange"><div class="stat-label">Chờ xác nhận</div><div class="stat-val" id="st-wait">–</div></div>
-    <div class="stat-card green"><div class="stat-label">Đã nhận</div><div class="stat-val" id="st-yes">–</div></div>
-    <div class="stat-card red"><div class="stat-label">Từ chối</div><div class="stat-val" id="st-no">–</div></div>
-  </div>
+// ── SPINNER ───────────────────────────────────────────────────────────────────
+function Spinner({text='Đang tải...'}){
+  return(
+    <div className="flex flex-col items-center justify-center py-20 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">{text}</p>
+    </div>
+  );
+}
 
-  <div class="table-wrap">
-    <div class="toolbar">
-      <div class="toolbar-title">Danh sách sinh viên</div>
-      <div style="display:flex;gap:8px">
-        <input class="search-inp" id="search" placeholder="Tìm tên, MSSV, đề tài..." oninput="filterTable()"/>
-        <button class="btn-refresh" onclick="loadData()">↻ Tải lại</button>
+// ── AVATAR MENU (header dropdown) ────────────────────────────────────────────
+function AvatarMenu(){
+  const [open,setOpen]=useState(false);
+  useEffect(()=>{
+    if(!open) return;
+    const h=(e)=>{if(!e.target.closest('#gv-avatar-wrap')) setOpen(false);};
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[open]);
+  return(
+    <div id="gv-avatar-wrap" className="relative">
+      <button onClick={()=>setOpen(o=>!o)}
+        className={`focus:outline-none rounded-full transition-all ${open?'ring-2 ring-primary/50':''} hover:ring-2 hover:ring-primary/30`}>
+        <Av name={SESSION.name} cls="w-9 h-9 cursor-pointer"/>
+      </button>
+      {open&&(
+        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-outline-variant/20 z-50 overflow-hidden anim-slide">
+          <div className="px-4 py-3 bg-surface-container-low border-b border-outline-variant/10">
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">Tài khoản</p>
+            <div className="flex items-center gap-3">
+              <Av name={SESSION.name} cls="w-9 h-9 text-sm flex-shrink-0"/>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-on-surface truncate">{SESSION.name}</p>
+                <p className="text-xs text-on-surface-variant truncate">{SESSION.maGV}</p>
+              </div>
+            </div>
+          </div>
+          <button onClick={()=>{localStorage.clear();window.location.href='login.html';}}
+            className="w-full flex items-center gap-3 px-4 py-3 text-error font-semibold hover:bg-error-container/20 transition-colors text-sm">
+            <span className="material-symbols-outlined text-base">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── SIDEBAR (y chang trangchu.html, chỉ đổi nav items cho GV) ────────────────
+function Sidebar({tab, setTab, logout}){
+  const navItems=[
+    {id:'dashboard',  icon:'dashboard',        label:'Thông tin chung'},
+    {id:'sinhvien',   icon:'group',             label:'Sinh viên hướng dẫn'},
+    {id:'phanbien',   icon:'rate_review',       label:'Sinh viên phản biện'},
+    {id:'hoidong',    icon:'gavel',             label:'Hội đồng'},
+  ];
+  return(
+    <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-72 bg-slate-50 rounded-r-3xl z-50 p-4 overflow-y-auto">
+      {/* Logo — giống trangchu */}
+      <div className="mb-6 px-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">U</div>
+        <span className="text-2xl font-black text-blue-900 tracking-tight">UTE Hub</span>
+      </div>
+
+      {/* Profile GV — cùng style với SV ở trangchu */}
+      <div className="mb-6 p-4 bg-surface-container rounded-2xl">
+        <div className="flex flex-col items-start gap-2">
+          <Av name={SESSION.name} cls="w-12 h-12"/>
+          <div className="w-full min-w-0">
+            <h4 className="font-bold text-on-surface text-sm truncate">{SESSION.name||'Giảng viên'}</h4>
+            <p className="text-xs text-on-surface-variant font-medium">Mã GV: {SESSION.maGV}</p>
+            <p className="text-xs text-on-surface-variant truncate">{SESSION.email}</p>
+            <span className="inline-block mt-1.5 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-black rounded-full tracking-wider">GV</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav items */}
+      <nav className="flex-1 space-y-1">
+        {navItems.map(item=>(
+          <button key={item.id} onClick={()=>setTab(item.id)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left
+              ${tab===item.id?'bg-blue-100 text-blue-800':'text-slate-600 hover:bg-slate-200/50'}`}>
+            <span className={`material-symbols-outlined ${tab===item.id?'fill-icon':''}`}>{item.icon}</span>
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* Logout ở cuối sidebar */}
+      <div className="mt-4 pt-4 border-t border-outline-variant/20">
+        <button onClick={logout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-error font-semibold hover:bg-error-container/20 transition-colors text-sm">
+          <span className="material-symbols-outlined text-base">logout</span>
+          Đăng xuất
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+// ── HEADER (copy y chang trangchu.html) ───────────────────────────────────────
+function Header({notifications=[]}){
+  const [showNoti,setShowNoti]=useState(false);
+  return(
+    <header className="fixed top-0 z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 shadow-sm" style={{left:'18rem',right:0}}>
+      <h1 className="font-headline text-base font-extrabold uppercase tracking-wide text-blue-900">ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</h1>
+      <div className="flex items-center gap-4">
+        {/* Bell */}
+        <div className="relative">
+          <button onClick={()=>setShowNoti(v=>!v)} className="relative p-2 hover:bg-surface-container rounded-full transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
+            {notifications.length>0&&(
+              <span className="absolute top-1 right-1 bg-error text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                {notifications.length>9?'9+':notifications.length}
+              </span>
+            )}
+          </button>
+          {showNoti&&(
+            <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-outline-variant/20 z-50 overflow-hidden anim-slide">
+              <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between">
+                <h4 className="font-bold text-sm">Thông báo</h4>
+                <button onClick={()=>setShowNoti(false)} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined text-sm">close</span></button>
+              </div>
+              {notifications.length===0?(
+                <div className="p-6 text-center text-sm text-on-surface-variant">Không có thông báo mới</div>
+              ):(
+                <div className="max-h-72 overflow-y-auto divide-y divide-outline-variant/10">
+                  {notifications.map((n,i)=>(
+                    <div key={i} className="p4 p-4 hover:bg-surface-container-low transition-colors">
+                      <p className="text-sm font-medium text-on-surface">{n.message}</p>
+                      <p className="text-[11px] text-on-surface-variant mt-1">{n.time}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        {/* VN Flag */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full">
+          <svg width="20" height="14" viewBox="0 0 20 14" style={{borderRadius:'2px',flexShrink:0}}>
+            <rect width="20" height="14" fill="#DA251D"/>
+            <polygon points="10,2.5 11.18,6.36 15.24,6.36 12.03,8.64 13.21,12.5 10,10.22 6.79,12.5 7.97,8.64 4.76,6.36 8.82,6.36" fill="#FFFF00"/>
+          </svg>
+          <span className="text-xs font-bold text-on-surface">VN</span>
+        </div>
+        {/* Avatar */}
+        <AvatarMenu/>
+      </div>
+    </header>
+  );
+}
+
+// ── TAB 1: THÔNG TIN CHUNG ────────────────────────────────────────────────────
+function TabThongTinChung({toast}){
+  const [loading, setLoading] = useState(false);
+
+  const stats = [
+    {label:'Sinh viên hướng dẫn', value:'12', icon:'school',    color:'bg-primary text-on-primary', sub:'Học kỳ hiện tại'},
+    {label:'Vai trò phản biện',    value:'08', icon:'visibility', color:'bg-secondary-fixed text-on-secondary-fixed', sub:'Chờ chấm điểm'},
+    {label:'Buổi Hội đồng',        value:'05', icon:'groups',     color:'bg-tertiary-fixed text-on-tertiary-fixed', sub:'Sắp tới'},
+  ];
+
+  const pendingRequests = [
+    {title:'Đề tài: AI trong Y tế',      student:'Lê Văn Tuấn',  mssv:'20110045', type:'Đề xuất đề tài',     typeColor:'bg-secondary-container/20 text-on-secondary-container'},
+    {title:'Báo cáo: Giai đoạn 1',       student:'Trần Thị Bé',   mssv:'20110122', type:'Báo cáo tiến độ',    typeColor:'bg-tertiary-fixed/30 text-on-tertiary-fixed-variant'},
+  ];
+
+  const schedule = [
+    {day:'15', month:'TH5', title:'Họp Hội đồng chấm KLTN', time:'08:00 SA • Phòng A1-203', role:'Chủ tịch'},
+    {day:'18', month:'TH5', title:'Hạn chót nộp điểm PB',   time:'11:59 CH • Hệ thống trực tuyến', role:null},
+    {day:'22', month:'TH5', title:'Họp nhóm nghiên cứu',     time:'14:00 CH • Phòng B3-101', role:'Trưởng nhóm'},
+  ];
+
+  const activity = [
+    {icon:'upload_file', bg:'bg-primary-fixed', iconColor:'text-primary',                 msg:<><span className="font-bold">Võ Văn Hậu</span> đã nộp bản thảo Chương 2.</>, time:'10 phút trước'},
+    {icon:'chat_bubble', bg:'bg-tertiary-fixed', iconColor:'text-on-tertiary-fixed-variant', msg:<><span className="font-bold">Hệ thống</span>: Bạn có 2 phản hồi mới từ SV.</>, time:'2 giờ trước'},
+    {icon:'check_circle',bg:'bg-tertiary-fixed', iconColor:'text-on-tertiary-fixed-variant', msg:<><span className="font-bold">Nguyễn Hoàng Nam</span> đã được xác nhận đạt.</>, time:'Hôm qua'},
+  ];
+
+  const finalResults = [
+    {name:'Nguyễn Hoàng Nam', mssv:'20110098', plagiarism:'12% - Đạt',  plagColor:'bg-tertiary-fixed text-on-tertiary-fixed-variant', gvhd:'8.5', gvpb:'8.0', hd:'9.0', total:'8.6'},
+    {name:'Phạm Minh Tâm',    mssv:'20110341', plagiarism:'28% - Kiểm tra', plagColor:'bg-secondary-fixed text-on-secondary-fixed-variant', gvhd:'7.0', gvpb:'6.5', hd:'7.5', total:'7.1'},
+  ];
+
+  return(
+    <div className="space-y-6 anim-fade">
+
+      {/* Profile bento */}
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Profile card */}
+        <div className="lg:col-span-2 p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col md:flex-row gap-6 items-center">
+          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-4xl shadow-lg flex-shrink-0">
+            {SESSION.name.trim().split(' ').filter(Boolean).slice(-1)[0]?.[0]?.toUpperCase()||'G'}
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <div className="flex flex-col md:flex-row md:items-end gap-2 mb-1">
+              <h2 className="text-2xl font-black text-primary tracking-tight">{SESSION.name}</h2>
+              <span className="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-xs font-bold rounded-full mb-1 inline-block w-fit mx-auto md:mx-0">Giảng viên</span>
+            </div>
+            <p className="text-on-surface-variant font-medium mb-4 flex items-center justify-center md:justify-start gap-2 text-sm">
+              <span className="material-symbols-outlined text-sm">school</span> {SESSION.nganh||'Khoa học máy tính'} • {SESSION.maGV}
+            </p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-3 text-sm">
+              <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl">
+                <span className="material-symbols-outlined text-primary text-base">calendar_today</span>
+                <span className="font-bold text-sm">HK2 - 2024-2025</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl">
+                <span className="material-symbols-outlined text-primary text-base">mail</span>
+                <span className="font-medium text-sm truncate max-w-[180px]">{SESSION.email||'gv@hcmute.edu.vn'}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick stats */}
+        <div className="grid grid-cols-1 gap-3">
+          {stats.map((s,i)=>(
+            <div key={i} className={`p-5 rounded-2xl flex justify-between items-center relative overflow-hidden group shadow-sm ${s.color}`}>
+              <div className="relative z-10">
+                <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">{s.label}</p>
+                <h3 className="text-3xl font-black">{s.value}</h3>
+                <p className="text-[10px] opacity-60 mt-0.5">{s.sub}</p>
+              </div>
+              <span className="material-symbols-outlined text-5xl opacity-20 absolute -right-2 -bottom-2 group-hover:scale-110 transition-transform">{s.icon}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Main grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 space-y-6">
+
+          {/* Yêu cầu chờ duyệt */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary">pending_actions</span>
+                Yêu cầu chờ duyệt
+              </h3>
+              <a className="text-sm font-bold text-primary hover:underline" href="#">Xem tất cả</a>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {pendingRequests.map((r,i)=>(
+                <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 border-secondary group hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors text-sm">{r.title}</h4>
+                      <p className="text-xs text-on-surface-variant">{r.student} • {r.mssv}</p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${r.typeColor}`}>{r.type}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={()=>toast.show('Đã phê duyệt yêu cầu!','success')}
+                      className="flex-1 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 transition-opacity">Phê duyệt</button>
+                    <button onClick={()=>toast.show('Đã từ chối yêu cầu.','warn')}
+                      className="flex-1 py-2 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors">Từ chối</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Kết quả xét tốt nghiệp */}
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">analytics</span>
+                Kết quả xét tốt nghiệp
+              </h3>
+              <button onClick={()=>toast.show('Đang xuất file...','success')} className="p-2 bg-surface-container rounded-xl hover:bg-surface-container-high transition-colors">
+                <span className="material-symbols-outlined text-on-surface-variant">download</span>
+              </button>
+            </div>
+            <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead className="bg-surface-container-low border-b border-outline-variant/20">
+                    <tr>
+                      {['Sinh viên','Đạo văn','GVHD','GVPB','HĐ','Tổng điểm'].map(h=>(
+                        <th key={h} className={`px-5 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider ${h==='Tổng điểm'||h==='GVHD'||h==='GVPB'||h==='HĐ'?'text-center':''}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/10">
+                    {finalResults.map((r,i)=>(
+                      <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
+                        <td className="px-5 py-3">
+                          <p className="font-bold text-on-surface text-sm">{r.name}</p>
+                          <p className="text-[10px] text-on-surface-variant">MSSV: {r.mssv}</p>
+                        </td>
+                        <td className="px-5 py-3 text-center"><span className={`px-2 py-1 text-[10px] font-bold rounded ${r.plagColor}`}>{r.plagiarism}</span></td>
+                        <td className="px-5 py-3 text-center font-medium text-sm">{r.gvhd}</td>
+                        <td className="px-5 py-3 text-center font-medium text-sm">{r.gvpb}</td>
+                        <td className="px-5 py-3 text-center font-medium text-sm">{r.hd}</td>
+                        <td className="px-5 py-3 text-center"><span className="font-black text-primary text-lg">{r.total}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Right column: schedule + activity */}
+        <div className="space-y-6">
+          {/* Lịch trình */}
+          <section className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
+            <h3 className="text-base font-bold text-on-surface mb-5 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">event</span>
+              Lịch trình sắp tới
+            </h3>
+            <div className="space-y-5">
+              {schedule.map((s,i)=>(
+                <div key={i} className="flex gap-4 group">
+                  <div className="flex flex-col items-center">
+                    <span className="text-xs font-black text-primary text-center leading-tight">{s.day}<br/>{s.month}</span>
+                    {i<schedule.length-1&&<div className="w-px flex-1 bg-outline-variant/30 mt-2"/>}
+                  </div>
+                  <div className="pb-2">
+                    <h4 className="text-sm font-bold text-on-surface">{s.title}</h4>
+                    <p className="text-xs text-on-surface-variant">{s.time}</p>
+                    {s.role&&<p className="text-[10px] mt-1 text-secondary font-bold italic">Vai trò: {s.role}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Hoạt động gần đây */}
+          <section className="bg-surface-container p-6 rounded-2xl">
+            <h3 className="text-base font-bold text-on-surface mb-5 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">history</span>
+              Hoạt động gần đây
+            </h3>
+            <div className="space-y-4">
+              {activity.map((a,i)=>(
+                <div key={i} className="flex items-start gap-3">
+                  <div className={`w-8 h-8 rounded-full ${a.bg} flex items-center justify-center flex-shrink-0`}>
+                    <span className={`material-symbols-outlined ${a.iconColor} text-sm`}>{a.icon}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-on-surface">{a.msg}</p>
+                    <p className="text-[10px] text-on-surface-variant mt-1">{a.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button className="w-full mt-5 py-2 border border-primary/20 text-primary text-xs font-bold rounded-xl hover:bg-primary/5 transition-colors">
+              Xem nhật ký đầy đủ
+            </button>
+          </section>
+        </div>
       </div>
     </div>
-    <div id="table-container"><div class="loading">⏳ Đang tải dữ liệu...</div></div>
-  </div>
-</div>
-
-<script>
-const API = 'https://script.google.com/macros/s/AKfycbwMaY83CO3-sr0Z_mw-Sfx1kTWJM95rBbkq-HX36M6TTNVrrG4ETimVVfw2FzHgsv4a/exec';
-
-// Kiểm tra đăng nhập
-const email = sessionStorage.getItem('ute_email');
-const role  = sessionStorage.getItem('ute_role');
-if(!email){ window.location.href='login.html'; }
-document.getElementById('user-chip').textContent = email || 'Admin';
-
-let allData = [];
-
-async function loadData(){
-  document.getElementById('table-container').innerHTML='<div class="loading">⏳ Đang tải dữ liệu...</div>';
-  try{
-    const res = await fetch(`${API}?action=getRegistrations`);
-    const json = await res.json();
-    allData = json.data || [];
-    renderStats(allData);
-    renderTable(allData);
-  } catch(e){
-    document.getElementById('table-container').innerHTML='<div class="empty">⚠️ Không thể tải dữ liệu. Vui lòng thử lại.</div>';
-  }
-}
-
-function renderStats(data){
-  document.getElementById('st-total').textContent = data.length;
-  document.getElementById('st-wait').textContent  = data.filter(r=>r['Xác nhận']==='Chờ xác nhận').length;
-  document.getElementById('st-yes').textContent   = data.filter(r=>r['Xác nhận']==='Đã nhận').length;
-  document.getElementById('st-no').textContent    = data.filter(r=>r['Xác nhận']==='Từ chối').length;
-}
-
-function renderTable(data){
-  if(!data.length){
-    document.getElementById('table-container').innerHTML='<div class="empty">📭 Chưa có sinh viên đăng ký nào.</div>';
-    return;
-  }
-  let rows = data.map((r,i)=>{
-    const status = r['Xác nhận']||'Chờ xác nhận';
-    let badge='', btnHtml='';
-    if(status==='Đã nhận'){
-      badge=`<span class="badge yes">✅ Đã nhận</span>`;
-      btnHtml=`<span style="font-size:12px;color:#6b7280">Đã xử lý</span>`;
-    } else if(status==='Từ chối'){
-      badge=`<span class="badge no">❌ Từ chối</span>`;
-      btnHtml=`<span style="font-size:12px;color:#6b7280">Đã xử lý</span>`;
-    } else {
-      badge=`<span class="badge wait">⏳ Chờ xác nhận</span>`;
-      btnHtml=`<button class="btn-accept" onclick="confirm_row(${r._row},'Đã nhận',this)">Nhận lời mời</button><button class="btn-reject" onclick="confirm_row(${r._row},'Từ chối',this)">Từ chối</button>`;
-    }
-    return `<tr>
-      <td>${r['STT']||i+1}</td>
-      <td><strong>${r['Họ tên']||''}</strong></td>
-      <td>${r['MSSV']||''}</td>
-      <td style="font-size:12.5px;color:#6b7280">${r['Gmail']||''}</td>
-      <td>${r['Đề tài']||''}</td>
-      <td>${r['GVHD']||''}</td>
-      <td>${badge}</td>
-      <td>${btnHtml}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('table-container').innerHTML=`
-    <table>
-      <thead><tr>
-        <th>STT</th><th>Họ và tên</th><th>MSSV</th><th>Gmail</th>
-        <th>Đề tài đăng ký</th><th>GVHD</th><th>Trạng thái</th><th>Hành động</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-}
-
-function filterTable(){
-  const q = document.getElementById('search').value.toLowerCase();
-  if(!q){ renderTable(allData); return; }
-  const filtered = allData.filter(r=>
-    (r['Họ tên']||'').toLowerCase().includes(q)||
-    (r['MSSV']||'').toLowerCase().includes(q)||
-    (r['Đề tài']||'').toLowerCase().includes(q)||
-    (r['Gmail']||'').toLowerCase().includes(q)
   );
-  renderTable(filtered);
 }
 
-async function confirm_row(row, status, btn){
-  const btns = btn.closest('td').querySelectorAll('button');
-  btns.forEach(b=>b.disabled=true);
-  try{
-    await fetch(API,{method:'POST',body:JSON.stringify({action:'confirm',row,status})});
-    showOverlay(status==='Đã nhận'?'success':'error',
-      status==='Đã nhận'?'✅':'❌',
-      status==='Đã nhận'?'Đã nhận lời mời!':'Đã từ chối lời mời.');
-    setTimeout(()=>{
-      document.getElementById('overlay').className='overlay';
-      loadData();
-    },2000);
-  } catch(e){
-    btns.forEach(b=>b.disabled=false);
+// ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
+function TabSinhVienHuongDan({toast}){
+  const [search, setSearch] = useState('');
+  const [grades, setGrades] = useState({'21110123':'8.5','21110456':'','21110789':''});
+  const [saving, setSaving] = useState({});
+
+  const students = [
+    {
+      name:'Nguyễn Văn An', mssv:'21110123', email:'an.nv@student.hcmute.edu.vn',
+      topic:'Xây dựng hệ thống IoT cho nông nghiệp thông minh',
+      file:'Bao-cao-tuan-12.pdf',
+      status:'approved', statusLabel:'Hoàn thành', statusColor:'bg-tertiary-fixed text-on-tertiary-fixed',
+      plagiarism:'5% (Đạt)', plagColor:'bg-tertiary-fixed text-on-tertiary-fixed', plagIcon:'verified',
+    },
+    {
+      name:'Trần Thị Bích', mssv:'21110456', email:'bich.tt@student.hcmute.edu.vn',
+      topic:'Phát triển ứng dụng Mobile quản lý tài chính',
+      file:'Phac-thao-du-an.pdf',
+      status:'pending', statusLabel:'Đang thực hiện', statusColor:'bg-secondary-container text-on-secondary-container',
+      plagiarism:'18% (Cần kiểm tra)', plagColor:'bg-secondary-container text-on-secondary-container', plagIcon:'warning',
+    },
+    {
+      name:'Lê Hoàng Nam', mssv:'21110789', email:'nam.lh@student.hcmute.edu.vn',
+      topic:'Nghiên cứu Machine Learning trong y tế',
+      file:null,
+      status:'rejected', statusLabel:'Trễ hạn', statusColor:'bg-error-container text-on-error-container',
+      plagiarism:'Chưa có kết quả', plagColor:'bg-surface-container text-outline', plagIcon:'pending',
+    },
+    {
+      name:'Phạm Thị Lan', mssv:'21110321', email:'lan.pt@student.hcmute.edu.vn',
+      topic:'Xây dựng chatbot hỗ trợ học tập bằng NLP',
+      file:'De-cuong-KLTN.pdf',
+      status:'approved', statusLabel:'Hoàn thành', statusColor:'bg-tertiary-fixed text-on-tertiary-fixed',
+      plagiarism:'8% (Đạt)', plagColor:'bg-tertiary-fixed text-on-tertiary-fixed', plagIcon:'verified',
+    },
+  ];
+
+  const filtered = students.filter(s=>
+    s.name.toLowerCase().includes(search.toLowerCase())||
+    s.mssv.includes(search)
+  );
+
+  const stats = [
+    {label:'Tổng số sinh viên', value: students.length.toString(), icon:'groups', color:'bg-surface-container-lowest'},
+    {label:'Đã hoàn thành',     value: students.filter(s=>s.status==='approved').length.toString(), icon:'check_circle', color:'bg-surface-container-lowest'},
+    {label:'Chờ xử lý',         value: students.filter(s=>s.status==='pending').length.toString(),  icon:'pending_actions', color:'bg-surface-container-lowest'},
+  ];
+
+  async function handleSaveGrade(mssv){
+    const g = grades[mssv];
+    if(g===''||g===undefined){ toast.show('Vui lòng nhập điểm!','warn'); return; }
+    const num = parseFloat(g);
+    if(isNaN(num)||num<0||num>10){ toast.show('Điểm phải từ 0 đến 10!','error'); return; }
+    setSaving(prev=>({...prev,[mssv]:true}));
+    try{
+      // Thực tế gọi API: await apiPost({action:'saveGrade', email:..., mssv, grade:num})
+      await new Promise(r=>setTimeout(r,800));
+      toast.show(`Đã lưu điểm ${num.toFixed(1)} cho MSSV ${mssv}`,'success');
+    }catch(e){ toast.show('Lưu điểm thất bại!','error'); }
+    setSaving(prev=>({...prev,[mssv]:false}));
   }
+
+  return(
+    <div className="space-y-6 anim-fade">
+
+      {/* Header + search */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-on-surface tracking-tight">Sinh viên hướng dẫn</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Quản lý danh sách sinh viên thực tập và đồ án</p>
+        </div>
+        <div className="relative w-full md:w-96">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+          <input
+            value={search} onChange={e=>setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-surface-tint focus:bg-surface-container-lowest transition-all text-sm outline-none"
+            placeholder="Tìm kiếm theo tên hoặc MSSV..."/>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {stats.map((s,i)=>(
+          <div key={i} className={`${s.color} p-5 rounded-2xl shadow-sm flex items-center justify-between`}>
+            <div>
+              <p className="text-on-surface-variant text-sm font-medium">{s.label}</p>
+              <h3 className="text-2xl font-bold mt-1">{s.value}</h3>
+            </div>
+            <div className="bg-primary-fixed p-3 rounded-xl">
+              <span className="material-symbols-outlined text-primary">{s.icon}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden border border-outline-variant/15">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
+                {['Sinh viên','Đề tài & Tài liệu','Trạng thái','Kiểm tra đạo văn','Điểm số','Thao tác'].map((h,i)=>(
+                  <th key={h} className={`px-6 py-4 ${i===4?'text-center':i===5?'text-right':''}`}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-surface-container">
+              {filtered.length===0?(
+                <tr><td colSpan="6" className="px-6 py-16 text-center text-on-surface-variant text-sm">
+                  <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
+                  Không tìm thấy sinh viên
+                </td></tr>
+              ):filtered.map((sv)=>(
+                <tr key={sv.mssv} className="hover:bg-surface-container-low transition-colors group">
+                  {/* Sinh viên */}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <Av name={sv.name} cls="w-10 h-10 flex-shrink-0"/>
+                      <div>
+                        <p className="font-bold text-on-surface text-sm">{sv.name}</p>
+                        <p className="text-xs text-on-surface-variant">MSSV: {sv.mssv}</p>
+                        <p className="text-xs text-outline italic">{sv.email}</p>
+                      </div>
+                    </div>
+                  </td>
+
+                  {/* Đề tài */}
+                  <td className="px-6 py-4">
+                    <div className="max-w-xs">
+                      <p className="text-sm font-medium line-clamp-1">{sv.topic}</p>
+                      {sv.file?(
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="material-symbols-outlined text-error text-base">picture_as_pdf</span>
+                          <a href="#" className="text-xs text-primary hover:underline font-medium">{sv.file}</a>
+                        </div>
+                      ):(
+                        <div className="flex items-center gap-2 mt-1 opacity-50 italic">
+                          <span className="material-symbols-outlined text-base">upload_file</span>
+                          <span className="text-xs">Chưa nộp tệp</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Trạng thái */}
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase ${sv.statusColor}`}>{sv.statusLabel}</span>
+                  </td>
+
+                  {/* Đạo văn */}
+                  <td className="px-6 py-4">
+                    <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase flex items-center gap-1 w-fit ${sv.plagColor}`}>
+                      <span className="material-symbols-outlined text-[14px]">{sv.plagIcon}</span>
+                      {sv.plagiarism}
+                    </span>
+                  </td>
+
+                  {/* Điểm số */}
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center items-center gap-2">
+                      <input
+                        type="number" min="0" max="10" step="0.1"
+                        value={grades[sv.mssv]||''} placeholder="--"
+                        onChange={e=>setGrades(prev=>({...prev,[sv.mssv]:e.target.value}))}
+                        className="w-16 text-center py-1.5 bg-surface-container border border-outline-variant rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-container outline-none"/>
+                      <button
+                        onClick={()=>handleSaveGrade(sv.mssv)}
+                        disabled={!!saving[sv.mssv]}
+                        title="Lưu điểm"
+                        className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">
+                        {saving[sv.mssv]
+                          ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
+                          : <span className="material-symbols-outlined text-[16px]">save</span>}
+                      </button>
+                    </div>
+                  </td>
+
+                  {/* Thao tác */}
+                  <td className="px-6 py-4">
+                    <div className="flex justify-end gap-2">
+                      <button onClick={()=>toast.show('Hệ thống tin nhắn đang bảo trì!','warn')}
+                        className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all" title="Nhắn tin">
+                        <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                      </button>
+                      <button onClick={()=>toast.show('Tính năng nhận xét đang phát triển!','warn')}
+                        className="p-2 text-outline hover:text-secondary hover:bg-secondary-fixed rounded-lg transition-all" title="Nhận xét">
+                        <span className="material-symbols-outlined text-[20px]">comment</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="px-6 py-4 bg-surface-container-low flex items-center justify-between border-t border-outline-variant/10">
+          <span className="text-xs text-on-surface-variant">Hiển thị {filtered.length} trong tổng số {students.length} sinh viên</span>
+          <div className="flex gap-2">
+            <button className="p-2 rounded-lg hover:bg-surface-container-high transition-colors text-outline">
+              <span className="material-symbols-outlined">chevron_left</span>
+            </button>
+            <button className="px-3 py-1 bg-primary text-on-primary rounded-lg text-xs font-bold">1</button>
+            <button className="px-3 py-1 hover:bg-surface-container-high rounded-lg text-xs font-bold transition-colors">2</button>
+            <button className="p-2 rounded-lg hover:bg-surface-container-high transition-colors text-outline">
+              <span className="material-symbols-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Notice bar */}
+      <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center gap-4">
+        <div className="bg-primary text-white p-3 rounded-full flex-shrink-0">
+          <span className="material-symbols-outlined">info</span>
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-bold text-primary">Thông báo hướng dẫn trực tiếp</p>
+          <p className="text-xs text-on-surface-variant">Lịch họp định kỳ vào <span className="font-bold text-on-surface">Thứ 4 hàng tuần</span> tại <span className="font-bold text-on-surface">Phòng A202</span>. Vui lòng cập nhật điểm trước khi kết thúc học kỳ.</p>
+        </div>
+        <button onClick={()=>toast.show('Đã xác nhận lịch họp!','success')}
+          className="px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold shadow-lg hover:opacity-90 transition-opacity flex-shrink-0">
+          Xác nhận lịch
+        </button>
+      </div>
+    </div>
+  );
 }
 
-function showOverlay(type,icon,msg){
-  const ov=document.getElementById('overlay');
-  document.getElementById('ov-icon').textContent=icon;
-  document.getElementById('ov-msg').textContent=msg;
-  ov.className='overlay show '+type;
+// ── TAB PLACEHOLDER ───────────────────────────────────────────────────────────
+function TabPlaceholder({icon,label}){
+  return(
+    <div className="anim-fade flex flex-col items-center justify-center py-32 gap-6">
+      <span className="material-symbols-outlined text-7xl text-primary opacity-20">{icon}</span>
+      <h2 className="text-2xl font-headline font-black text-on-surface">{label}</h2>
+      <p className="text-on-surface-variant">Giao diện đang được xây dựng. Vui lòng quay lại sau.</p>
+    </div>
+  );
 }
 
-function logout(){
-  sessionStorage.clear();
-  window.location.href='login.html';
+// ── APP ROOT ──────────────────────────────────────────────────────────────────
+function App(){
+  useEffect(()=>{
+    const role=localStorage.getItem('ute_role');
+    const email=localStorage.getItem('ute_email');
+    if(!role||!email){
+      window.location.href='login.html';
+      return;
+    }
+    // Sinh viên → chuyển về trangchu.html
+    if(role==='sinhvien'){
+      window.location.href='trangchu.html';
+      return;
+    }
+  },[]);
+
+  const [tab,setTab]=useState('dashboard');
+  const toast=useToast();
+
+  const notifications=[
+    {message:'📋 Sinh viên Võ Văn Hậu đã nộp bản thảo Chương 2.',time:'10 phút trước'},
+    {message:'⚠️ Phạm Minh Tâm có tỷ lệ đạo văn 28% — cần kiểm tra.',time:'2 giờ trước'},
+  ];
+
+  return(
+    <div className="min-h-screen bg-background">
+      {toast.toast&&<Toast {...toast.toast} onClose={toast.hide}/>}
+
+      <Sidebar
+        tab={tab} setTab={setTab}
+        logout={()=>{localStorage.clear();window.location.href='login.html';}}
+      />
+
+      <Header notifications={notifications}/>
+
+      <main className="pt-24 pb-10 px-6 min-h-screen" style={{marginLeft:'18rem'}}>
+        <div className="max-w-7xl mx-auto">
+          {tab==='dashboard' && <TabThongTinChung toast={toast}/>}
+          {tab==='sinhvien' && <TabSinhVienHuongDan toast={toast}/>}
+          {tab==='phanbien' && <TabPlaceholder icon="rate_review" label="Sinh viên phản biện"/>}
+          {tab==='hoidong'  && <TabPlaceholder icon="gavel" label="Hội đồng"/>}
+        </div>
+      </main>
+
+      {/* Mobile bottom nav */}
+      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-white/90 backdrop-blur-lg rounded-t-3xl shadow-2xl">
+        {[
+          {id:'dashboard',icon:'dashboard',   l:'Tổng quan'},
+          {id:'sinhvien', icon:'group',        l:'Hướng dẫn'},
+          {id:'phanbien', icon:'rate_review',  l:'Phản biện'},
+          {id:'hoidong',  icon:'gavel',        l:'Hội đồng'},
+        ].map(it=>(
+          <button key={it.id} onClick={()=>setTab(it.id)}
+            className={`flex flex-col items-center justify-center px-3 py-2 rounded-2xl transition-all ${tab===it.id?'bg-blue-50 text-blue-800':'text-slate-400'}`}>
+            <span className="material-symbols-outlined text-2xl">{it.icon}</span>
+            <span className="text-[10px] font-semibold mt-1">{it.l}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
 }
 
-loadData();
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
