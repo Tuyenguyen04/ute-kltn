@@ -83,6 +83,19 @@ async function apiPost(body){
   try{ return JSON.parse(text); }
   catch(e){ console.error('JSON parse error:', e); throw new Error('Response không phải JSON: '+text.slice(0,300)); }
 }
+// Dùng riêng cho upload file (fileBase64 quá dài cho GET query string)
+async function apiPostFile(body){
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    redirect: 'follow',
+  });
+  const text = await r.text();
+  console.log('📥 apiPostFile response:', text);
+  try{ return JSON.parse(text); }
+  catch(e){ console.error('JSON parse error:', e); throw new Error('Response không phải JSON: '+text.slice(0,300)); }
+}
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function Toast({message,type,onClose}){
@@ -938,7 +951,7 @@ function PlagiarismUploadCell({ sv, toast, onUploaded, onView }) {
         r.onerror = () => rej(new Error('Đọc file thất bại'));
         r.readAsDataURL(file);
       });
-      const res = await apiPost({
+      const res = await apiPostFile({
         action    : 'savePlagiarism',
         email     : sv.studentEmail,
         fileBase64: b64,
