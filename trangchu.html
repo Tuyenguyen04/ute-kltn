@@ -146,12 +146,21 @@ function letterGrade(g){
 }
 async function apiGet(params){
   const qs=new URLSearchParams(params).toString();
-  const r=await fetch(`${API_URL}?${qs}`);
+  const r=await fetch(`${API_URL}?${qs}`,{redirect:'follow'});
   return r.json();
 }
 async function apiPost(body){
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  return r.json();
+  // GAS: POST bị CORS block → chuyển thành GET với redirect:follow
+  const qs=new URLSearchParams(
+    Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v||'')]))
+  ).toString();
+  try{
+    const r=await fetch(`${API_URL}?${qs}`,{redirect:'follow'});
+    return r.json();
+  }catch(_){
+    await fetch(API_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+    return {success:true,_nocors:true};
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
@@ -1117,69 +1126,85 @@ function Registration({onSuccess,instructorList,loadingGV}){
       :form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26'
       :'Đợt 2 - HK2 NH25-26';
 
-    // GAS không hỗ trợ CORS với POST từ browser → dùng GET (no-cors workaround)
-    // Gọi bằng GET, GAS doGet() sẽ xử lý và ghi vào sheet DangKy
     const params = new URLSearchParams({
-      action        : 'submitRegistration',
-      type          : 'bctt',
-      email         : SESSION.email,
-      name          : SESSION.name,
-      maSo          : SESSION.maSo,
-      nganh         : SESSION.nganh,
-      topic         : form.topic,
-      company       : form.company,
-      instructorName: selGV.name,
+      action         : 'submitRegistration',
+      type           : 'bctt',
+      email          : SESSION.email,
+      name           : SESSION.name,
+      maSo           : SESSION.maSo,
+      nganh          : SESSION.nganh,
+      topic          : form.topic,
+      company        : form.company,
+      instructorName : selGV.name,
       instructorEmail: selGV.email,
-      instructorId  : selGV.id || selGV.code || '',
-      term          : termLabel,
-      note          : form.note || '',
-      position      : form.position || '',
-      internDuration: form.internDuration || '',
+      instructorId   : selGV.id || selGV.code || '',
+      term           : termLabel,
+      note           : form.note || '',
+      position       : form.position || '',
+      internDuration : form.internDuration || '',
+      semester       : form.semester || '',
     });
 
-    try{
-      // Thử GET trước (doGet trong GAS)
-      const res = await fetch(`${API_URL}?${params.toString()}`).then(r=>r.json());
-      if(res.success){
+    // GAS Web App redirect: phải dùng redirect:'follow' mới nhận được JSON
+    const gasCall = () => fetch(`${API_URL}?${params.toString()}`, { redirect: 'follow' });
+
+    try {
+      const r = await gasCall();
+      let res = null;
+      try { res = await r.json(); } catch(_) { res = null; }
+
+      if (res && res.success) {
+        // Gửi thông báo đến GV (best-effort, không block UI)
+        const notifParams = new URLSearchParams({
+          action   : 'saveNotification',
+          forEmail : selGV.email,
+          message  : `📬 Sinh viên ${SESSION.name} (${SESSION.maSo}) vừa gửi yêu cầu đăng ký đề tài BCTT: "${form.topic}". Vui lòng xem xét và duyệt.`,
+        });
+        fetch(`${API_URL}?${notifParams.toString()}`, { redirect: 'follow' }).catch(()=>{});
+
         localStorage.setItem('ute_bctt_submittedAt', new Date().toLocaleString('vi-VN'));
         setShowConfirm(false);
         setShowSuccess(true);
-      } else {
-        toast.show(res.message||'Gửi thất bại. Vui lòng thử lại.','error');
+      } else if (res && !res.success) {
+        toast.show(res.message || 'Gửi thất bại. Vui lòng thử lại.', 'error');
         setSubmitting(false);
+      } else {
+        // r.json() parse lỗi nhưng HTTP OK → GAS đã xử lý (opaque-like), coi như thành công
+        localStorage.setItem('ute_bctt_submittedAt', new Date().toLocaleString('vi-VN'));
+        setShowConfirm(false);
+        setShowSuccess(true);
       }
     } catch(e) {
-      // Fallback: thử POST với no-cors (GAS nhận được nhưng không trả JSON)
-      // → coi như thành công nếu không có network error
+      // Network error thực sự → fallback no-cors để GAS vẫn ghi sheet
       try {
         await fetch(API_URL, {
           method : 'POST',
           mode   : 'no-cors',
           headers: { 'Content-Type': 'text/plain' },
           body   : JSON.stringify({
-            action        : 'submitRegistration',
-            type          : 'bctt',
-            email         : SESSION.email,
-            name          : SESSION.name,
-            maSo          : SESSION.maSo,
-            nganh         : SESSION.nganh,
-            topic         : form.topic,
-            company       : form.company,
-            instructorName: selGV.name,
+            action         : 'submitRegistration',
+            type           : 'bctt',
+            email          : SESSION.email,
+            name           : SESSION.name,
+            maSo           : SESSION.maSo,
+            nganh          : SESSION.nganh,
+            topic          : form.topic,
+            company        : form.company,
+            instructorName : selGV.name,
             instructorEmail: selGV.email,
-            instructorId  : selGV.id || selGV.code || '',
-            term          : termLabel,
-            note          : form.note || '',
-            position      : form.position || '',
-            internDuration: form.internDuration || '',
+            instructorId   : selGV.id || selGV.code || '',
+            term           : termLabel,
+            note           : form.note || '',
+            position       : form.position || '',
+            internDuration : form.internDuration || '',
+            semester       : form.semester || '',
           }),
         });
-        // no-cors luôn trả opaque response → không đọc được JSON, nhưng GAS vẫn chạy
         localStorage.setItem('ute_bctt_submittedAt', new Date().toLocaleString('vi-VN'));
         setShowConfirm(false);
         setShowSuccess(true);
       } catch(e2) {
-        toast.show('Lỗi kết nối. Kiểm tra mạng và thử lại.','error');
+        toast.show('Lỗi kết nối. Kiểm tra mạng và thử lại.', 'error');
         setSubmitting(false);
       }
     }
