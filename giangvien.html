@@ -257,47 +257,247 @@ function Header({notifications=[]}){
   );
 }
 
+// ================================================================
+// SHEET CONFIG (CSV direct read — không qua Apps Script)
+// ================================================================
+const SS_ID_CSV   = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
+const SHEET_DANGKY_TAB  = 'DangKy';
+const SHEET_HOIDONG_TAB = 'HoiDongKLTN';
+const SHEET_NOTIF_TAB   = 'Notifications';
+
+// ── CSV PARSER CHUNG ──────────────────────────────────────────────────────────
+function parseCsvLine(line) {
+  const cols = []; let cur = '', inQ = false;
+  for (let j = 0; j < line.length; j++) {
+    const c = line[j];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur.replace(/^"|"$/g,'').trim()); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur.replace(/^"|"$/g,'').trim());
+  return cols;
+}
+
+async function fetchSheetCSV(sheetTab) {
+  const url = `https://docs.google.com/spreadsheets/d/${SS_ID_CSV}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetTab)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Không tải được sheet: ' + sheetTab);
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  return lines.slice(1).map(parseCsvLine); // bỏ dòng header
+}
+
+// ── ĐỌC DANGKY theo email GV ─────────────────────────────────────────────────
+// Sheet DangKy:
+//  A=Timestamp B=StudentEmail C=StudentName D=MaSo E=Nganh F=Type G=Topic
+//  H=Company I=InstructorName J=InstructorEmail K=InstructorId L=Term
+//  M=Note N=Status O=Grade P=Semester Q=Position R=InternDuration
+async function fetchDangKyByGV(gvEmail) {
+  const rows = await fetchSheetCSV(SHEET_DANGKY_TAB);
+  const pendingList = [], approvedList = [];
+  for (const r of rows) {
+    if (!r[9] || r[9].toLowerCase().trim() !== gvEmail.toLowerCase().trim()) continue;
+    const obj = {
+      studentEmail   : r[1]  || '',
+      studentName    : r[2]  || '',
+      maSo           : r[3]  || '',
+      nganh          : r[4]  || '',
+      topic          : r[6]  || '',
+      company        : r[7]  || '',
+      term           : r[11] || '',
+      note           : r[12] || '',
+      status         : r[13] || 'pending',
+      grade          : r[14] !== '' ? parseFloat(r[14]) : null,
+      position       : r[16] || '',
+      internDuration : r[17] || '',
+    };
+    if (obj.status === 'pending') pendingList.push(obj);
+    else if (obj.status === 'approved' || obj.status === 'graded') approvedList.push(obj);
+  }
+  return { pendingList, approvedList };
+}
+
+// ── ĐỌC HỘI ĐỒNG theo email GV ───────────────────────────────────────────────
+// Sheet HoiDongKLTN:
+//  A=EmailSV B=MaSoSV C=HoTenSV D=HoTenGVPB E=EmailGVPB
+//  F=TruongHD G=ThanhVien1 H=ThanhVien2 I=ThuKy
+async function fetchHoiDongByGV(gvEmail) {
+  const rows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
+  // Lọc các dòng GV xuất hiện trong bất kỳ vai trò nào
+  const email = gvEmail.toLowerCase().trim();
+  return rows.filter(r =>
+    (r[4]||'').toLowerCase().trim() === email || // GV Phản biện
+    (r[5]||'').toLowerCase().includes(email)  || // Trưởng HĐ
+    (r[6]||'').toLowerCase().includes(email)  || // TV1
+    (r[7]||'').toLowerCase().includes(email)  || // TV2
+    (r[8]||'').toLowerCase().includes(email)     // Thư ký
+  ).map(r => ({
+    studentEmail   : r[0] || '',
+    maSo           : r[1] || '',
+    studentName    : r[2] || '',
+    gvPhanBienName : r[3] || '',
+    gvPhanBienEmail: r[4] || '',
+    truongHD       : r[5] || '',
+    thanhVien1     : r[6] || '',
+    thanhVien2     : r[7] || '',
+    thuKy          : r[8] || '',
+  }));
+}
+
+// ── ĐỌC NOTIFICATIONS theo email GV ─────────────────────────────────────────
+// Sheet Notifications: A=Timestamp B=ForEmail C=Message D=Read
+async function fetchGVNotifications(gvEmail) {
+  try {
+    const rows = await fetchSheetCSV(SHEET_NOTIF_TAB);
+    const email = gvEmail.toLowerCase().trim();
+    // Lấy 10 thông báo mới nhất gửi đến GV này (forEmail=gvEmail)
+    return rows
+      .filter(r => (r[1]||'').toLowerCase().trim() === email)
+      .slice(-10).reverse()
+      .map(r => ({ time: r[0]||'', message: r[2]||'' }));
+  } catch { return []; }
+}
+
+// ── MODAL TỪ CHỐI ────────────────────────────────────────────────────────────
+function RejectModal({request, onConfirm, onClose}) {
+  const [reason, setReason] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleConfirm() {
+    if (!reason.trim()) return;
+    setSubmitting(true);
+    await onConfirm(request, reason.trim());
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-on-surface/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl anim-slide">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-full bg-error-container flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-error">cancel</span>
+          </div>
+          <div>
+            <h2 className="font-headline font-extrabold text-lg text-on-surface">Từ chối đề tài</h2>
+            <p className="text-xs text-on-surface-variant">Sinh viên sẽ nhận được lý do qua thông báo</p>
+          </div>
+        </div>
+        <div className="bg-surface-container-low rounded-2xl p-4 mb-5">
+          <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Đề tài</p>
+          <p className="font-bold text-on-surface text-sm">{request.topic}</p>
+          <p className="text-xs text-on-surface-variant mt-1">{request.studentName} • {request.maSo}</p>
+        </div>
+        <div className="mb-5">
+          <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+            Lý do từ chối <span className="text-error">*</span>
+          </label>
+          <textarea
+            value={reason} onChange={e => setReason(e.target.value)}
+            rows={4} autoFocus
+            className="w-full bg-surface-container-low rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-error/20 text-on-surface placeholder:text-outline/50 resize-none text-sm"
+            placeholder="VD: Đề tài chưa đủ tính ứng dụng, cần bổ sung thêm phần phân tích..."/>
+          {!reason.trim() && <p className="text-xs text-error mt-1">Bắt buộc nhập lý do từ chối</p>}
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={submitting}
+            className="flex-1 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all text-sm disabled:opacity-50">
+            Hủy bỏ
+          </button>
+          <button onClick={handleConfirm} disabled={!reason.trim() || submitting}
+            className="flex-1 py-3 rounded-xl bg-error text-white font-bold shadow-lg hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2">
+            {submitting
+              ? <><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>
+              : <><span className="material-symbols-outlined text-sm">send</span>Xác nhận từ chối</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── TAB 1: THÔNG TIN CHUNG ────────────────────────────────────────────────────
-function TabThongTinChung({toast}){
-  const [loading, setLoading] = useState(false);
+function TabThongTinChung({toast, addGVNotification}) {
+  const [pendingList,  setPendingList]  = React.useState([]);
+  const [approvedList, setApprovedList] = React.useState([]);
+  const [loading,      setLoading]      = React.useState(true);
+  const [processingId, setProcessingId] = React.useState(null);
+  const [rejectTarget, setRejectTarget] = React.useState(null);
+
+  React.useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const { pendingList: p, approvedList: a } = await fetchDangKyByGV(SESSION.email);
+      setPendingList(p);
+      setApprovedList(a);
+    } catch(e) {
+      toast.show('Không tải được dữ liệu từ Sheet. Kiểm tra quyền chia sẻ.', 'error');
+    }
+    setLoading(false);
+  }
+
+  async function handleApprove(req) {
+    setProcessingId(req.studentEmail);
+    try {
+      const res = await apiPost({ action:'updateStatus', studentEmail: req.studentEmail, status:'approved' });
+      if (res.success) {
+        toast.show(`✅ Đã duyệt đề tài của ${req.studentName}!`, 'success');
+        // Lưu thông báo cho SV vào sheet Notifications
+        await apiPost({
+          action: 'saveNotification',
+          forEmail: req.studentEmail,
+          message: `✅ GV ${SESSION.name} đã duyệt đề tài "${req.topic}" của bạn!`,
+        });
+        // Push thông báo local lên chuông GV (xác nhận hành động)
+        addGVNotification({ message: `Đã duyệt đề tài cho ${req.studentName}`, time: 'Vừa xong' });
+        setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
+        setApprovedList(prev => [{ ...req, status:'approved' }, ...prev]);
+      } else {
+        toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    setProcessingId(null);
+  }
+
+  async function handleReject(req, reason) {
+    setProcessingId(req.studentEmail);
+    try {
+      const res = await apiPost({ action:'updateStatus', studentEmail: req.studentEmail, status:'rejected' });
+      if (res.success) {
+        toast.show(`Đã từ chối đề tài của ${req.studentName}.`, 'warn');
+        await apiPost({
+          action: 'saveNotification',
+          forEmail: req.studentEmail,
+          message: `❌ GV ${SESSION.name} đã từ chối đề tài "${req.topic}". Lý do: ${reason}`,
+        });
+        addGVNotification({ message: `Đã từ chối đề tài của ${req.studentName}`, time: 'Vừa xong' });
+        setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
+      } else {
+        toast.show(res.message || 'Từ chối thất bại. Thử lại.', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    setProcessingId(null);
+    setRejectTarget(null);
+  }
 
   const stats = [
-    {label:'Sinh viên hướng dẫn', value:'12', icon:'school',    color:'bg-primary text-on-primary', sub:'Học kỳ hiện tại'},
-    {label:'Vai trò phản biện',    value:'08', icon:'visibility', color:'bg-secondary-fixed text-on-secondary-fixed', sub:'Chờ chấm điểm'},
-    {label:'Buổi Hội đồng',        value:'05', icon:'groups',     color:'bg-tertiary-fixed text-on-tertiary-fixed', sub:'Sắp tới'},
+    { label:'Sinh viên hướng dẫn', value: approvedList.length.toString(), icon:'school',          color:'bg-primary text-on-primary',               sub:'Đang hướng dẫn' },
+    { label:'Chờ duyệt',           value: pendingList.length.toString(),   icon:'pending_actions', color:'bg-secondary-fixed text-on-secondary-fixed', sub:'Cần xử lý'      },
+    { label:'Buổi Hội đồng',       value: '--',                            icon:'groups',          color:'bg-tertiary-fixed text-on-tertiary-fixed',   sub:'Xem tab Hội đồng' },
   ];
 
-  const pendingRequests = [
-    {title:'Đề tài: AI trong Y tế',      student:'Lê Văn Tuấn',  mssv:'20110045', type:'Đề xuất đề tài',     typeColor:'bg-secondary-container/20 text-on-secondary-container'},
-    {title:'Báo cáo: Giai đoạn 1',       student:'Trần Thị Bé',   mssv:'20110122', type:'Báo cáo tiến độ',    typeColor:'bg-tertiary-fixed/30 text-on-tertiary-fixed-variant'},
-  ];
-
-  const schedule = [
-    {day:'15', month:'TH5', title:'Họp Hội đồng chấm KLTN', time:'08:00 SA • Phòng A1-203', role:'Chủ tịch'},
-    {day:'18', month:'TH5', title:'Hạn chót nộp điểm PB',   time:'11:59 CH • Hệ thống trực tuyến', role:null},
-    {day:'22', month:'TH5', title:'Họp nhóm nghiên cứu',     time:'14:00 CH • Phòng B3-101', role:'Trưởng nhóm'},
-  ];
-
-  const activity = [
-    {icon:'upload_file', bg:'bg-primary-fixed', iconColor:'text-primary',                 msg:<><span className="font-bold">Võ Văn Hậu</span> đã nộp bản thảo Chương 2.</>, time:'10 phút trước'},
-    {icon:'chat_bubble', bg:'bg-tertiary-fixed', iconColor:'text-on-tertiary-fixed-variant', msg:<><span className="font-bold">Hệ thống</span>: Bạn có 2 phản hồi mới từ SV.</>, time:'2 giờ trước'},
-    {icon:'check_circle',bg:'bg-tertiary-fixed', iconColor:'text-on-tertiary-fixed-variant', msg:<><span className="font-bold">Nguyễn Hoàng Nam</span> đã được xác nhận đạt.</>, time:'Hôm qua'},
-  ];
-
-  const finalResults = [
-    {name:'Nguyễn Hoàng Nam', mssv:'20110098', plagiarism:'12% - Đạt',  plagColor:'bg-tertiary-fixed text-on-tertiary-fixed-variant', gvhd:'8.5', gvpb:'8.0', hd:'9.0', total:'8.6'},
-    {name:'Phạm Minh Tâm',    mssv:'20110341', plagiarism:'28% - Kiểm tra', plagColor:'bg-secondary-fixed text-on-secondary-fixed-variant', gvhd:'7.0', gvpb:'6.5', hd:'7.5', total:'7.1'},
-  ];
-
-  return(
+  return (
     <div className="space-y-6 anim-fade">
+      {rejectTarget && (
+        <RejectModal request={rejectTarget} onConfirm={handleReject} onClose={() => setRejectTarget(null)}/>
+      )}
 
-      {/* Profile bento */}
+      {/* Profile + Stats */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile card */}
         <div className="lg:col-span-2 p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col md:flex-row gap-6 items-center">
           <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-4xl shadow-lg flex-shrink-0">
-            {SESSION.name.trim().split(' ').filter(Boolean).slice(-1)[0]?.[0]?.toUpperCase()||'G'}
+            {SESSION.name.trim().split(' ').filter(Boolean).slice(-1)[0]?.[0]?.toUpperCase() || 'G'}
           </div>
           <div className="flex-1 text-center md:text-left">
             <div className="flex flex-col md:flex-row md:items-end gap-2 mb-1">
@@ -305,28 +505,27 @@ function TabThongTinChung({toast}){
               <span className="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-xs font-bold rounded-full mb-1 inline-block w-fit mx-auto md:mx-0">Giảng viên</span>
             </div>
             <p className="text-on-surface-variant font-medium mb-4 flex items-center justify-center md:justify-start gap-2 text-sm">
-              <span className="material-symbols-outlined text-sm">school</span> {SESSION.nganh||'Khoa học máy tính'} • {SESSION.maGV}
+              <span className="material-symbols-outlined text-sm">school</span>
+              {SESSION.nganh || 'Khoa học máy tính'} • {SESSION.maGV}
             </p>
-            <div className="flex flex-wrap justify-center md:justify-start gap-3 text-sm">
+            <div className="flex flex-wrap justify-center md:justify-start gap-3">
               <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl">
                 <span className="material-symbols-outlined text-primary text-base">calendar_today</span>
                 <span className="font-bold text-sm">HK2 - 2024-2025</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl">
                 <span className="material-symbols-outlined text-primary text-base">mail</span>
-                <span className="font-medium text-sm truncate max-w-[180px]">{SESSION.email||'gv@hcmute.edu.vn'}</span>
+                <span className="font-medium text-sm truncate max-w-[180px]">{SESSION.email}</span>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Quick stats */}
         <div className="grid grid-cols-1 gap-3">
-          {stats.map((s,i)=>(
+          {stats.map((s, i) => (
             <div key={i} className={`p-5 rounded-2xl flex justify-between items-center relative overflow-hidden group shadow-sm ${s.color}`}>
               <div className="relative z-10">
                 <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">{s.label}</p>
-                <h3 className="text-3xl font-black">{s.value}</h3>
+                <h3 className="text-3xl font-black">{loading ? '...' : s.value}</h3>
                 <p className="text-[10px] opacity-60 mt-0.5">{s.sub}</p>
               </div>
               <span className="material-symbols-outlined text-5xl opacity-20 absolute -right-2 -bottom-2 group-hover:scale-110 transition-transform">{s.icon}</span>
@@ -345,119 +544,147 @@ function TabThongTinChung({toast}){
               <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
                 <span className="material-symbols-outlined text-secondary">pending_actions</span>
                 Yêu cầu chờ duyệt
+                {!loading && pendingList.length > 0 && (
+                  <span className="bg-error text-white text-[10px] font-black px-2 py-0.5 rounded-full">{pendingList.length}</span>
+                )}
               </h3>
-              <a className="text-sm font-bold text-primary hover:underline" href="#">Xem tất cả</a>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {pendingRequests.map((r,i)=>(
-                <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 border-secondary group hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <h4 className="font-bold text-on-surface group-hover:text-primary transition-colors text-sm">{r.title}</h4>
-                      <p className="text-xs text-on-surface-variant">{r.student} • {r.mssv}</p>
-                    </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${r.typeColor}`}>{r.type}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={()=>toast.show('Đã phê duyệt yêu cầu!','success')}
-                      className="flex-1 py-2 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 transition-opacity">Phê duyệt</button>
-                    <button onClick={()=>toast.show('Đã từ chối yêu cầu.','warn')}
-                      className="flex-1 py-2 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors">Từ chối</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Kết quả xét tốt nghiệp */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">analytics</span>
-                Kết quả xét tốt nghiệp
-              </h3>
-              <button onClick={()=>toast.show('Đang xuất file...','success')} className="p-2 bg-surface-container rounded-xl hover:bg-surface-container-high transition-colors">
-                <span className="material-symbols-outlined text-on-surface-variant">download</span>
+              <button onClick={loadData} className="p-2 hover:bg-surface-container rounded-full transition-colors" title="Làm mới">
+                <span className={`material-symbols-outlined text-on-surface-variant text-base ${loading?'anim-spin':''}`}>refresh</span>
               </button>
             </div>
-            <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead className="bg-surface-container-low border-b border-outline-variant/20">
-                    <tr>
-                      {['Sinh viên','Đạo văn','GVHD','GVPB','HĐ','Tổng điểm'].map(h=>(
-                        <th key={h} className={`px-5 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider ${h==='Tổng điểm'||h==='GVHD'||h==='GVPB'||h==='HĐ'?'text-center':''}`}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant/10">
-                    {finalResults.map((r,i)=>(
-                      <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
-                        <td className="px-5 py-3">
-                          <p className="font-bold text-on-surface text-sm">{r.name}</p>
-                          <p className="text-[10px] text-on-surface-variant">MSSV: {r.mssv}</p>
-                        </td>
-                        <td className="px-5 py-3 text-center"><span className={`px-2 py-1 text-[10px] font-bold rounded ${r.plagColor}`}>{r.plagiarism}</span></td>
-                        <td className="px-5 py-3 text-center font-medium text-sm">{r.gvhd}</td>
-                        <td className="px-5 py-3 text-center font-medium text-sm">{r.gvpb}</td>
-                        <td className="px-5 py-3 text-center font-medium text-sm">{r.hd}</td>
-                        <td className="px-5 py-3 text-center"><span className="font-black text-primary text-lg">{r.total}</span></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-16 gap-3 text-on-surface-variant">
+                <span className="material-symbols-outlined anim-spin text-2xl text-primary">refresh</span>
+                <span className="text-sm font-medium">Đang tải từ Google Sheet...</span>
               </div>
-            </div>
+            ) : pendingList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 bg-surface-container-lowest rounded-2xl border border-outline-variant/15">
+                <span className="material-symbols-outlined text-5xl opacity-15">inbox</span>
+                <p className="text-sm font-medium text-on-surface-variant">Không có yêu cầu nào đang chờ duyệt</p>
+                <p className="text-xs text-on-surface-variant/60">Sinh viên đăng ký đề tài sẽ xuất hiện ở đây</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingList.map((r, i) => (
+                  <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 border-secondary hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1 min-w-0 pr-3">
+                        <h4 className="font-bold text-on-surface text-sm mb-0.5 line-clamp-1">📄 {r.topic}</h4>
+                        <p className="text-xs text-on-surface-variant">
+                          <span className="font-semibold">{r.studentName}</span> • MSSV: {r.maSo}
+                        </p>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-secondary-container/20 text-on-secondary-container flex-shrink-0">BCTT</span>
+                    </div>
+
+                    {/* Chi tiết */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded-xl mb-4">
+                      {[
+                        { label:'Đơn vị TT',     val: r.company       },
+                        { label:'Vị trí TT',     val: r.position      },
+                        { label:'Thời gian TT',  val: r.internDuration },
+                        { label:'Học kỳ',        val: r.term          },
+                      ].map((item, j) => (
+                        <div key={j}>
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{item.label}</p>
+                          <p className="text-xs font-semibold text-on-surface mt-0.5">{item.val || '--'}</p>
+                        </div>
+                      ))}
+                      {r.note && (
+                        <div className="col-span-2">
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ghi chú SV</p>
+                          <p className="text-xs text-on-surface-variant mt-0.5 italic">"{r.note}"</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleApprove(r)}
+                        disabled={processingId === r.studentEmail}
+                        className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        {processingId === r.studentEmail
+                          ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span>
+                          : <span className="material-symbols-outlined text-sm">check_circle</span>}
+                        Phê duyệt
+                      </button>
+                      <button
+                        onClick={() => setRejectTarget(r)}
+                        disabled={processingId === r.studentEmail}
+                        className="flex-1 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
+                        <span className="material-symbols-outlined text-sm">cancel</span>
+                        Từ chối
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Sinh viên đang hướng dẫn */}
+          <section>
+            <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-primary">group</span>
+              Sinh viên đang hướng dẫn
+            </h3>
+            {!loading && approvedList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-14 gap-3 bg-surface-container-lowest rounded-2xl border border-outline-variant/15">
+                <span className="material-symbols-outlined text-5xl opacity-15">school</span>
+                <p className="text-sm font-medium text-on-surface-variant">Chưa có sinh viên nào được duyệt</p>
+              </div>
+            ) : (
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-surface-container-low">
+                      <tr>
+                        {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','Điểm'].map(h => (
+                          <th key={h} className="px-5 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/10">
+                      {loading ? (
+                        <tr><td colSpan="5" className="px-5 py-8 text-center text-sm text-on-surface-variant">Đang tải...</td></tr>
+                      ) : approvedList.map((sv, i) => (
+                        <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
+                          <td className="px-5 py-3">
+                            <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
+                            <p className="text-[10px] text-on-surface-variant">{sv.maSo}</p>
+                          </td>
+                          <td className="px-5 py-3 max-w-[200px]">
+                            <p className="text-sm text-on-surface line-clamp-2">{sv.topic}</p>
+                          </td>
+                          <td className="px-5 py-3 text-sm text-on-surface-variant">{sv.company || '--'}</td>
+                          <td className="px-5 py-3 text-xs text-on-surface-variant">{sv.term || '--'}</td>
+                          <td className="px-5 py-3">
+                            {sv.grade != null
+                              ? <span className="font-black text-primary">{sv.grade.toFixed(1)}</span>
+                              : <span className="text-xs text-on-surface-variant/50 italic">Chưa có</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </section>
         </div>
 
-        {/* Right column: schedule + activity */}
-        <div className="space-y-6">
-          {/* Lịch trình */}
-          <section className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10">
-            <h3 className="text-base font-bold text-on-surface mb-5 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">event</span>
-              Lịch trình sắp tới
-            </h3>
-            <div className="space-y-5">
-              {schedule.map((s,i)=>(
-                <div key={i} className="flex gap-4 group">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs font-black text-primary text-center leading-tight">{s.day}<br/>{s.month}</span>
-                    {i<schedule.length-1&&<div className="w-px flex-1 bg-outline-variant/30 mt-2"/>}
-                  </div>
-                  <div className="pb-2">
-                    <h4 className="text-sm font-bold text-on-surface">{s.title}</h4>
-                    <p className="text-xs text-on-surface-variant">{s.time}</p>
-                    {s.role&&<p className="text-[10px] mt-1 text-secondary font-bold italic">Vai trò: {s.role}</p>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Hoạt động gần đây */}
+        {/* Right: hoạt động gần đây */}
+        <div>
           <section className="bg-surface-container p-6 rounded-2xl">
-            <h3 className="text-base font-bold text-on-surface mb-5 flex items-center gap-2">
+            <h3 className="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
               <span className="material-symbols-outlined text-primary">history</span>
               Hoạt động gần đây
             </h3>
-            <div className="space-y-4">
-              {activity.map((a,i)=>(
-                <div key={i} className="flex items-start gap-3">
-                  <div className={`w-8 h-8 rounded-full ${a.bg} flex items-center justify-center flex-shrink-0`}>
-                    <span className={`material-symbols-outlined ${a.iconColor} text-sm`}>{a.icon}</span>
-                  </div>
-                  <div>
-                    <p className="text-xs text-on-surface">{a.msg}</p>
-                    <p className="text-[10px] text-on-surface-variant mt-1">{a.time}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col items-center justify-center py-10 gap-3 text-on-surface-variant">
+              <span className="material-symbols-outlined text-4xl opacity-15">inbox</span>
+              <p className="text-xs font-medium text-center opacity-60">Hoạt động sẽ được ghi lại<br/>sau khi duyệt / từ chối đề tài</p>
             </div>
-            <button className="w-full mt-5 py-2 border border-primary/20 text-primary text-xs font-bold rounded-xl hover:bg-primary/5 transition-colors">
-              Xem nhật ký đầy đủ
-            </button>
           </section>
         </div>
       </div>
@@ -466,89 +693,78 @@ function TabThongTinChung({toast}){
 }
 
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
-function TabSinhVienHuongDan({toast}){
-  const [search, setSearch] = useState('');
-  const [grades, setGrades] = useState({'21110123':'8.5','21110456':'','21110789':''});
-  const [saving, setSaving] = useState({});
+function TabSinhVienHuongDan({toast}) {
+  const [search,   setSearch]   = React.useState('');
+  const [students, setStudents] = React.useState([]);
+  const [loading,  setLoading]  = React.useState(true);
+  const [grades,   setGrades]   = React.useState({});
+  const [saving,   setSaving]   = React.useState({});
 
-  const students = [
-    {
-      name:'Nguyễn Văn An', mssv:'21110123', email:'an.nv@student.hcmute.edu.vn',
-      topic:'Xây dựng hệ thống IoT cho nông nghiệp thông minh',
-      file:'Bao-cao-tuan-12.pdf',
-      status:'approved', statusLabel:'Hoàn thành', statusColor:'bg-tertiary-fixed text-on-tertiary-fixed',
-      plagiarism:'5% (Đạt)', plagColor:'bg-tertiary-fixed text-on-tertiary-fixed', plagIcon:'verified',
-    },
-    {
-      name:'Trần Thị Bích', mssv:'21110456', email:'bich.tt@student.hcmute.edu.vn',
-      topic:'Phát triển ứng dụng Mobile quản lý tài chính',
-      file:'Phac-thao-du-an.pdf',
-      status:'pending', statusLabel:'Đang thực hiện', statusColor:'bg-secondary-container text-on-secondary-container',
-      plagiarism:'18% (Cần kiểm tra)', plagColor:'bg-secondary-container text-on-secondary-container', plagIcon:'warning',
-    },
-    {
-      name:'Lê Hoàng Nam', mssv:'21110789', email:'nam.lh@student.hcmute.edu.vn',
-      topic:'Nghiên cứu Machine Learning trong y tế',
-      file:null,
-      status:'rejected', statusLabel:'Trễ hạn', statusColor:'bg-error-container text-on-error-container',
-      plagiarism:'Chưa có kết quả', plagColor:'bg-surface-container text-outline', plagIcon:'pending',
-    },
-    {
-      name:'Phạm Thị Lan', mssv:'21110321', email:'lan.pt@student.hcmute.edu.vn',
-      topic:'Xây dựng chatbot hỗ trợ học tập bằng NLP',
-      file:'De-cuong-KLTN.pdf',
-      status:'approved', statusLabel:'Hoàn thành', statusColor:'bg-tertiary-fixed text-on-tertiary-fixed',
-      plagiarism:'8% (Đạt)', plagColor:'bg-tertiary-fixed text-on-tertiary-fixed', plagIcon:'verified',
-    },
-  ];
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const { approvedList } = await fetchDangKyByGV(SESSION.email);
+        setStudents(approvedList);
+        const init = {};
+        approvedList.forEach(sv => { init[sv.maSo] = sv.grade != null ? String(sv.grade) : ''; });
+        setGrades(init);
+      } catch(e) { toast.show('Không tải được danh sách sinh viên.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
 
-  const filtered = students.filter(s=>
-    s.name.toLowerCase().includes(search.toLowerCase())||
-    s.mssv.includes(search)
+  const filtered = students.filter(s =>
+    s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
   );
 
-  const stats = [
-    {label:'Tổng số sinh viên', value: students.length.toString(), icon:'groups', color:'bg-surface-container-lowest'},
-    {label:'Đã hoàn thành',     value: students.filter(s=>s.status==='approved').length.toString(), icon:'check_circle', color:'bg-surface-container-lowest'},
-    {label:'Chờ xử lý',         value: students.filter(s=>s.status==='pending').length.toString(),  icon:'pending_actions', color:'bg-surface-container-lowest'},
-  ];
-
-  async function handleSaveGrade(mssv){
-    const g = grades[mssv];
-    if(g===''||g===undefined){ toast.show('Vui lòng nhập điểm!','warn'); return; }
+  async function handleSaveGrade(maSo, studentEmail) {
+    const g = grades[maSo];
+    if (g === '' || g === undefined) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
     const num = parseFloat(g);
-    if(isNaN(num)||num<0||num>10){ toast.show('Điểm phải từ 0 đến 10!','error'); return; }
-    setSaving(prev=>({...prev,[mssv]:true}));
-    try{
-      // Thực tế gọi API: await apiPost({action:'saveGrade', email:..., mssv, grade:num})
-      await new Promise(r=>setTimeout(r,800));
-      toast.show(`Đã lưu điểm ${num.toFixed(1)} cho MSSV ${mssv}`,'success');
-    }catch(e){ toast.show('Lưu điểm thất bại!','error'); }
-    setSaving(prev=>({...prev,[mssv]:false}));
+    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
+    setSaving(prev => ({ ...prev, [maSo]: true }));
+    try {
+      const res = await apiPost({ action:'updateStatus', studentEmail, status:'graded', grade: num });
+      if (res.success) {
+        toast.show(`Đã lưu điểm ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+        setStudents(prev => prev.map(sv => sv.maSo === maSo ? { ...sv, grade: num } : sv));
+      } else { toast.show(res.message || 'Lưu điểm thất bại!', 'error'); }
+    } catch(e) { toast.show('Lưu điểm thất bại!', 'error'); }
+    setSaving(prev => ({ ...prev, [maSo]: false }));
   }
 
-  return(
-    <div className="space-y-6 anim-fade">
+  const stats = [
+    { label:'Tổng SV', value: students.length, icon:'groups' },
+    { label:'Đã có điểm', value: students.filter(s => s.grade != null).length, icon:'check_circle' },
+    { label:'Chưa có điểm', value: students.filter(s => s.grade == null).length, icon:'pending_actions' },
+  ];
 
-      {/* Header + search */}
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">Đang tải danh sách sinh viên...</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 anim-fade">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-on-surface tracking-tight">Sinh viên hướng dẫn</h2>
-          <p className="text-on-surface-variant mt-1 text-sm">Quản lý danh sách sinh viên thực tập và đồ án</p>
+          <p className="text-on-surface-variant mt-1 text-sm">Danh sách sinh viên đã được duyệt đề tài BCTT</p>
         </div>
-        <div className="relative w-full md:w-96">
+        <div className="relative w-full md:w-80">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
-          <input
-            value={search} onChange={e=>setSearch(e.target.value)}
+          <input value={search} onChange={e => setSearch(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-surface-tint focus:bg-surface-container-lowest transition-all text-sm outline-none"
-            placeholder="Tìm kiếm theo tên hoặc MSSV..."/>
+            placeholder="Tìm tên hoặc MSSV..."/>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {stats.map((s,i)=>(
-          <div key={i} className={`${s.color} p-5 rounded-2xl shadow-sm flex items-center justify-between`}>
+      <div className="grid grid-cols-3 gap-4">
+        {stats.map((s, i) => (
+          <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm flex items-center justify-between">
             <div>
               <p className="text-on-surface-variant text-sm font-medium">{s.label}</p>
               <h3 className="text-2xl font-bold mt-1">{s.value}</h3>
@@ -560,669 +776,430 @@ function TabSinhVienHuongDan({toast}){
         ))}
       </div>
 
-      {/* Table */}
-      <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden border border-outline-variant/15">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
-                {['Sinh viên','Đề tài & Tài liệu','Trạng thái','Kiểm tra đạo văn','Điểm số','Thao tác'].map((h,i)=>(
-                  <th key={h} className={`px-6 py-4 ${i===4?'text-center':i===5?'text-right':''}`}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-container">
-              {filtered.length===0?(
-                <tr><td colSpan="6" className="px-6 py-16 text-center text-on-surface-variant text-sm">
-                  <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
-                  Không tìm thấy sinh viên
-                </td></tr>
-              ):filtered.map((sv)=>(
-                <tr key={sv.mssv} className="hover:bg-surface-container-low transition-colors group">
-                  {/* Sinh viên */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <Av name={sv.name} cls="w-10 h-10 flex-shrink-0"/>
-                      <div>
-                        <p className="font-bold text-on-surface text-sm">{sv.name}</p>
-                        <p className="text-xs text-on-surface-variant">MSSV: {sv.mssv}</p>
-                        <p className="text-xs text-outline italic">{sv.email}</p>
+      {students.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 bg-surface-container-lowest rounded-3xl shadow-sm">
+          <span className="material-symbols-outlined text-6xl opacity-15">school</span>
+          <p className="text-sm font-medium text-on-surface-variant">Chưa có sinh viên nào được duyệt đề tài</p>
+          <p className="text-xs text-on-surface-variant/60">Duyệt đề tài ở tab Thông tin chung để sinh viên xuất hiện ở đây</p>
+        </div>
+      ) : (
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden border border-outline-variant/15">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
+                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','Điểm số',''].map((h, i) => (
+                    <th key={i} className={`px-6 py-4 ${i===4?'text-center':''}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-container">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan="6" className="px-6 py-16 text-center text-on-surface-variant text-sm">
+                    <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
+                    Không tìm thấy sinh viên
+                  </td></tr>
+                ) : filtered.map(sv => (
+                  <tr key={sv.maSo} className="hover:bg-surface-container-low transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                        <div>
+                          <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
+                          <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
+                          <p className="text-xs text-outline italic truncate max-w-[130px]">{sv.studentEmail}</p>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-
-                  {/* Đề tài */}
-                  <td className="px-6 py-4">
-                    <div className="max-w-xs">
-                      <p className="text-sm font-medium line-clamp-1">{sv.topic}</p>
-                      {sv.file?(
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="material-symbols-outlined text-error text-base">picture_as_pdf</span>
-                          <a href="#" className="text-xs text-primary hover:underline font-medium">{sv.file}</a>
-                        </div>
-                      ):(
-                        <div className="flex items-center gap-2 mt-1 opacity-50 italic">
-                          <span className="material-symbols-outlined text-base">upload_file</span>
-                          <span className="text-xs">Chưa nộp tệp</span>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-
-                  {/* Trạng thái */}
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase ${sv.statusColor}`}>{sv.statusLabel}</span>
-                  </td>
-
-                  {/* Đạo văn */}
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase flex items-center gap-1 w-fit ${sv.plagColor}`}>
-                      <span className="material-symbols-outlined text-[14px]">{sv.plagIcon}</span>
-                      {sv.plagiarism}
-                    </span>
-                  </td>
-
-                  {/* Điểm số */}
-                  <td className="px-6 py-4">
-                    <div className="flex justify-center items-center gap-2">
-                      <input
-                        type="number" min="0" max="10" step="0.1"
-                        value={grades[sv.mssv]||''} placeholder="--"
-                        onChange={e=>setGrades(prev=>({...prev,[sv.mssv]:e.target.value}))}
-                        className="w-16 text-center py-1.5 bg-surface-container border border-outline-variant rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-container outline-none"/>
-                      <button
-                        onClick={()=>handleSaveGrade(sv.mssv)}
-                        disabled={!!saving[sv.mssv]}
-                        title="Lưu điểm"
-                        className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">
-                        {saving[sv.mssv]
-                          ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
-                          : <span className="material-symbols-outlined text-[16px]">save</span>}
-                      </button>
-                    </div>
-                  </td>
-
-                  {/* Thao tác */}
-                  <td className="px-6 py-4">
-                    <div className="flex justify-end gap-2">
-                      <button onClick={()=>toast.show('Hệ thống tin nhắn đang bảo trì!','warn')}
-                        className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all" title="Nhắn tin">
+                    </td>
+                    <td className="px-6 py-4 max-w-[200px]">
+                      <p className="text-sm font-medium line-clamp-2">{sv.topic}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{sv.company || '--'}</td>
+                    <td className="px-6 py-4 text-xs text-on-surface-variant">{sv.term || '--'}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-center items-center gap-2">
+                        <input type="number" min="0" max="10" step="0.1"
+                          value={grades[sv.maSo] || ''} placeholder="--"
+                          onChange={e => setGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
+                          className="w-16 text-center py-1.5 bg-surface-container border border-outline-variant rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-container outline-none"/>
+                        <button onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)}
+                          disabled={!!saving[sv.maSo]}
+                          className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">
+                          {saving[sv.maSo]
+                            ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
+                            : <span className="material-symbols-outlined text-[16px]">save</span>}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button onClick={() => toast.show('Hệ thống tin nhắn đang bảo trì!', 'warn')}
+                        className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
                         <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
                       </button>
-                      <button onClick={()=>toast.show('Tính năng nhận xét đang phát triển!','warn')}
-                        className="p-2 text-outline hover:text-secondary hover:bg-secondary-fixed rounded-lg transition-all" title="Nhận xét">
-                        <span className="material-symbols-outlined text-[20px]">comment</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="px-6 py-4 bg-surface-container-low flex items-center justify-between border-t border-outline-variant/10">
-          <span className="text-xs text-on-surface-variant">Hiển thị {filtered.length} trong tổng số {students.length} sinh viên</span>
-          <div className="flex gap-2">
-            <button className="p-2 rounded-lg hover:bg-surface-container-high transition-colors text-outline">
-              <span className="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button className="px-3 py-1 bg-primary text-on-primary rounded-lg text-xs font-bold">1</button>
-            <button className="px-3 py-1 hover:bg-surface-container-high rounded-lg text-xs font-bold transition-colors">2</button>
-            <button className="p-2 rounded-lg hover:bg-surface-container-high transition-colors text-outline">
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10">
+            <span className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {students.length} sinh viên</span>
           </div>
         </div>
-      </div>
-
-      {/* Notice bar */}
-      <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center gap-4">
-        <div className="bg-primary text-white p-3 rounded-full flex-shrink-0">
-          <span className="material-symbols-outlined">info</span>
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-bold text-primary">Thông báo hướng dẫn trực tiếp</p>
-          <p className="text-xs text-on-surface-variant">Lịch họp định kỳ vào <span className="font-bold text-on-surface">Thứ 4 hàng tuần</span> tại <span className="font-bold text-on-surface">Phòng A202</span>. Vui lòng cập nhật điểm trước khi kết thúc học kỳ.</p>
-        </div>
-        <button onClick={()=>toast.show('Đã xác nhận lịch họp!','success')}
-          className="px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold shadow-lg hover:opacity-90 transition-opacity flex-shrink-0">
-          Xác nhận lịch
-        </button>
-      </div>
+      )}
     </div>
   );
 }
 
 // ── TAB 3: SINH VIÊN PHẢN BIỆN ───────────────────────────────────────────────
-function TabPhanBien({toast}){
-  const [search, setSearch] = useState('');
-  const [council, setCouncil] = useState('all');
-  const [pbGrades, setPbGrades] = useState({'20110452':'','20110891':'8.5','20110321':''});
-  const [saving, setSaving] = useState({});
+// Đọc từ sheet HoiDongKLTN — lọc các dòng có GV này là GV phản biện (cột E)
+function TabPhanBien({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [loading,  setLoading]  = React.useState(true);
+  const [search,   setSearch]   = React.useState('');
+  const [pbGrades, setPbGrades] = React.useState({});
+  const [saving,   setSaving]   = React.useState({});
 
-  const students = [
-    {
-      name:'Nguyễn Văn Hoàng', mssv:'20110452', email:'hoang.nv@student.hcmute.edu.vn',
-      topic:'Hệ thống quản lý chuỗi cung ứng Blockchain',
-      file:'Bao_cao_PB.pdf',
-      gvhd:'ThS. Lê Thị Mai', council:'Hội đồng 05 - Phòng A302',
-      plagiarism:'12% - Đạt', plagColor:'bg-tertiary-fixed text-on-tertiary-fixed', plagIcon:'check_circle',
-      initials:'NH', initBg:'bg-secondary-container/20 text-secondary',
-    },
-    {
-      name:'Trần Thị Phương', mssv:'20110891', email:'phuong.tt@student.hcmute.edu.vn',
-      topic:'Xây dựng ứng dụng AI nhận diện khuôn mặt',
-      file:'Final_Report_V2.pdf',
-      gvhd:'TS. Trần Quang', council:'Hội đồng 01 - Phòng B105',
-      plagiarism:'28% - Cần kiểm tra', plagColor:'bg-secondary-fixed text-on-secondary-fixed-variant', plagIcon:'warning',
-      initials:'TP', initBg:'bg-primary-container/20 text-primary',
-    },
-    {
-      name:'Lâm Minh Anh', mssv:'20110321', email:'anh.lm@student.hcmute.edu.vn',
-      topic:'Phát triển hạ tầng Microservices với K8s',
-      file:'Thesis_Review_Final.pdf',
-      gvhd:'ThS. Phạm Tuấn', council:'Hội đồng 05 - Phòng A302',
-      plagiarism:'Chưa kiểm tra', plagColor:'bg-surface-container text-on-surface-variant', plagIcon:'pending',
-      initials:'LM', initBg:'bg-tertiary-fixed-dim/20 text-on-tertiary-fixed-variant',
-    },
-  ];
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        // Lấy toàn bộ HoiDongKLTN rồi lọc dòng GV này là phản biện
+        const rows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
+        const email = SESSION.email.toLowerCase().trim();
+        const pbList = rows
+          .filter(r => (r[4]||'').toLowerCase().trim() === email)
+          .map(r => ({
+            studentEmail : r[0] || '',
+            maSo         : r[1] || '',
+            studentName  : r[2] || '',
+            gvPBName     : r[3] || '',
+            truongHD     : r[5] || '',
+            thanhVien1   : r[6] || '',
+            thanhVien2   : r[7] || '',
+            thuKy        : r[8] || '',
+          }));
+        setStudents(pbList);
+        const init = {};
+        pbList.forEach(sv => { init[sv.maSo] = ''; });
+        setPbGrades(init);
+      } catch(e) { toast.show('Không tải được dữ liệu hội đồng.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
 
-  const councils = [...new Set(students.map(s=>s.council))];
+  const filtered = students.filter(s =>
+    s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
+  );
 
-  const filtered = students.filter(s=>{
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.mssv.includes(search);
-    const matchCouncil = council==='all' || s.council===council;
-    return matchSearch && matchCouncil;
-  });
-
-  async function handleSavePbGrade(mssv){
-    const g = pbGrades[mssv];
-    if(g===''||g===undefined){ toast.show('Vui lòng nhập điểm!','warn'); return; }
+  async function handleSavePbGrade(maSo, studentEmail) {
+    const g = pbGrades[maSo];
+    if (!g) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
     const num = parseFloat(g);
-    if(isNaN(num)||num<0||num>10){ toast.show('Điểm phải từ 0 đến 10!','error'); return; }
-    setSaving(prev=>({...prev,[mssv]:true}));
-    await new Promise(r=>setTimeout(r,800));
-    toast.show(`Đã lưu điểm phản biện ${num.toFixed(1)} cho MSSV ${mssv}`,'success');
-    setSaving(prev=>({...prev,[mssv]:false}));
+    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
+    setSaving(prev => ({ ...prev, [maSo]: true }));
+    await new Promise(r => setTimeout(r, 700)); // TODO: gọi API lưu điểm PB riêng khi có
+    toast.show(`Đã lưu điểm phản biện ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+    setSaving(prev => ({ ...prev, [maSo]: false }));
   }
 
-  return(
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">Đang tải từ sheet HoiDongKLTN...</p>
+    </div>
+  );
+
+  return (
     <div className="space-y-6 anim-fade">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-on-surface tracking-tight">Danh sách Phản biện</h2>
-          <p className="text-on-surface-variant mt-1 text-sm max-w-2xl">Quản lý và chấm điểm cho các sinh viên được phân công phản biện trong học kỳ này.</p>
+          <p className="text-on-surface-variant mt-1 text-sm">Sinh viên bạn được phân công phản biện (từ sheet HoiDongKLTN)</p>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={()=>toast.show('Đang xuất danh sách...','success')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-surface-container-low text-on-surface font-semibold rounded-xl hover:bg-surface-container-high transition-colors text-sm">
-            <span className="material-symbols-outlined text-lg">file_download</span>
-            Xuất danh sách
-          </button>
-          <button onClick={()=>toast.show('Đã lưu tất cả điểm phản biện!','success')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-primary text-on-primary font-semibold rounded-xl hover:opacity-90 transition-opacity text-sm shadow-md shadow-primary/20">
-            <span className="material-symbols-outlined text-lg">save</span>
-            Lưu tất cả
-          </button>
-        </div>
-      </div>
-
-      {/* Search & Filter */}
-      <div className="bg-surface-container-lowest rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-4 items-center">
-        <div className="relative w-full md:flex-1">
+        <div className="relative w-full md:w-80">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-          <input value={search} onChange={e=>setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 transition-all text-sm outline-none"
-            placeholder="Tìm kiếm theo tên hoặc mã số sinh viên..."/>
-        </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <select value={council} onChange={e=>setCouncil(e.target.value)}
-            className="flex-1 md:w-56 py-3 px-4 bg-surface-container-low border-none rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none">
-            <option value="all">Tất cả Hội đồng</option>
-            {councils.map(c=><option key={c} value={c}>{c}</option>)}
-          </select>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
+            placeholder="Tìm tên hoặc MSSV..."/>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse" style={{minWidth:'1000px'}}>
-            <thead>
-              <tr className="bg-surface-container-low/50">
-                {['Thông tin sinh viên','Đề tài & Tài liệu','Giảng viên & Hội đồng','Điểm số','Kiểm tra đạo văn','Thao tác'].map((h,i)=>(
-                  <th key={h} className={`px-6 py-5 text-[11px] font-black uppercase tracking-widest text-on-surface-variant ${i===3?'text-center':i===5?'text-right':''}`}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/10">
-              {filtered.length===0?(
-                <tr><td colSpan="6" className="px-6 py-16 text-center text-on-surface-variant text-sm">
-                  <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
-                  Không tìm thấy sinh viên
-                </td></tr>
-              ):filtered.map(sv=>(
-                <tr key={sv.mssv} className="hover:bg-surface-container-low/30 transition-colors">
-                  {/* Thông tin SV */}
-                  <td className="px-6 py-5">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs flex-shrink-0 ${sv.initBg}`}>
-                        {sv.initials}
-                      </div>
-                      <div>
-                        <p className="font-bold text-sm text-on-surface">{sv.name}</p>
-                        <p className="text-xs text-on-surface-variant">{sv.mssv} • {sv.email}</p>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Đề tài */}
-                  <td className="px-6 py-5">
-                    <p className="text-sm font-semibold text-on-surface leading-snug mb-2 line-clamp-1">{sv.topic}</p>
-                    <a href="#" className="inline-flex items-center gap-2 px-3 py-1 bg-error-container/20 text-error rounded-lg hover:bg-error-container/40 transition-colors">
-                      <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
-                      <span className="text-[10px] font-bold uppercase">{sv.file}</span>
-                    </a>
-                  </td>
-
-                  {/* GV & HĐ */}
-                  <td className="px-6 py-5">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-xs text-primary">school</span>
-                        <span className="text-xs font-medium">{sv.gvhd}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-xs text-secondary">groups</span>
-                        <span className="text-xs text-on-surface-variant">{sv.council}</span>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Điểm */}
-                  <td className="px-4 py-5">
-                    <div className="flex justify-center items-center gap-2">
-                      <input type="number" min="0" max="10" step="0.1" placeholder="0.0"
-                        value={pbGrades[sv.mssv]||''}
-                        onChange={e=>setPbGrades(prev=>({...prev,[sv.mssv]:e.target.value}))}
-                        className="w-16 h-10 text-center bg-surface-container border-none rounded-lg font-bold text-primary focus:ring-2 focus:ring-primary/40 focus:bg-white transition-all outline-none"/>
-                      <button onClick={()=>handleSavePbGrade(sv.mssv)} disabled={!!saving[sv.mssv]}
-                        className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
-                        {saving[sv.mssv]
-                          ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
-                          : <span className="material-symbols-outlined text-[16px]">save</span>}
-                      </button>
-                    </div>
-                  </td>
-
-                  {/* Đạo văn */}
-                  <td className="px-6 py-5">
-                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${sv.plagColor}`}>
-                      <span className="material-symbols-outlined text-sm">{sv.plagIcon}</span>
-                      <span className="text-xs font-bold uppercase">{sv.plagiarism}</span>
-                    </div>
-                  </td>
-
-                  {/* Thao tác */}
-                  <td className="px-6 py-5 text-right">
-                    <button onClick={()=>toast.show('Tính năng chỉnh sửa đang phát triển!','warn')}
-                      className="p-2 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
-                      <span className="material-symbols-outlined">edit_square</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {students.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+          <span className="material-symbols-outlined text-7xl opacity-10">rate_review</span>
+          <p className="text-base font-bold text-on-surface-variant">Chưa có sinh viên phản biện nào</p>
+          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">
+            Khi admin điền email GV vào cột "Email GV phản biện" trong sheet HoiDongKLTN, danh sách sẽ tự hiện ở đây.
+          </p>
         </div>
-
-        {/* Pagination */}
-        <div className="mt-0 px-6 py-4 bg-surface-container-low border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center gap-4 text-on-surface-variant">
-          <p className="text-xs font-medium">Đang hiển thị {filtered.length} trên tổng số {students.length} sinh viên phản biện</p>
-          <div className="flex items-center gap-1">
-            <button className="p-2 rounded-lg hover:bg-surface-container-low transition-colors opacity-30" disabled>
-              <span className="material-symbols-outlined">chevron_left</span>
-            </button>
-            <button className="w-8 h-8 rounded-lg bg-primary text-on-primary font-bold text-xs">1</button>
-            <button className="w-8 h-8 rounded-lg hover:bg-surface-container-low text-xs font-medium">2</button>
-            <button className="w-8 h-8 rounded-lg hover:bg-surface-container-low text-xs font-medium">3</button>
-            <button className="p-2 rounded-lg hover:bg-surface-container-low transition-colors">
-              <span className="material-symbols-outlined">chevron_right</span>
-            </button>
+      ) : (
+        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse" style={{minWidth:'800px'}}>
+              <thead>
+                <tr className="bg-surface-container-low">
+                  {['Sinh viên','Thành phần hội đồng','Điểm phản biện','Thao tác'].map((h, i) => (
+                    <th key={i} className={`px-6 py-4 text-[11px] font-black uppercase tracking-widest text-on-surface-variant ${i===2?'text-center':''}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/10">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan="4" className="px-6 py-12 text-center text-sm text-on-surface-variant">Không tìm thấy</td></tr>
+                ) : filtered.map(sv => (
+                  <tr key={sv.maSo} className="hover:bg-surface-container-low/30 transition-colors">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                        <div>
+                          <p className="font-bold text-sm text-on-surface">{sv.studentName}</p>
+                          <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.studentEmail}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="space-y-1 text-xs">
+                        {sv.truongHD    && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
+                        {sv.thanhVien1  && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
+                        {sv.thanhVien2  && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
+                        {sv.thuKy       && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-5">
+                      <div className="flex justify-center items-center gap-2">
+                        <input type="number" min="0" max="10" step="0.1" placeholder="0.0"
+                          value={pbGrades[sv.maSo] || ''}
+                          onChange={e => setPbGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
+                          className="w-16 h-10 text-center bg-surface-container border-none rounded-lg font-bold text-primary focus:ring-2 focus:ring-primary/40 outline-none"/>
+                        <button onClick={() => handleSavePbGrade(sv.maSo, sv.studentEmail)}
+                          disabled={!!saving[sv.maSo]}
+                          className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
+                          {saving[sv.maSo]
+                            ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
+                            : <span className="material-symbols-outlined text-[16px]">save</span>}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <button onClick={() => toast.show('Tính năng đang phát triển!', 'warn')}
+                        className="p-2 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
+                        <span className="material-symbols-outlined">edit_square</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10">
+            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {students.length} sinh viên phản biện</p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 // ── TAB 4: HỘI ĐỒNG ──────────────────────────────────────────────────────────
-function TabHoiDong({toast}){
-  const [search, setSearch] = useState('');
-  const [hdGrades, setHdGrades] = useState({'20110342':'8.3','20110512':''});
-  const [saving, setSaving] = useState({});
-  const [confirmed, setConfirmed] = useState(false);
+// Hiển thị toàn bộ các sinh viên có GV này trong hội đồng (bất kỳ vai trò)
+function TabHoiDong({toast}) {
+  const [hdList,   setHdList]   = React.useState([]);
+  const [loading,  setLoading]  = React.useState(true);
+  const [search,   setSearch]   = React.useState('');
+  const [hdGrades, setHdGrades] = React.useState({});
+  const [saving,   setSaving]   = React.useState({});
 
-  const members = [
-    {name:'TS. Nguyễn Văn Thành', short:'NT', bg:'bg-primary-container'},
-    {name:'TS. Phạm Minh Hoàng',  short:'PH', bg:'bg-secondary-container'},
-    {name:'ThS. Trần Thu Thủy',   short:'TT', bg:'bg-tertiary-container'},
-  ];
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const list = await fetchHoiDongByGV(SESSION.email);
+        setHdList(list);
+        const init = {};
+        list.forEach(sv => { init[sv.maSo] = ''; });
+        setHdGrades(init);
+      } catch(e) { toast.show('Không tải được dữ liệu hội đồng.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
 
-  const students = [
-    {
-      name:'Lê Quang Tùng', mssv:'20110342', email:'tung.lq@student.ute.vn',
-      topic:'Hệ thống quản lý thực tập thông minh', file:'Report.pdf',
-      plagiarism:'12% - Đạt', plagColor:'bg-tertiary-container/10 text-on-tertiary-fixed-variant', plagIcon:'verified',
-      initials:'QT', initBg:'bg-blue-100 text-blue-700',
-      memberGrades:[
-        {name:'TS. Nguyễn Văn Thành', score:'8.5'},
-        {name:'TS. Phạm Minh Hoàng',  score:'8.0'},
-        {name:'ThS. Lê Thị Thanh',    score:'8.5'},
-      ],
-    },
-    {
-      name:'Trần Hà Nam', mssv:'20110512', email:'nam.th@student.ute.vn',
-      topic:'Ứng dụng AR trong giảng dạy kỹ thuật', file:'Final.pdf',
-      plagiarism:'25% - Cảnh báo', plagColor:'bg-error-container/20 text-error', plagIcon:'warning',
-      initials:'HN', initBg:'bg-purple-100 text-purple-700',
-      memberGrades:[
-        {name:'TS. Nguyễn Văn Thành', score:'--'},
-        {name:'TS. Phạm Minh Hoàng',  score:'--'},
-        {name:'ThS. Lê Thị Thanh',    score:'--'},
-      ],
-    },
-  ];
-
-  const filtered = students.filter(s=>
-    s.name.toLowerCase().includes(search.toLowerCase()) || s.mssv.includes(search)
+  const filtered = hdList.filter(s =>
+    s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
   );
 
-  async function handleSaveHdGrade(mssv){
-    const g = hdGrades[mssv];
-    if(g===''||g===undefined){ toast.show('Vui lòng nhập điểm!','warn'); return; }
+  function getRoleLabel(sv) {
+    const email = SESSION.email.toLowerCase().trim();
+    if ((sv.gvPhanBienEmail||'').toLowerCase().trim() === email) return { label:'Phản biện', color:'bg-secondary-container text-on-secondary-container' };
+    if ((sv.truongHD||'').toLowerCase().includes(email))         return { label:'Trưởng HĐ', color:'bg-primary text-white' };
+    if ((sv.thuKy||'').toLowerCase().includes(email))            return { label:'Thư ký',    color:'bg-tertiary-fixed text-on-tertiary-fixed' };
+    return { label:'Thành viên', color:'bg-surface-container-highest text-on-surface-variant' };
+  }
+
+  async function handleSaveHdGrade(maSo) {
+    const g = hdGrades[maSo];
+    if (!g) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
     const num = parseFloat(g);
-    if(isNaN(num)||num<0||num>10){ toast.show('Điểm phải từ 0 đến 10!','error'); return; }
-    setSaving(prev=>({...prev,[mssv]:true}));
-    await new Promise(r=>setTimeout(r,800));
-    toast.show(`Đã lưu điểm hội đồng ${num.toFixed(1)} cho MSSV ${mssv}`,'success');
-    setSaving(prev=>({...prev,[mssv]:false}));
+    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
+    setSaving(prev => ({ ...prev, [maSo]: true }));
+    await new Promise(r => setTimeout(r, 700)); // TODO: API lưu điểm HĐ
+    toast.show(`Đã lưu điểm hội đồng ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+    setSaving(prev => ({ ...prev, [maSo]: false }));
   }
 
-  function handleConfirm(){
-    setConfirmed(true);
-    toast.show('Đã xác nhận và hoàn tất Hội đồng HD04-2024!','success');
-  }
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">Đang tải từ sheet HoiDongKLTN...</p>
+    </div>
+  );
 
-  return(
+  return (
     <div className="space-y-6 anim-fade">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-black text-on-surface tracking-tight">Chi tiết Hội đồng</h2>
-          <p className="text-on-surface-variant mt-1 text-sm max-w-lg">Quản lý và đánh giá các buổi bảo vệ khóa luận tốt nghiệp của sinh viên trong hội đồng phân công.</p>
+          <h2 className="text-3xl font-black text-on-surface tracking-tight">Hội đồng KLTN</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Danh sách sinh viên bạn tham gia hội đồng (đọc từ sheet HoiDongKLTN)</p>
         </div>
-        <button onClick={()=>toast.show('Đang xuất biên bản...','success')}
-          className="flex items-center gap-2 px-6 py-3 bg-surface-container-high text-on-surface font-semibold rounded-xl hover:bg-surface-container-highest transition-colors">
-          <span className="material-symbols-outlined text-xl">print</span>
-          Xuất biên bản
-        </button>
+        <div className="relative w-full md:w-80">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
+            placeholder="Tìm tên hoặc MSSV..."/>
+        </div>
       </div>
 
-      {/* Overview Bento */}
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 bg-surface-container-lowest p-8 rounded-3xl shadow-sm flex flex-col justify-between overflow-hidden relative group">
-          <div className="relative z-10">
-            <h3 className="text-sm font-bold text-primary tracking-widest uppercase mb-6">Trạng thái Hội đồng</h3>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="space-y-1">
-                <span className="text-5xl font-headline font-black text-on-surface">03</span>
-                <p className="text-on-surface-variant font-medium">Buổi họp sắp tới</p>
-              </div>
-              <div className="space-y-1">
-                <span className="text-5xl font-headline font-black text-on-surface">12</span>
-                <p className="text-on-surface-variant font-medium">Sinh viên báo cáo</p>
-              </div>
-            </div>
-          </div>
-          <div className="absolute -right-12 -bottom-12 opacity-5 group-hover:scale-110 transition-transform duration-700">
-            <span className="material-symbols-outlined text-[200px]">gavel</span>
-          </div>
+      {hdList.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+          <span className="material-symbols-outlined text-7xl opacity-10">gavel</span>
+          <p className="text-base font-bold text-on-surface-variant">Chưa có dữ liệu hội đồng</p>
+          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">
+            Admin điền thông tin vào sheet HoiDongKLTN (cột Trưởng HĐ / TV / Thư ký) là sẽ hiện ở đây.
+          </p>
         </div>
-
-        <div className="bg-primary p-8 rounded-3xl text-on-primary flex flex-col justify-center relative overflow-hidden">
-          <div className="relative z-10">
-            <p className="text-primary-fixed-dim/80 text-sm font-bold mb-2">PHIÊN LÀM VIỆC TIẾP THEO</p>
-            <h4 className="text-xl font-bold leading-tight">Phòng A4.201 - Cơ sở chính</h4>
-            <div className="mt-6 flex items-center gap-3">
-              <span className="material-symbols-outlined">calendar_today</span>
-              <span className="font-medium">Thứ Tư, 24/05/2024</span>
-            </div>
-          </div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary-container rounded-full blur-3xl opacity-20 -mr-16 -mt-16"/>
-        </div>
-      </section>
-
-      {/* Council Info */}
-      <section className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-secondary-container/20 rounded-2xl flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined text-3xl">info</span>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-on-surface">Thông tin Hội đồng HD04-2024</h3>
-              <p className="text-sm text-on-surface-variant">Học kỳ 2 - Năm học 2023-2024</p>
-            </div>
-          </div>
-          <span className={`px-4 py-1.5 font-bold rounded-full text-xs ${confirmed?'bg-tertiary-fixed text-on-tertiary-fixed':'bg-tertiary-fixed-dim/20 text-on-tertiary-fixed'}`}>
-            {confirmed?'HOÀN TẤT':'ĐANG DIỄN RA'}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-y-8 gap-x-12 border-t border-outline-variant/15 pt-8">
-          {[
-            {label:'Thời gian',   v1:'07:30 - 11:30',       v2:'Ngày 24/05/2024'},
-            {label:'Phòng họp',   v1:'Phòng A4.201',         v2:'Tòa nhà Trung tâm'},
-            {label:'Vai trò',     v1:'Chủ tịch Hội đồng',   v2:'Thành viên số 01', isRole:true},
-            {label:'Thư ký',      v1:'ThS. Lê Thị Thanh',   v2:'lethanh@ute.edu.vn'},
-          ].map((item,i)=>(
-            <div key={i} className="space-y-1">
-              <p className="text-xs font-bold text-on-surface-variant/60 uppercase">{item.label}</p>
-              <p className={`font-bold ${item.isRole?'text-primary flex items-center gap-1':'text-on-surface'}`}>
-                {item.isRole&&<span className="material-symbols-outlined text-sm">stars</span>}
-                {item.v1}
-              </p>
-              <p className="text-sm text-on-surface-variant">{item.v2}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-8">
-          <p className="text-xs font-bold text-on-surface-variant/60 uppercase mb-4">Danh sách thành viên Hội đồng</p>
-          <div className="flex flex-wrap gap-3">
-            {members.map((m,i)=>(
-              <div key={i} className="flex items-center gap-2 bg-surface-container px-4 py-2 rounded-xl">
-                <div className={`w-6 h-6 rounded-full ${m.bg} text-[10px] flex items-center justify-center text-white font-bold`}>{m.short}</div>
-                <span className="text-sm font-semibold">{m.name}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Student List */}
-      <section className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-outline-variant/15 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h3 className="text-xl font-bold text-on-surface">Danh sách Sinh viên báo cáo</h3>
-          <div className="flex items-center bg-surface-container-low px-4 py-2 rounded-xl border border-outline-variant/10 w-full md:w-auto">
-            <span className="material-symbols-outlined text-on-surface-variant mr-2">search</span>
-            <input value={search} onChange={e=>setSearch(e.target.value)}
-              className="bg-transparent border-none focus:ring-0 text-sm p-0 w-full md:w-48 outline-none"
-              placeholder="Tìm tên sinh viên..."/>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-surface-container-low">
-                {['Sinh viên','Đề tài & Kiểm tra đạo văn','Điểm thành viên','Tổng điểm'].map((h,i)=>(
-                  <th key={h} className={`px-8 py-4 text-left text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider ${i===3?'text-center':''}`}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant/15">
-              {filtered.map(sv=>(
-                <tr key={sv.mssv} className="hover:bg-surface-container-low/50 transition-colors">
-                  {/* SV */}
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${sv.initBg}`}>{sv.initials}</div>
-                      <div>
-                        <p className="font-bold text-on-surface">{sv.name}</p>
-                        <p className="text-xs text-on-surface-variant">{sv.mssv} • {sv.email}</p>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Đề tài */}
-                  <td className="px-6 py-6">
-                    <div className="max-w-xs space-y-2">
-                      <p className="text-sm font-semibold line-clamp-1">{sv.topic}</p>
-                      <div className="flex items-center gap-3">
-                        <a href="#" className="inline-flex items-center gap-1 text-primary text-xs font-bold hover:underline">
-                          <span className="material-symbols-outlined text-lg">picture_as_pdf</span>
-                          {sv.file}
-                        </a>
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded ${sv.plagColor}`}>
-                          <span className="material-symbols-outlined text-[12px]">{sv.plagIcon}</span>
-                          {sv.plagiarism}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* Điểm thành viên */}
-                  <td className="px-6 py-6">
-                    <div className="grid grid-cols-1 gap-1" style={{minWidth:'160px'}}>
-                      {sv.memberGrades.map((mg,i)=>(
-                        <div key={i} className="flex justify-between items-center py-1 border-b border-outline-variant/10 text-xs last:border-0">
-                          <span className="text-on-surface-variant">{mg.name}</span>
-                          <span className={`font-bold ${mg.score==='--'?'text-on-surface-variant/40':''}`}>{mg.score}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </td>
-
-                  {/* Tổng điểm */}
-                  <td className="px-6 py-6 text-center">
-                    <div className="flex flex-col items-center gap-1">
-                      <div className="flex items-center justify-center gap-2">
-                        <input type="number" min="0" max="10" step="0.1" placeholder="0.0"
-                          value={hdGrades[sv.mssv]||''}
-                          onChange={e=>setHdGrades(prev=>({...prev,[sv.mssv]:e.target.value}))}
-                          className="w-16 h-10 rounded-xl bg-primary-container/10 border-primary/20 text-center font-black text-primary focus:ring-2 focus:ring-primary/20 outline-none"/>
-                        <span className="text-xs text-on-surface-variant">/ 10</span>
-                        <button onClick={()=>handleSaveHdGrade(sv.mssv)} disabled={!!saving[sv.mssv]}
-                          className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
-                          {saving[sv.mssv]
-                            ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
-                            : <span className="material-symbols-outlined text-[16px]">save</span>}
-                        </button>
-                      </div>
-                      <span className="text-[10px] font-bold text-on-surface-variant/60 uppercase">Điểm TB</span>
-                    </div>
-                  </td>
+      ) : (
+        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse" style={{minWidth:'900px'}}>
+              <thead>
+                <tr className="bg-surface-container-low">
+                  {['Sinh viên','Vai trò của bạn','Thành phần hội đồng','Điểm HĐ'].map((h, i) => (
+                    <th key={i} className={`px-8 py-4 text-left text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider ${i===3?'text-center':''}`}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer summary */}
-        <div className="p-8 bg-surface-container-low flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-8">
-            <div className="text-center md:text-left">
-              <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Đã chấm điểm</p>
-              <p className="text-xl font-headline font-black text-on-surface">08 / 12</p>
-            </div>
-            <div className="hidden md:block h-10 w-px bg-outline-variant/30"/>
-            <div className="text-center md:text-left">
-              <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Điểm TB Hội đồng</p>
-              <p className="text-xl font-headline font-black text-primary">8.42</p>
-            </div>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/15">
+                {filtered.map(sv => {
+                  const role = getRoleLabel(sv);
+                  return (
+                    <tr key={sv.maSo} className="hover:bg-surface-container-low/50 transition-colors">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-3">
+                          <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                          <div>
+                            <p className="font-bold text-on-surface">{sv.studentName}</p>
+                            <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.studentEmail}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${role.color}`}>{role.label}</span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="space-y-1 text-xs">
+                          {sv.truongHD   && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
+                          {sv.thanhVien1 && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
+                          {sv.thanhVien2 && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
+                          {sv.thuKy      && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
+                          {sv.gvPhanBienName && <p><span className="text-secondary font-bold">PB:</span> {sv.gvPhanBienName}</p>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-2">
+                            <input type="number" min="0" max="10" step="0.1" placeholder="0.0"
+                              value={hdGrades[sv.maSo] || ''}
+                              onChange={e => setHdGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
+                              className="w-16 h-10 rounded-xl bg-primary-container/10 text-center font-black text-primary focus:ring-2 focus:ring-primary/20 outline-none"/>
+                            <button onClick={() => handleSaveHdGrade(sv.maSo)}
+                              disabled={!!saving[sv.maSo]}
+                              className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
+                              {saving[sv.maSo]
+                                ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
+                                : <span className="material-symbols-outlined text-[16px]">save</span>}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <button onClick={handleConfirm} disabled={confirmed}
-            className={`w-full md:w-auto px-10 py-4 font-bold rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3
-              ${confirmed
-                ?'bg-tertiary-fixed text-on-tertiary-fixed cursor-default'
-                :'bg-gradient-to-br from-primary to-primary-container text-white hover:shadow-primary/20'}`}>
-            <span className="material-symbols-outlined">{confirmed?'check_circle':'save'}</span>
-            {confirmed?'Đã hoàn tất Hội đồng':'Xác nhận và Hoàn tất Hội đồng'}
-          </button>
+          <div className="px-8 py-4 bg-surface-container-low border-t border-outline-variant/10">
+            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {hdList.length} sinh viên trong hội đồng</p>
+          </div>
         </div>
-      </section>
+      )}
     </div>
   );
 }
 
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
-function App(){
-  useEffect(()=>{
-    const role=localStorage.getItem('ute_role');
-    const email=localStorage.getItem('ute_email');
-    if(!role||!email){
-      window.location.href='login.html';
-      return;
-    }
-    // Sinh viên → chuyển về trangchu.html
-    if(role==='sinhvien'){
-      window.location.href='trangchu.html';
-      return;
-    }
-  },[]);
+function App() {
+  React.useEffect(() => {
+    const role  = localStorage.getItem('ute_role');
+    const email = localStorage.getItem('ute_email');
+    if (!role || !email) { window.location.href = 'login.html'; return; }
+    if (role === 'sinhvien') { window.location.href = 'trangchu.html'; return; }
+  }, []);
 
-  const [tab,setTab]=useState('dashboard');
-  const toast=useToast();
+  const [tab,  setTab]  = React.useState('dashboard');
+  const toast            = useToast();
 
-  const notifications=[
-    {message:'📋 Sinh viên Võ Văn Hậu đã nộp bản thảo Chương 2.',time:'10 phút trước'},
-    {message:'⚠️ Phạm Minh Tâm có tỷ lệ đạo văn 28% — cần kiểm tra.',time:'2 giờ trước'},
-  ];
+  // Thông báo chuông GV — được push khi duyệt/từ chối + tải từ sheet khi login
+  const [notifications, setNotifications] = React.useState([]);
 
-  return(
+  React.useEffect(() => {
+    // Tải thông báo dành cho GV này từ sheet Notifications
+    (async () => {
+      const notis = await fetchGVNotifications(SESSION.email);
+      if (notis.length > 0) setNotifications(notis);
+    })();
+  }, []);
+
+  function addGVNotification(noti) {
+    setNotifications(prev => [noti, ...prev].slice(0, 20));
+  }
+
+  return (
     <div className="min-h-screen bg-background">
-      {toast.toast&&<Toast {...toast.toast} onClose={toast.hide}/>}
+      {toast.toast && <Toast {...toast.toast} onClose={toast.hide}/>}
 
-      <Sidebar
-        tab={tab} setTab={setTab}
-        logout={()=>{localStorage.clear();window.location.href='login.html';}}
-      />
+      <Sidebar tab={tab} setTab={setTab}
+        logout={() => { localStorage.clear(); window.location.href = 'login.html'; }}/>
 
       <Header notifications={notifications}/>
 
       <main className="pt-24 pb-10 px-6 min-h-screen" style={{marginLeft:'18rem'}}>
         <div className="max-w-7xl mx-auto">
-          {tab==='dashboard' && <TabThongTinChung toast={toast}/>}
-          {tab==='sinhvien' && <TabSinhVienHuongDan toast={toast}/>}
-          {tab==='phanbien' && <TabPhanBien toast={toast}/>}
-          {tab==='hoidong'  && <TabHoiDong toast={toast}/>}
+          {tab === 'dashboard' && <TabThongTinChung toast={toast} addGVNotification={addGVNotification}/>}
+          {tab === 'sinhvien'  && <TabSinhVienHuongDan toast={toast}/>}
+          {tab === 'phanbien'  && <TabPhanBien toast={toast}/>}
+          {tab === 'hoidong'   && <TabHoiDong toast={toast}/>}
         </div>
       </main>
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-white/90 backdrop-blur-lg rounded-t-3xl shadow-2xl">
         {[
-          {id:'dashboard',icon:'dashboard',   l:'Tổng quan'},
-          {id:'sinhvien', icon:'group',        l:'Hướng dẫn'},
-          {id:'phanbien', icon:'rate_review',  l:'Phản biện'},
-          {id:'hoidong',  icon:'gavel',        l:'Hội đồng'},
-        ].map(it=>(
-          <button key={it.id} onClick={()=>setTab(it.id)}
+          {id:'dashboard', icon:'dashboard',   l:'Tổng quan'},
+          {id:'sinhvien',  icon:'group',        l:'Hướng dẫn'},
+          {id:'phanbien',  icon:'rate_review',  l:'Phản biện'},
+          {id:'hoidong',   icon:'gavel',        l:'Hội đồng'},
+        ].map(it => (
+          <button key={it.id} onClick={() => setTab(it.id)}
             className={`flex flex-col items-center justify-center px-3 py-2 rounded-2xl transition-all ${tab===it.id?'bg-blue-50 text-blue-800':'text-slate-400'}`}>
             <span className="material-symbols-outlined text-2xl">{it.icon}</span>
             <span className="text-[10px] font-semibold mt-1">{it.l}</span>
@@ -1234,6 +1211,7 @@ function App(){
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
 </script>
 </body>
 </html>
