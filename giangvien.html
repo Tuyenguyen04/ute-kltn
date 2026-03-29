@@ -308,18 +308,21 @@ async function fetchDangKyByGV(gvEmail) {
   for (const r of rows) {
     if (!r[9] || r[9].toLowerCase().trim() !== gvEmail.toLowerCase().trim()) continue;
     const obj = {
-      studentEmail   : r[1]  || '',
-      studentName    : r[2]  || '',
-      maSo           : r[3]  || '',
-      nganh          : r[4]  || '',
-      topic          : r[6]  || '',
-      company        : r[7]  || '',
-      term           : r[11] || '',
-      note           : r[12] || '',
-      status         : r[13] || 'pending',
-      grade          : r[14] !== '' ? parseFloat(r[14]) : null,
-      position       : r[16] || '',
-      internDuration : r[17] || '',
+      studentEmail    : r[1]  || '',
+      studentName     : r[2]  || '',
+      maSo            : r[3]  || '',
+      nganh           : r[4]  || '',
+      topic           : r[6]  || '',
+      company         : r[7]  || '',
+      term            : r[11] || '',
+      note            : r[12] || '',
+      status          : r[13] || 'pending',
+      grade           : r[14] !== '' ? parseFloat(r[14]) : null,
+      position        : r[16] || '',
+      internDuration  : r[17] || '',
+      reportSubmitted : r[18] === 'true' || r[18] === true,
+      reportDriveUrl  : r[19] || '',  // cột T — link Drive file SV nộp
+      plagiarismUrl   : r[20] || '',  // cột U — link Drive file đạo văn GV upload
     };
     if (obj.status === 'pending') pendingList.push(obj);
     else if (obj.status === 'approved' || obj.status === 'graded') approvedList.push(obj);
@@ -801,6 +804,200 @@ function TabThongTinChung({toast, addGVNotification}) {
   );
 }
 
+// ── FILE VIEWER MODAL (Hướng 3) ───────────────────────────────────────────────
+// Embed Drive file trực tiếp trong modal — GV xem + tải về không cần mở Drive
+function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) {
+  // Trích file ID từ mọi dạng Drive URL
+  function getDriveId(u) {
+    const m = u.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    return m ? m[1] : null;
+  }
+  const fileId      = getDriveId(url);
+  const embedUrl    = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null;
+  const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : null;
+  const [iframeLoaded, setIframeLoaded] = React.useState(false);
+
+  // Đóng khi click backdrop
+  function onBackdrop(e){ if(e.target===e.currentTarget) onClose(); }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      style={{background:'rgba(25,27,34,0.75)',backdropFilter:'blur(8px)'}}
+      onClick={onBackdrop}>
+      <div className="bg-white rounded-3xl shadow-2xl flex flex-col anim-slide overflow-hidden"
+        style={{width:'min(960px,96vw)',height:'min(90vh,800px)'}}>
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/20 flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPlagiarism ? 'bg-tertiary-fixed' : 'bg-primary-fixed'}`}>
+              <span className={`material-symbols-outlined fill-icon text-xl`}
+                style={{color: isPlagiarism ? '#003f29' : undefined}}
+                className={`material-symbols-outlined fill-icon text-xl ${!isPlagiarism ? 'text-primary' : ''}`}>
+                {isPlagiarism ? 'policy' : 'description'}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest leading-none mb-0.5">
+                {isPlagiarism ? 'Kết quả kiểm tra đạo văn' : 'Báo cáo thực tập'}
+              </p>
+              <h3 className="font-black text-on-surface text-sm truncate leading-snug">{studentName}</h3>
+              {fileName && (
+                <p className="text-[11px] text-outline truncate mt-0.5">{fileName}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+            {/* Nút Tải về — download thẳng không qua UI Drive */}
+            {downloadUrl && (
+              <a href={downloadUrl}
+                download
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container transition-colors shadow-sm shadow-primary/20">
+                <span className="material-symbols-outlined text-[17px]">download</span>
+                Tải về
+              </a>
+            )}
+            {/* Nút đóng */}
+            <button onClick={onClose}
+              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">
+              <span className="material-symbols-outlined text-on-surface-variant">close</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Viewer ── */}
+        <div className="relative flex-1 bg-surface-container-low overflow-hidden">
+          {/* Loading skeleton */}
+          {!iframeLoaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-on-surface-variant z-10 bg-surface-container-low">
+              <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+              <p className="text-sm font-medium">Đang tải file...</p>
+              <p className="text-xs text-on-surface-variant/60">Vui lòng chờ trong giây lát</p>
+            </div>
+          )}
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              className="w-full h-full border-0"
+              title={`Báo cáo - ${studentName}`}
+              allow="autoplay"
+              onLoad={() => setIframeLoaded(true)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-on-surface-variant">
+              <span className="material-symbols-outlined text-5xl opacity-20">broken_image</span>
+              <p className="text-sm font-medium">Không đọc được URL file</p>
+              <p className="text-xs opacity-60">URL: {url}</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── Footer hint ── */}
+        <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10 flex-shrink-0 flex items-center justify-between">
+          <p className="text-[11px] text-on-surface-variant">
+            <span className="material-symbols-outlined text-[14px] align-middle mr-1">info</span>
+            Nhấn <strong>Tải về</strong> để lưu file về máy
+          </p>
+          {downloadUrl && (
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] text-primary font-medium hover:underline flex items-center gap-1">
+              <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+              Mở trong Drive
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── PLAGIARISM UPLOAD CELL ────────────────────────────────────────────────────
+// GV upload file kết quả kiểm tra đạo văn cho từng SV
+// Sau khi upload: hiện nút "Xem / Tải" mở FileViewerModal (dùng chung)
+function PlagiarismUploadCell({ sv, toast, onUploaded, onView }) {
+  const fileRef = React.useRef(null);
+  const [uploading, setUploading] = React.useState(false);
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Chấp nhận PDF, Word, txt, ảnh kết quả
+    const okTypes = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/msword','image/png','image/jpeg','text/plain'];
+    if (!okTypes.includes(file.type) && !file.name.match(/\.(pdf|docx?|txt|png|jpe?g)$/i)) {
+      toast.show('Chỉ chấp nhận PDF, Word, TXT hoặc ảnh!', 'error'); return;
+    }
+    if (file.size > 20 * 1024 * 1024) { toast.show('File tối đa 20 MB!', 'error'); return; }
+
+    setUploading(true);
+    try {
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(',')[1]);
+        r.onerror = () => rej(new Error('Đọc file thất bại'));
+        r.readAsDataURL(file);
+      });
+      const res = await apiPost({
+        action    : 'savePlagiarism',
+        email     : sv.studentEmail,
+        fileBase64: b64,
+        fileName  : file.name,
+        mimeType  : file.type || 'application/octet-stream',
+      });
+      if (res.success) {
+        toast.show(`Đã lưu file đạo văn cho ${sv.studentName}`, 'success');
+        onUploaded(res.driveUrl || '');
+      } else {
+        toast.show(res.message || 'Upload thất bại!', 'error');
+      }
+    } catch(err) {
+      toast.show('Lỗi upload: ' + err.message, 'error');
+    }
+    setUploading(false);
+    e.target.value = '';
+  }
+
+  return (
+    <div className="inline-flex flex-col items-center gap-0.5">
+      {sv.plagiarismUrl ? (
+        // Đã có file — hiện nút xem + nút đổi file
+        <div className="flex flex-col items-center gap-1">
+          <button
+            onClick={() => onView(sv.plagiarismUrl, sv.studentName)}
+            title="Xem / Tải file đạo văn"
+            className="inline-flex flex-col items-center gap-0.5 group">
+            <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors">
+              <span className="material-symbols-outlined fill-icon text-[20px]" style={{color:'#003f29'}}>policy</span>
+            </span>
+            <span className="text-[9px] font-bold" style={{color:'#003f29'}}>Xem / Tải</span>
+          </button>
+          {/* Nút đổi file nhỏ */}
+          <button onClick={() => fileRef.current?.click()} disabled={uploading}
+            title="Đổi file đạo văn"
+            className="text-[9px] text-on-surface-variant/50 hover:text-primary underline disabled:opacity-40">
+            {uploading ? 'Đang upload...' : 'Đổi file'}
+          </button>
+        </div>
+      ) : (
+        // Chưa có file — hiện nút upload
+        <button onClick={() => fileRef.current?.click()} disabled={uploading}
+          title="Upload file kết quả đạo văn"
+          className="inline-flex flex-col items-center gap-0.5 group">
+          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container group-hover:bg-surface-container-high transition-colors disabled:opacity-50">
+            {uploading
+              ? <span className="material-symbols-outlined text-[20px] anim-spin text-primary">refresh</span>
+              : <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40">upload_file</span>}
+          </span>
+          <span className="text-[9px] text-on-surface-variant/40">{uploading ? 'Uploading...' : 'Upload'}</span>
+        </button>
+      )}
+      <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+        className="hidden" onChange={handleFile}/>
+    </div>
+  );
+}
+
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
 function TabSinhVienHuongDan({toast}) {
   const [search,   setSearch]   = React.useState('');
@@ -808,6 +1005,9 @@ function TabSinhVienHuongDan({toast}) {
   const [loading,  setLoading]  = React.useState(true);
   const [grades,   setGrades]   = React.useState({});
   const [saving,   setSaving]   = React.useState({});
+
+  // ── Modal xem file báo cáo SV ───────────────────────────────
+  const [viewerFile, setViewerFile] = React.useState(null); // { url, studentName }
 
   // ── KLTN state ──────────────────────────────────────────────
   const [kltnPending,  setKltnPending]  = React.useState([]); // step=1, chờ duyệt đề cương
@@ -930,6 +1130,15 @@ function TabSinhVienHuongDan({toast}) {
           request={rejectOutlineTarget}
           onConfirm={handleRejectOutline}
           onClose={() => setRejectOutlineTarget(null)}
+        />
+      )}
+
+      {/* Modal xem file báo cáo SV — Hướng 3 */}
+      {viewerFile && (
+        <FileViewerModal
+          url={viewerFile.url}
+          studentName={viewerFile.studentName}
+          onClose={() => setViewerFile(null)}
         />
       )}
 
@@ -1123,14 +1332,14 @@ function TabSinhVienHuongDan({toast}) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
-                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','Điểm số',''].map((h, i) => (
-                    <th key={i} className={`px-6 py-4 ${i===4?'text-center':''}`}>{h}</th>
+                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','File BC','File đạo văn','Điểm số',''].map((h, i) => (
+                    <th key={i} className={`px-4 py-4 ${i===6?'text-center':i===4||i===5?'text-center':''}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="6" className="px-6 py-16 text-center text-on-surface-variant text-sm">
+                  <tr><td colSpan="8" className="px-6 py-16 text-center text-on-surface-variant text-sm">
                     <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
                     Không tìm thấy sinh viên
                   </td></tr>
@@ -1151,6 +1360,41 @@ function TabSinhVienHuongDan({toast}) {
                     </td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{sv.company || '--'}</td>
                     <td className="px-6 py-4 text-xs text-on-surface-variant">{sv.term || '--'}</td>
+
+                    {/* ── Cột File BC — Hướng 3: xem + tải trong modal ── */}
+                    <td className="px-4 py-4 text-center">
+                      {sv.reportSubmitted && sv.reportDriveUrl ? (
+                        <button
+                          onClick={() => setViewerFile({ url: sv.reportDriveUrl, studentName: sv.studentName })}
+                          title="Xem / Tải báo cáo"
+                          className="inline-flex flex-col items-center gap-0.5 group">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors">
+                            <span className="material-symbols-outlined fill-icon text-[20px] text-primary">description</span>
+                          </span>
+                          <span className="text-[9px] font-bold text-primary">Xem / Tải</span>
+                        </button>
+                      ) : (
+                        <div className="inline-flex flex-col items-center gap-0.5">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container">
+                            <span className="material-symbols-outlined text-[20px] text-on-surface-variant/30">description</span>
+                          </span>
+                          <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* ── Cột File đạo văn — GV upload kết quả kiểm tra ── */}
+                    <td className="px-4 py-4 text-center">
+                      <PlagiarismUploadCell
+                        sv={sv}
+                        toast={toast}
+                        onUploaded={(url) => setStudents(prev =>
+                          prev.map(s => s.maSo === sv.maSo ? { ...s, plagiarismUrl: url } : s)
+                        )}
+                        onView={(url, name) => setViewerFile({ url, studentName: name, isPlagiarism: true })}
+                      />
+                    </td>
+
                     <td className="px-6 py-4">
                       <div className="flex justify-center items-center gap-2">
                         <input type="number" min="0" max="10" step="0.1"
