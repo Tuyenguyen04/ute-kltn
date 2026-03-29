@@ -57,8 +57,9 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzptXTukZzho3esHy5efvLJ
 
 // 5 ngành khớp đúng cột Ngành trong sheet GV
 const NGANH_LIST = ['QLCN','Kế toán','Thương mại điện tử','Kinh doanh quốc tế','Logistic'];
-const SHEET_ID_GV    = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
-const SHEET_GV_TAB   = 'Giảng viên phụ trách';
+const SHEET_ID_GV     = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
+const SHEET_GV_TAB    = 'Giảng viên phụ trách';  // GV hướng dẫn BCTT
+const SHEET_GV_KLTN_TAB = 'GV KLTN';              // GV hướng dẫn KLTN (sheet riêng)
 const SHEET_NOTIF_TAB = 'Notifications';
 
 // Đọc thông báo dành cho SV này từ sheet Notifications (CSV)
@@ -96,6 +97,38 @@ async function fetchGVFromCSV(){
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID_GV}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_GV_TAB)}`;
   const res = await fetch(url);
   if(!res.ok) throw new Error('Không tải được sheet GV');
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  const rows = [];
+  for(let i=1;i<lines.length;i++){
+    const cols=[];let cur='',inQ=false;
+    for(let j=0;j<lines[i].length;j++){
+      const c=lines[i][j];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===','&&!inQ){cols.push(cur.replace(/"/g,'').trim());cur='';}
+      else{cur+=c;}
+    }
+    cols.push(cur.replace(/"/g,'').trim());
+    if(cols[1]&&cols[3]){
+      rows.push({
+        name:cols[1]||'',
+        code:cols[2]||'',
+        email:cols[3]||'',
+        slDangKi:parseInt(cols[5])||0,
+        slConLai:parseInt(cols[6])||0,
+        nganh:cols[7]||'',
+      });
+    }
+  }
+  return rows;
+}
+
+// Đọc GV KLTN từ sheet "GV KLTN" (cấu trúc giống Giảng viên phụ trách)
+// A=STT B=HọTên C=MãGV D=Gmail E=Role F=SLđăngkí G=SLcònlại H=Ngành
+async function fetchGVKLTNFromCSV(){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID_GV}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_GV_KLTN_TAB)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Không tải được sheet GV KLTN');
   const text = await res.text();
   const lines = text.trim().split('\n');
   const rows = [];
@@ -2453,12 +2486,12 @@ function App(){
         .catch(()=>console.warn('Không tải được GV từ Sheet'))
         .finally(()=>setLoadingGV(false));
     }
-    // Load GV cho tab kltn
+    // Load GV cho tab kltn — đọc từ sheet "GV KLTN" riêng biệt
     if(tab==='kltn'&&kltnInstructorList.length===0){
       setLoadingKltnGV(true);
-      fetchGVFromCSV()
+      fetchGVKLTNFromCSV()
         .then(rows=>setKltnInstructorList(rows))
-        .catch(()=>console.warn('Không tải được GV từ Sheet'))
+        .catch(()=>console.warn('Không tải được GV KLTN từ Sheet'))
         .finally(()=>setLoadingKltnGV(false));
     }
   },[tab]);
