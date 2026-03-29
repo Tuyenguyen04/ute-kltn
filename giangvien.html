@@ -556,9 +556,10 @@ function TabThongTinChung({toast, addGVNotification}) {
         addGVNotification({ message: `Đã duyệt đề tài cho ${req.studentName}`, time: 'Vừa xong' });
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
         setApprovedList(prev => [{ ...req, status:'approved' }, ...prev]);
-      } else {
-        toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error');
-      }
+} else {
+  console.error('Server trả về lỗi:', res);
+  toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error');
+}
     } catch(e) { console.error('Approve error:', e); toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setProcessingId(null);
   }
