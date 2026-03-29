@@ -67,11 +67,15 @@ const SESSION = {
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 async function apiGet(params){
   const qs=new URLSearchParams(params).toString();
-  const r=await fetch(`${API_URL}?${qs}`);
+  const r=await fetch(`${API_URL}?${qs}`,{redirect:'follow'});
   return r.json();
 }
 async function apiPost(body){
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  // FIX: dùng GET + query string thay vì POST JSON (GAS không đọc được JSON body)
+  const qs=new URLSearchParams(
+    Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v||'')]))
+  ).toString();
+  const r=await fetch(`${API_URL}?${qs}`,{redirect:'follow'});
   return r.json();
 }
 
