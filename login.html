@@ -188,6 +188,9 @@ async function handleGoogleLogin(response){
   showOverlay('success','⏳','Đang kiểm tra quyền truy cập...','');
 
   try {
+    // Xoá sạch session cũ trước khi lưu mới
+    localStorage.clear();
+
     // Tải song song cả 2 sheet
     const [csvSV, csvGV] = await Promise.all([
       fetchSheetCSV(SHEET_SV),
@@ -197,29 +200,30 @@ async function handleGoogleLogin(response){
     const rowsSV = parseCSV(csvSV);
     const rowsGV = parseCSV(csvGV);
 
-    // Kiểm tra sheet Sinh viên trước
-    const sv = findEmailInRows(rowsSV, email);
-    if(sv){
-      localStorage.setItem('ute_email', email);
-      localStorage.setItem('ute_role',  'sinhvien');
-      localStorage.setItem('ute_name',  sv.name || nameGG);
-      localStorage.setItem('ute_maSo',  sv.maSo || '');
-      localStorage.setItem('ute_nganh', sv.nganh || '');
-      showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000);
-      return;
-    }
-
-    // Kiểm tra sheet Giảng viên
+    // ── Kiểm tra sheet Giảng viên TRƯỚC ──────────────────────────
+    // (để tránh trường hợp GV bị nhầm sang SV nếu email trùng)
     const gv = findEmailInRows(rowsGV, email);
     if(gv){
       localStorage.setItem('ute_email', email);
-      localStorage.setItem('ute_role',  'giangvien');
+      localStorage.setItem('ute_role',  'giangvien');           // hardcode, không lấy từ sheet
       localStorage.setItem('ute_name',  gv.name || nameGG);
       localStorage.setItem('ute_maSo',  gv.maSo || '');
       localStorage.setItem('ute_nganh', gv.nganh || '');
-      showOverlay('success','🎉','Chúc mừng bạn đã đăng nhập thành công!','Đang chuyển hướng...');
+      showOverlay('success','🎉','Chào mừng Giảng viên ' + (gv.name||nameGG) + '!','Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
+      return;
+    }
+
+    // ── Kiểm tra sheet Sinh viên ──────────────────────────────────
+    const sv = findEmailInRows(rowsSV, email);
+    if(sv){
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'sinhvien');            // hardcode, không lấy từ sheet
+      localStorage.setItem('ute_name',  sv.name || nameGG);
+      localStorage.setItem('ute_maSo',  sv.maSo || '');
+      localStorage.setItem('ute_nganh', sv.nganh || '');
+      showOverlay('success','🎉','Chào mừng ' + (sv.name||nameGG) + '!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000);
       return;
     }
 
