@@ -146,30 +146,143 @@ function letterGrade(g){
 }
 async function apiGet(params){
   const qs=new URLSearchParams(params).toString();
-  const r=await fetch(`${API_URL}?${qs}`,{redirect:'follow'});
+  const r=await fetch(`${API_URL}?${qs}`,{method:'GET',redirect:'follow'});
   return r.json();
 }
 async function apiPost(body){
   // GAS: dùng GET với redirect:follow để đọc được JSON response (tránh CORS)
+  // doGet() trong GAS phải xử lý tất cả action
   const qs=new URLSearchParams(
     Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v??'')]))
   ).toString();
-  const r=await fetch(`${API_URL}?${qs}`,{redirect:'follow'});
+  const r=await fetch(`${API_URL}?${qs}`,{method:'GET',redirect:'follow'});
   const text=await r.text();
   try{ return JSON.parse(text); }
   catch(e){ console.error('JSON parse error:',e,text.slice(0,300)); throw new Error('Response không phải JSON'); }
 }
-// Dùng riêng cho upload file (fileBase64 quá dài cho GET query string)
-async function apiPostFile(body){
+// ── apiPost helper ────────────────────────────────────────────
+// Gửi JSON qua POST với Content-Type: text/plain (simple request, không trigger CORS preflight)
+async function _gasPost(body){
   const r=await fetch(API_URL,{
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'text/plain;charset=UTF-8'},
     body:JSON.stringify(body),
     redirect:'follow',
   });
   const text=await r.text();
   try{ return JSON.parse(text); }
-  catch(e){ console.error('JSON parse error:',e,text.slice(0,300)); throw new Error('Response không phải JSON'); }
+  catch(e){ console.error('GAS parse error:',e,text.slice(0,200)); throw new Error('Response không phải JSON'); }
+}
+
+// ── Chunked file upload ───────────────────────────────────────
+// Chia file thành các chunk nhỏ (4MB base64 ≈ 3MB binary) rồi gửi từng chunk.
+// GAS ghép lại và trả driveUrl. Sau đó gọi action thật với driveUrl.
+//
+// Cách dùng:
+//   const driveUrl = await uploadFileInChunks(file, 'BaoCaoTT_UTE', onProgress);
+//   await apiPost({ action:'submitReport', ..., driveUrl });
+//
+const CHUNK_SIZE_BYTES = 3 * 1024 * 1024; // 3MB binary → ~4MB base64
+
+async function uploadFileInChunks(file, folderName, onProgress){
+  // Đọc toàn bộ file thành ArrayBuffer
+  const buffer = await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.onerror=rej;
+    r.readAsArrayBuffer(file);
+  });
+
+  const bytes = new Uint8Array(buffer);
+  const totalChunks = Math.ceil(bytes.length / CHUNK_SIZE_BYTES);
+  const uploadId = Date.now() + '_' + Math.random().toString(36).slice(2,8);
+
+  console.log(`📤 Bắt đầu upload: ${file.name} (${(bytes.length/1024/1024).toFixed(1)}MB, ${totalChunks} chunks)`);
+
+  for(let i=0; i<totalChunks; i++){
+    const start = i * CHUNK_SIZE_BYTES;
+    const end   = Math.min(start + CHUNK_SIZE_BYTES, bytes.length);
+    const chunk = bytes.slice(start, end);
+
+    // Chuyển chunk sang base64
+    let binary = '';
+    chunk.forEach(b => binary += String.fromCharCode(b));
+    const chunkBase64 = btoa(binary);
+
+    let attempt = 0;
+    let ok = false;
+    while(attempt < 3 && !ok){
+      try{
+        const res = await _gasPost({
+          action:'uploadChunk',
+          uploadId, chunkIndex:i, totalChunks,
+          chunkData:chunkBase64,
+          fileName:file.name, mimeType:file.type||'application/octet-stream',
+          folderName,
+        });
+        if(!res.success) throw new Error(res.message||'Chunk failed');
+        ok = true;
+      }catch(err){
+        attempt++;
+        console.warn(`Chunk ${i} thất bại lần ${attempt}:`, err.message);
+        if(attempt>=3) throw new Error(`Upload thất bại chunk ${i}: ${err.message}`);
+        await new Promise(r=>setTimeout(r, 1000 * attempt));
+      }
+    }
+
+    if(onProgress) onProgress(Math.round(((i+1)/totalChunks)*100));
+    console.log(`✅ Chunk ${i+1}/${totalChunks}`);
+  }
+
+  // Finalize: ghép và lưu file trên GAS
+  const finalRes = await _gasPost({
+    action:'finalizeUpload',
+    uploadId, totalChunks,
+    fileName:file.name, mimeType:file.type||'application/octet-stream',
+    folderName,
+  });
+  if(!finalRes.success) throw new Error(finalRes.message||'Finalize thất bại');
+  console.log('🎉 Upload hoàn tất:', finalRes.driveUrl);
+  return finalRes.driveUrl;
+}
+
+// ── apiPostFile: tự động chọn direct hoặc chunked ────────────
+// File ≤ 15MB: gửi base64 trực tiếp (nhanh, 1 request)
+// File > 15MB: dùng chunked upload
+const DIRECT_UPLOAD_LIMIT = 15 * 1024 * 1024; // 15MB
+
+async function apiPostFile(body, onProgress){
+  const { _file, folderName, ...rest } = body;
+
+  // Nếu body truyền _file object (File API) → dùng chunked logic
+  if(_file && _file instanceof File){
+    if(_file.size <= DIRECT_UPLOAD_LIMIT){
+      // Direct: đọc base64 và gửi trong 1 request
+      const b64 = await new Promise((res,rej)=>{
+        const r=new FileReader();
+        r.onload=()=>res(r.result.split(',')[1]);
+        r.onerror=rej;
+        r.readAsDataURL(_file);
+      });
+      if(onProgress) onProgress(50);
+      const result = await _gasPost({ ...rest, folderName,
+        fileBase64:b64, fileName:_file.name,
+        mimeType:_file.type||'application/octet-stream',
+      });
+      if(onProgress) onProgress(100);
+      return result;
+    } else {
+      // Chunked upload
+      const driveUrl = await uploadFileInChunks(_file, folderName||'Upload_UTE', onProgress);
+      // Gọi action chính với driveUrl (không có fileBase64)
+      return await _gasPost({ ...rest, driveUrl,
+        fileName:_file.name, mimeType:_file.type||'application/octet-stream',
+      });
+    }
+  }
+
+  // Legacy: body đã có fileBase64 (code cũ vẫn hoạt động)
+  return await _gasPost(body);
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
@@ -1589,6 +1702,7 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
   const [note,setNote]   = useState('');
   const [step,setStep]   = useState(1); // 1=chọn file | 2=confirm
   const [submitting,setSubmitting] = useState(false);
+  const [progress,setProgress] = useState(0);
   const [done,setDone]   = useState(false);
 
   function pickFile(e){
@@ -1598,21 +1712,14 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
     if(!ok.some(t=>f.type===t)&&!f.name.match(/\.(pdf|docx?|zip)$/i)){
       toast.show('Chỉ chấp nhận file PDF, Word hoặc ZIP!','error'); return;
     }
-    if(f.size>30*1024*1024){toast.show('File tối đa 30 MB!','error');return;}
+    if(f.size>100*1024*1024){toast.show('File tối đa 100 MB!','error');return;}
     setFile(f);
   }
 
   async function submit(){
     if(!file){toast.show('Vui lòng chọn file báo cáo!','error');return;}
-    setSubmitting(true);
+    setSubmitting(true); setProgress(0);
     try{
-      // Convert file → base64 để gửi qua GAS
-      const b64=await new Promise((res,rej)=>{
-        const r=new FileReader();
-        r.onload=()=>res(r.result.split(',')[1]);
-        r.onerror=rej;
-        r.readAsDataURL(file);
-      });
       const res=await apiPostFile({
         action:'submitReport',
         email:SESSION.email,
@@ -1623,14 +1730,13 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
         instructorEmail:instr?.email||'',
         instructorName:instr?.name||'',
         note:note.trim(),
-        fileName:file.name,
-        fileSize:file.size,
-        fileBase64:b64,
-      });
+        folderName:'BaoCaoTT_UTE',
+        _file:file,
+      }, pct=>setProgress(pct));
       if(res?.success){setDone(true);}
       else{toast.show(res?.message||'Gửi thất bại. Thử lại.','error');setSubmitting(false);}
     }catch(e){
-      toast.show('Lỗi kết nối. Thử lại sau.','error');
+      toast.show('Lỗi upload: '+e.message,'error');
       setSubmitting(false);
     }
   }
@@ -1699,7 +1805,7 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
           <div>
             <label className="text-sm font-semibold text-on-surface-variant block mb-2">
               File báo cáo <span className="text-error">*</span>
-              <span className="text-xs font-normal ml-2 opacity-60">PDF / Word / ZIP · tối đa 30 MB</span>
+              <span className="text-xs font-normal ml-2 opacity-60">PDF / Word / ZIP · tối đa 100 MB</span>
             </label>
             {!file?(
               <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-primary/30 rounded-2xl bg-primary-fixed/10 cursor-pointer hover:bg-primary-fixed/20 transition-colors group">
@@ -1741,7 +1847,19 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 px-8 pb-8 pt-4 border-t border-outline-variant/10 flex-shrink-0">
+        <div className="flex flex-col gap-3 px-8 pb-8 pt-4 border-t border-outline-variant/10 flex-shrink-0">
+          {submitting&&progress>0&&(
+            <div className="w-full">
+              <div className="flex justify-between text-xs text-on-surface-variant mb-1">
+                <span>{progress<100?'Đang upload file...':'Đang xử lý...'}</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="w-full bg-surface-container rounded-full h-2">
+                <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{width:progress+'%'}}></div>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-3">
           <button onClick={onClose} disabled={submitting}
             className="px-6 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all text-sm disabled:opacity-50">
             Hủy bỏ
@@ -1749,9 +1867,11 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
           <button onClick={submit} disabled={!file||submitting}
             className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm">
             {submitting
-              ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>
+              ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang upload{progress>0?` ${progress}%`:''}...</>
               :<><span className="material-symbols-outlined text-sm">send</span>Xác nhận nộp</>}
           </button>
+          </div>
+        </div>
         </div>
       </div>
     </div>
@@ -1769,25 +1889,20 @@ function SubmitKLTNModal({dashData,onClose,onSuccess,toast}){
   const [file,setFile]    = useState(null);
   const [note,setNote]    = useState('');
   const [submitting,setSubmitting] = useState(false);
+  const [progress,setProgress] = useState(0);
   const [done,setDone]    = useState(false);
 
   function pickFile(e){
     const f=e.target.files[0]; if(!f) return;
-    if(f.size>50*1024*1024){toast.show('File tối đa 50 MB!','error');return;}
+    if(f.size>100*1024*1024){toast.show('File tối đa 100 MB!','error');return;}
     setFile(f);
   }
   function fmtSize(b){return b>1024*1024?(b/1024/1024).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';}
 
   async function submit(){
     if(!file){toast.show('Vui lòng chọn file khóa luận!','error');return;}
-    setSubmitting(true);
+    setSubmitting(true); setProgress(0);
     try{
-      const b64=await new Promise((res,rej)=>{
-        const r=new FileReader();
-        r.onload=()=>res(r.result.split(',')[1]);
-        r.onerror=rej; r.readAsDataURL(file);
-      });
-      // GAS: updateKLTNStatus step=3 = SV nộp luận văn, chuyển sang bước chuẩn bị bảo vệ
       const result=await apiPostFile({
         action:'updateKLTNStatus',
         studentEmail:SESSION.email,
@@ -1795,14 +1910,13 @@ function SubmitKLTNModal({dashData,onClose,onSuccess,toast}){
         status:'approved',
         topic,
         note:note.trim(),
-        fileName:file.name,
-        fileSize:file.size,
-        fileBase64:b64,
-      });
+        folderName:'KhoaLuanKLTN_UTE',
+        _file:file,
+      }, pct=>setProgress(pct));
       if(result?.success){setDone(true);}
       else{toast.show(result?.message||'Gửi thất bại. Thử lại.','error');setSubmitting(false);}
     }catch(e){
-      toast.show('Lỗi kết nối. Thử lại sau.','error'); setSubmitting(false);
+      toast.show('Lỗi upload: '+e.message,'error'); setSubmitting(false);
     }
   }
 
@@ -1942,21 +2056,16 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
 
   function pickDecu(e){
     const f=e.target.files[0]; if(!f) return;
-    if(f.size>30*1024*1024){toast.show('File tối đa 30 MB!','error');return;}
+    if(f.size>100*1024*1024){toast.show('File tối đa 100 MB!','error');return;}
     setDecuFile(f);
   }
   function fmtSize(b){return b>1024*1024?(b/1024/1024).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';}
+  const [decuProgress,setDecuProgress]=useState(0);
 
   async function submitDecu(){
     if(!decuFile){toast.show('Vui lòng chọn file đề cương!','error');return;}
-    setUploadingDecu(true);
+    setUploadingDecu(true); setDecuProgress(0);
     try{
-      const b64=await new Promise((res,rej)=>{
-        const r=new FileReader();
-        r.onload=()=>res(r.result.split(',')[1]);
-        r.onerror=rej; r.readAsDataURL(decuFile);
-      });
-      // GAS: dùng updateKLTNStatus để GV biết SV đã nộp lại đề cương (reset pending)
       const result=await apiPostFile({
         action:'updateKLTNStatus',
         studentEmail:SESSION.email,
@@ -1964,17 +2073,16 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
         step:1,
         topic:kltnTopic,
         note:decuNote.trim(),
-        fileName:decuFile.name,
-        fileSize:decuFile.size,
-        fileBase64:b64,
-      });
+        folderName:'DeCuongKLTN_UTE',
+        _file:decuFile,
+      }, pct=>setDecuProgress(pct));
       if(result?.success){
         toast.show('Nộp đề cương chỉnh sửa thành công! GV sẽ xem xét.','success');
-        setShowUploadDecu(false); setDecuFile(null); setDecuNote('');
+        setShowUploadDecu(false); setDecuFile(null); setDecuNote(''); setDecuProgress(0);
       } else {
         toast.show(result?.message||'Gửi thất bại. Thử lại.','error');
       }
-    }catch(e){ toast.show('Lỗi kết nối. Thử lại sau.','error'); }
+    }catch(e){ toast.show('Lỗi upload: '+e.message,'error'); }
     setUploadingDecu(false);
   }
 
