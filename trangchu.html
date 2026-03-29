@@ -57,8 +57,38 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzptXTukZzho3esHy5efvLJ
 
 // 5 ngành khớp đúng cột Ngành trong sheet GV
 const NGANH_LIST = ['QLCN','Kế toán','Thương mại điện tử','Kinh doanh quốc tế','Logistic'];
-const SHEET_ID_GV = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
-const SHEET_GV_TAB = 'Giảng viên phụ trách';
+const SHEET_ID_GV    = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
+const SHEET_GV_TAB   = 'Giảng viên phụ trách';
+const SHEET_NOTIF_TAB = 'Notifications';
+
+// Đọc thông báo dành cho SV này từ sheet Notifications (CSV)
+// Sheet Notifications: A=Timestamp B=ForEmail C=Message D=Read
+async function fetchSVNotifications(svEmail){
+  try{
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID_GV}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SHEET_NOTIF_TAB)}`;
+    const res = await fetch(url);
+    if(!res.ok) return [];
+    const text = await res.text();
+    const lines = text.trim().split('\n').slice(1); // bỏ header
+    const email = svEmail.toLowerCase().trim();
+    const results = [];
+    for(const line of lines){
+      const cols=[]; let cur='',inQ=false;
+      for(let j=0;j<line.length;j++){
+        const c=line[j];
+        if(c==='"'){inQ=!inQ;}
+        else if(c===','&&!inQ){cols.push(cur.replace(/^"|"$/g,'').trim());cur='';}
+        else{cur+=c;}
+      }
+      cols.push(cur.replace(/^"|"$/g,'').trim());
+      if((cols[1]||'').toLowerCase().trim()===email){
+        results.push({ time: cols[0]||'', message: cols[2]||'' });
+      }
+    }
+    // Trả 10 mới nhất (đảo ngược vì sheet append từ trên xuống)
+    return results.slice(-10).reverse();
+  }catch(e){ return []; }
+}
 
 // Đọc GV từ Google Sheet CSV (không cần Apps Script)
 // Cột sheet GV: A=STT B=HọTên C=MãGV D=Gmail E=Role F=SLđăngkí G=SLcònlại H=Ngành
@@ -1560,20 +1590,30 @@ function App(){
     if(!SESSION.email) return;
     setLoadingDash(true);
     try{
-      const data=await apiGet({action:'getStudentDashboardData',email:SESSION.email});
+      // Load song song: dashboard data + thông báo từ sheet
+      const [data, sheetNotis] = await Promise.all([
+        apiGet({action:'getStudentDashboardData',email:SESSION.email}),
+        fetchSVNotifications(SESSION.email),
+      ]);
       setDashData(data);
 
-      // Push notifications theo trạng thái
-      const notes=[];
-      if(data?.status==='approved'&&!data?.reportSubmitted) notes.push({message:`✅ Đề tài "${data.topic}" đã được GV duyệt! Hãy thực hiện và nộp báo cáo.`,time:'Vừa cập nhật'});
-      if(data?.status==='rejected') notes.push({message:`❌ Đề tài "${data.topic}" bị từ chối. Vui lòng đổi đề tài.`,time:'Vừa cập nhật'});
-      if(data?.reportSubmitted&&data?.grade===null) notes.push({message:`📄 Báo cáo đã được nộp. GV đang chấm điểm trong 2 tuần.`,time:'Vừa cập nhật'});
-      if(data?.grade!==null&&data?.grade!==undefined){
+      // Thông báo từ sheet Notifications (do GV ghi khi duyệt/từ chối)
+      const notes = [...sheetNotis];
+
+      // Thêm thông báo dựa trên trạng thái hiện tại (nếu chưa có trong sheet)
+      if(data?.status==='approved'&&!data?.reportSubmitted
+         && !notes.some(n=>n.message.includes('đã duyệt đề tài')))
+        notes.unshift({message:`✅ Đề tài "${data.topic}" đã được GV duyệt! Hãy thực hiện và nộp báo cáo.`,time:'Vừa cập nhật'});
+      if(data?.status==='rejected'
+         && !notes.some(n=>n.message.includes('từ chối đề tài')))
+        notes.unshift({message:`❌ Đề tài "${data.topic}" bị từ chối. Vui lòng đổi đề tài.`,time:'Vừa cập nhật'});
+      if(data?.reportSubmitted&&data?.grade===null)
+        notes.push({message:`📄 Báo cáo đã được nộp. GV đang chấm điểm trong 2 tuần.`,time:'Vừa cập nhật'});
+      if(data?.grade!==null&&data?.grade!==undefined)
         notes.push({message:`📊 Điểm thực tập của bạn: ${data.grade} — ${data.grade>=5?'Đạt ✓':'Không đạt ✗'}`,time:'Vừa cập nhật'});
-      }
-      if(data?.grade>=5&&data?.gradeLocked){
+      if(data?.grade>=5&&data?.gradeLocked)
         notes.push({message:`🎓 Bạn đủ điều kiện đăng ký Khóa Luận Tốt Nghiệp!`,time:'Vừa cập nhật'});
-      }
+
       if(notes.length>0) setNotifications(notes);
 
     }catch(e){console.error('Dashboard load error:',e);}
