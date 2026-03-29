@@ -71,11 +71,13 @@ async function apiGet(params){
   return r.json();
 }
 async function apiPost(body){
-  const qs=new URLSearchParams(
-    Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v||'')]))
-  ).toString();
   console.log('📤 apiPost params:', body);
-  const r=await fetch(`${API_URL}?${qs}`,{redirect:'follow'});
+  const r=await fetch(API_URL,{
+    method:'POST',
+    redirect:'follow',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(body),
+  });
   const text=await r.text();
   console.log('📥 apiPost response:', text);
   try{ return JSON.parse(text); }
@@ -570,7 +572,7 @@ function TabThongTinChung({toast, addGVNotification}) {
   async function handleReject(req, reason) {
     setProcessingId(req.studentEmail);
     try {
-      const res = await apiPost({ action:'updateStatus', studentEmail: req.studentEmail, status:'rejected' });
+      const res = await apiPost({ action:'updateStatus', studentEmail: req.studentEmail, status:'rejected', reason: reason || '' });
       if (res.success) {
         toast.show(`Đã từ chối đề tài của ${req.studentName}.`, 'warn');
         await apiPost({
@@ -840,12 +842,10 @@ function TabSinhVienHuongDan({toast}) {
     setKltnProcessing(sv.studentEmail);
     try {
       const res = await apiPost({
-        action: 'updateKLTNStatus',
+        action: 'updateStatus',
+        type: 'kltn',
         studentEmail: sv.studentEmail,
         status: 'approved',
-        step: 2,
-        gvName: SESSION.name,
-        topic: sv.topic,
       });
       if (res.success) {
         toast.show(`✅ Đã duyệt đề cương của ${sv.studentName}!`, 'success');
@@ -863,13 +863,11 @@ function TabSinhVienHuongDan({toast}) {
     setKltnProcessing(sv.studentEmail);
     try {
       const res = await apiPost({
-        action: 'updateKLTNStatus',
+        action: 'updateStatus',
+        type: 'kltn',
         studentEmail: sv.studentEmail,
         status: 'rejected',
-        step: 1,
-        reason,
-        gvName: SESSION.name,
-        topic: sv.topic,
+        reason: reason || '',
       });
       if (res.success) {
         toast.show(`Đã từ chối đề cương của ${sv.studentName}.`, 'warn');
@@ -1235,8 +1233,14 @@ function TabPhanBien({toast}) {
     const num = parseFloat(g);
     if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
     setSaving(prev => ({ ...prev, [maSo]: true }));
-    await new Promise(r => setTimeout(r, 700)); // TODO: gọi API lưu điểm PB riêng khi có
-    toast.show(`Đã lưu điểm phản biện ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+    try {
+      const res = await apiPost({ action:'saveGrade', type:'pb', studentEmail, grade: num });
+      if (res.success) {
+        toast.show(`Đã lưu điểm phản biện ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+      } else {
+        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setSaving(prev => ({ ...prev, [maSo]: false }));
   }
 
@@ -1378,9 +1382,17 @@ function TabHoiDong({toast}) {
     if (!g) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
     const num = parseFloat(g);
     if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
+    const sv = hdList.find(s => s.maSo === maSo);
+    if (!sv) return;
     setSaving(prev => ({ ...prev, [maSo]: true }));
-    await new Promise(r => setTimeout(r, 700)); // TODO: API lưu điểm HĐ
-    toast.show(`Đã lưu điểm hội đồng ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+    try {
+      const res = await apiPost({ action:'saveGrade', type:'hd', studentEmail: sv.studentEmail, grade: num });
+      if (res.success) {
+        toast.show(`Đã lưu điểm hội đồng ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+      } else {
+        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setSaving(prev => ({ ...prev, [maSo]: false }));
   }
 
