@@ -150,26 +150,13 @@ async function apiGet(params){
   return r.json();
 }
 async function apiPost(body){
-  // GAS: dùng GET với redirect:follow để đọc được JSON response (tránh CORS)
+  // GAS: dùng GET với redirect:follow để đọc được JSON response
+  // KHÔNG dùng no-cors fallback vì không đọc được response
   const qs=new URLSearchParams(
-    Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v??'')]))
+    Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v||'')]))
   ).toString();
   const r=await fetch(`${API_URL}?${qs}`,{redirect:'follow'});
-  const text=await r.text();
-  try{ return JSON.parse(text); }
-  catch(e){ console.error('JSON parse error:',e,text.slice(0,300)); throw new Error('Response không phải JSON'); }
-}
-// Dùng riêng cho upload file (fileBase64 quá dài cho GET query string)
-async function apiPostFile(body){
-  const r=await fetch(API_URL,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(body),
-    redirect:'follow',
-  });
-  const text=await r.text();
-  try{ return JSON.parse(text); }
-  catch(e){ console.error('JSON parse error:',e,text.slice(0,300)); throw new Error('Response không phải JSON'); }
+  return r.json();
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
@@ -1613,7 +1600,7 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
         r.onerror=rej;
         r.readAsDataURL(file);
       });
-      const res=await apiPostFile({
+      const res=await apiPost({
         action:'submitReport',
         email:SESSION.email,
         name:SESSION.name,
@@ -1788,7 +1775,7 @@ function SubmitKLTNModal({dashData,onClose,onSuccess,toast}){
         r.onerror=rej; r.readAsDataURL(file);
       });
       // GAS: updateKLTNStatus step=3 = SV nộp luận văn, chuyển sang bước chuẩn bị bảo vệ
-      const result=await apiPostFile({
+      const result=await apiPost({
         action:'updateKLTNStatus',
         studentEmail:SESSION.email,
         step:3,
@@ -1957,7 +1944,7 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
         r.onerror=rej; r.readAsDataURL(decuFile);
       });
       // GAS: dùng updateKLTNStatus để GV biết SV đã nộp lại đề cương (reset pending)
-      const result=await apiPostFile({
+      const result=await apiPost({
         action:'updateKLTNStatus',
         studentEmail:SESSION.email,
         status:'pending',
