@@ -123,13 +123,16 @@ async function fetchGVFromCSV(){
 }
 
 // Đọc session — tên + maSo đã được lưu ĐÚNG từ login.html (đọc từ sheet)
-const SESSION = {
-  email: localStorage.getItem('ute_email') || '',
-  role:  localStorage.getItem('ute_role')  || '',
-  name:  localStorage.getItem('ute_name')  || '',   // Họ và Tên từ sheet, VD: "Nguyễn Thị Tuyết"
-  maSo:  localStorage.getItem('ute_maSo')  || '',   // MSSV từ sheet, VD: "23124153"
-  nganh: localStorage.getItem('ute_nganh') || '',
-};
+function getSession(){
+  return {
+    email: localStorage.getItem('ute_email') || '',
+    role:  localStorage.getItem('ute_role')  || '',
+    name:  localStorage.getItem('ute_name')  || '',
+    maSo:  localStorage.getItem('ute_maSo')  || '',
+    nganh: localStorage.getItem('ute_nganh') || '',
+  };
+}
+const SESSION = getSession();
 
 const SEM_DATE = {
   'D1-HK1-2526':'Từ ngày 11/8/2025 - 1/11/2025',
@@ -1690,7 +1693,6 @@ function Registration({onSuccess,instructorList,loadingGV}){
         <div className="lg:col-span-4"><RightPanel/></div>
       </div>
     </div>
-  </div>
   );
 }
 
@@ -2718,13 +2720,14 @@ function App(){
 
   // ── Load dashboard data từ API GAS ─────────────────────────────
   const loadDash=useCallback(async()=>{
-    if(!SESSION.email) return;
+    const sess=getSession();
+    if(!sess.email) return;
     setLoadingDash(true);
     try{
       // Load song song: dashboard data + thông báo từ sheet
       const [data, sheetNotis] = await Promise.all([
-        apiGet({action:'getStudentDashboardData',email:SESSION.email}),
-        fetchSVNotifications(SESSION.email),
+        apiGet({action:'getStudentDashboardData',email:sess.email}),
+        fetchSVNotifications(sess.email),
       ]);
       setDashData(data);
 
