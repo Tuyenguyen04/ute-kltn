@@ -293,7 +293,7 @@ function Toast({message,type,onClose}){
       style={{background:type==='error'?'#ba1a1a':type==='warn'?'#855300':'#005236',minWidth:'240px',justifyContent:'center'}}>
       <span className="material-symbols-outlined text-lg">{type==='error'?'error':type==='warn'?'warning':'check_circle'}</span>
       {message}
-    
+    </div>
   );
 }
 function useToast(){
@@ -565,8 +565,8 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
   // Nộp báo cáo: chỉ mở khi approved VÀ chưa nộp
   const canSubmitReport = reg && status==='approved' && !reportSubmitted && grade===null;
 
-  // Đăng ký BCTT: khoá khi đã từng đăng ký (kể cả pending/rejected)
-  const bcttAlreadyReg = reg;
+  // Đăng ký BCTT: khoá khi đã từng đăng ký, TRỪ trường hợp điểm trượt+locked (cần làm lại)
+  const bcttAlreadyReg = reg && !(failed && locked);
 
   // Tiến độ: thêm bước "Nộp BC" sau approved
   // 0=Bắt đầu|1=Đăng ký|2=Thực hiện|3=Kết thúc|4=Xác nhận
@@ -785,7 +785,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             </div>
           );
         })()}
-      
+      </div>{/* end Row 1 grid */}
 
       {/* ── Row 2: GV Info + Stepper ───────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -860,7 +860,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             </div>
           </div>
         </section>
-      
+      </div>{/* end Row 2 grid */}
 
       {/* ── Row 3: GV Phản biện & Hội đồng + Hành trình KLTN ─── */}
       {(()=>{
@@ -978,7 +978,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
               </div>
             </section>
 
-          
+          </div>{/* end Row 3 grid */}
         );
       })()}
 
@@ -1313,7 +1313,7 @@ function Registration({onSuccess,instructorList,loadingGV}){
                 {done?<span className="material-symbols-outlined text-sm">check</span>:n}
               </div>
               <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${cur?'text-primary':done?'text-on-surface':'text-on-surface-variant/60'}`}>{n}. {l}</span>
-            
+            </div>
             {i<STEPS.length-1&&<div className={`flex-1 h-[2px] mb-5 transition-all duration-500 ${step>n?'bg-primary':'bg-surface-container-highest'}`}/>}
           </React.Fragment>
         );
@@ -2674,7 +2674,6 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
       </div>
     </div>
   );
-  </div>
 }
 
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
@@ -2713,8 +2712,9 @@ function App(){
   // KLTN mở khi: điểm >= 5 VÀ GV đã khoá điểm (xác nhận chính thức)
   const kltnUnlocked = grade!==null && grade!==undefined && grade>=5 && locked;
   // BCTT disabled khi: KLTN mở HOẶC đã từng đăng ký BCTT (pending/approved/rejected)
+  // Khi đang loading → disable tất cả nút để tránh nhấp nháy
   const bcttAlreadyReg = dashData?.registered || false;
-  const bcttDisabled = kltnUnlocked || bcttAlreadyReg;
+  const bcttDisabled = loadingDash || kltnUnlocked || bcttAlreadyReg;
 
   // ── Load dashboard data từ API GAS ─────────────────────────────
   const loadDash=useCallback(async()=>{
@@ -2878,7 +2878,7 @@ function App(){
           {id:'dashboard',icon:'home',l:'Trang chủ'},
           {id:'registration',icon:'assignment_turned_in',l:'Đăng ký'},
         ].map(it=>(
-          <button key={it.id} onClick={()=>!bcttDisabled&&setTab(it.id)||it.id==='dashboard'&&setTab('dashboard')}
+          <button key={it.id} onClick={()=>{ if(it.id==='dashboard'||!bcttDisabled) setTab(it.id); }}
             className={`flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${tab===it.id?'bg-blue-50 text-blue-800':'text-slate-400'}`}>
             <span className="material-symbols-outlined text-2xl">{it.icon}</span>
             <span className="text-[10px] font-semibold mt-1">{it.l}</span>
