@@ -223,7 +223,7 @@ async function handleGoogleLogin(response){
       localStorage.setItem('ute_maSo',  sv.maSo || '');
       localStorage.setItem('ute_nganh', sv.nganh || '');
       showOverlay('success','🎉','Chào mừng ' + (sv.name||nameGG) + '!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000);
+      setTimeout(()=>{ window.location.href = 'trangchusinhvien.html'; }, 2000);
       return;
     }
 
