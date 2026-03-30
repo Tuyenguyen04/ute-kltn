@@ -293,7 +293,7 @@ function Toast({message,type,onClose}){
       style={{background:type==='error'?'#ba1a1a':type==='warn'?'#855300':'#005236',minWidth:'240px',justifyContent:'center'}}>
       <span className="material-symbols-outlined text-lg">{type==='error'?'error':type==='warn'?'warning':'check_circle'}</span>
       {message}
-    </div>
+    
   );
 }
 function useToast(){
@@ -785,7 +785,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             </div>
           );
         })()}
-      </div>
+      
 
       {/* ── Row 2: GV Info + Stepper ───────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -860,7 +860,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             </div>
           </div>
         </section>
-      </div>
+      
 
       {/* ── Row 3: GV Phản biện & Hội đồng + Hành trình KLTN ─── */}
       {(()=>{
@@ -978,7 +978,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
               </div>
             </section>
 
-          </div>
+          
         );
       })()}
 
@@ -1213,7 +1213,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
           </div>
         );
       })()}
-    </div>
+    
   );
 }
 
@@ -1313,7 +1313,7 @@ function Registration({onSuccess,instructorList,loadingGV}){
                 {done?<span className="material-symbols-outlined text-sm">check</span>:n}
               </div>
               <span className={`text-[10px] font-bold uppercase tracking-widest whitespace-nowrap ${cur?'text-primary':done?'text-on-surface':'text-on-surface-variant/60'}`}>{n}. {l}</span>
-            </div>
+            
             {i<STEPS.length-1&&<div className={`flex-1 h-[2px] mb-5 transition-all duration-500 ${step>n?'bg-primary':'bg-surface-container-highest'}`}/>}
           </React.Fragment>
         );
@@ -1689,6 +1689,8 @@ function Registration({onSuccess,instructorList,loadingGV}){
         </div>
         <div className="lg:col-span-4"><RightPanel/></div>
       </div>
+    </div>
+  </div>
     </div>
   );
 }
@@ -2672,6 +2674,7 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
       </div>
     </div>
   );
+  </div>
 }
 
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
