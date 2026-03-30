@@ -534,6 +534,10 @@ function AvatarMenu(){
 
 // ── DASHBOARD VIEW ────────────────────────────────────────────────────────────
 function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onRegisterKLTN,onSubmitKLTN,toast,kltnUnlocked,bcttDisabled}){
+  // Hooks phải đặt ở top-level component, không được đặt trong IIFE hay callback
+  const [filterLoai,setFilterLoai]=useState('all');
+  const [showAll,setShowAll]=useState(false);
+
   if(loading) return <Spinner text="Đang tải dữ liệu..."/>;
 
   const reg    = dashData?.registered||false;
@@ -1112,9 +1116,6 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             });
           }
         }
-
-        const [filterLoai,setFilterLoai]=useState('all');
-        const [showAll,setShowAll]=useState(false);
 
         // Đảo ngược để sự kiện mới nhất lên đầu
         const reversed=[...allHistory].reverse();
