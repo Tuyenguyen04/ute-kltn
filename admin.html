@@ -59,10 +59,12 @@ const SHEETS  = {
   // [REMOVED] HOIDONG sheet reference — committee assignment feature removed
   NOTIF:'Notifications',
 };
+// SESSION reads lazily so it reflects the actual stored value at render time,
+// not a stale snapshot captured at module-load before login redirects settle.
 const SESSION = {
-  email: localStorage.getItem('ute_email')||'',
-  role:  localStorage.getItem('ute_role') ||'',
-  name:  localStorage.getItem('ute_name') ||'Admin',
+  get email(){ return localStorage.getItem('ute_email')||''; },
+  get role(){  return localStorage.getItem('ute_role') ||''; },
+  get name(){  return localStorage.getItem('ute_name') ||'Admin'; },
 };
 
 async function apiPost(body){
@@ -76,14 +78,23 @@ async function apiPost(body){
   catch(e){ console.error('JSON parse error:', e, text.slice(0,300)); throw new Error('Response không phải JSON'); }
 }
 function parseCsv(line){
+  // RFC 4180-compliant parser: handles escaped quotes ("") inside quoted fields.
   const cols=[];let cur='',inQ=false;
   for(let j=0;j<line.length;j++){
     const c=line[j];
-    if(c==='"'){inQ=!inQ;}
-    else if(c===','&&!inQ){cols.push(cur.replace(/^"|"$/g,'').trim());cur='';}
-    else{cur+=c;}
+    if(inQ){
+      if(c==='"'){
+        // Peek next char: if also '"' it's an escaped quote, consume both
+        if(j+1<line.length&&line[j+1]==='"'){cur+='"';j++;}
+        else{inQ=false;} // closing quote
+      } else {cur+=c;}
+    } else {
+      if(c==='"'){inQ=true;}
+      else if(c===','){cols.push(cur.trim());cur='';}
+      else{cur+=c;}
+    }
   }
-  cols.push(cur.replace(/^"|"$/g,'').trim());
+  cols.push(cur.trim());
   return cols;
 }
 async function fetchCSV(tab){
@@ -108,7 +119,8 @@ function Toast({message,type,onClose}){
 function useToast(){
   const [t,setT]=useState(null);
   const show=useCallback((msg,tp='success')=>setT({message:msg,type:tp,k:Date.now()}),[]);
-  return{toast:t,show,hide:()=>setT(null)};
+  const hide=useCallback(()=>setT(null),[]);
+  return{toast:t,show,hide};
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -272,21 +284,20 @@ function TabOverview({toast}){
   },[]);
 
   if(loading) return <Spinner/>;
+  // [REMOVED] hdTotal card — committee assignment feature removed
   const cards=[
-        // [REMOVED] hdTotal card — committee assignment feature removed
-        const cards=[
-	  {label:'Sinh viên',value:stats?.sv,icon:'groups',color:'from-blue-500 to-blue-700',sub:'Đăng ký trong hệ thống'},
-	  {label:'Giảng viên',value:stats?.gv,icon:'school',color:'from-purple-500 to-purple-700',sub:'Đang hoạt động'},
-	  {label:'Đăng ký BCTT',value:stats?.dkTotal,icon:'assignment',color:'from-orange-400 to-orange-600',sub:`${stats?.dkPend} chờ · ${stats?.dkAppr} duyệt · ${stats?.dkRej} từ chối`},
-	  {label:'Đăng ký KLTN',value:stats?.klTotal,icon:'menu_book',color:'from-teal-500 to-teal-700',sub:`${stats?.klPend} chờ duyệt · ${stats?.klAppr} đang thực hiện`},
-        ];
+    {label:'Sinh viên',value:stats?.sv,icon:'groups',color:'from-blue-500 to-blue-700',sub:'Đăng ký trong hệ thống'},
+    {label:'Giảng viên',value:stats?.gv,icon:'school',color:'from-purple-500 to-purple-700',sub:'Đang hoạt động'},
+    {label:'Đăng ký BCTT',value:stats?.dkTotal,icon:'assignment',color:'from-orange-400 to-orange-600',sub:`${stats?.dkPend} chờ · ${stats?.dkAppr} duyệt · ${stats?.dkRej} từ chối`},
+    {label:'Đăng ký KLTN',value:stats?.klTotal,icon:'menu_book',color:'from-teal-500 to-teal-700',sub:`${stats?.klPend} chờ duyệt · ${stats?.klAppr} đang thực hiện`},
+  ];
   return(
     <div className="space-y-8 anim-fade">
       <div>
         <h2 className="text-3xl font-black text-on-surface">Chào mừng, {SESSION.name} 👋</h2>
         <p className="text-on-surface-variant mt-1">Bảng điều khiển toàn hệ thống UTE Hub.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
         {cards.map((c,i)=>(
           <div key={i} className={`bg-gradient-to-br ${c.color} p-6 rounded-3xl text-white shadow-lg relative overflow-hidden`}>
             <span className="material-symbols-outlined text-6xl opacity-10 absolute -right-3 -bottom-3">{c.icon}</span>
@@ -400,8 +411,9 @@ function TabBCTT({toast}){
   const [search,setSearch]=useState('');const [fStatus,setFStatus]=useState('all');
   const load=async()=>{setLoading(true);try{const d=await fetchCSV(SHEETS.DANGKY);setRows(d.filter(r=>r[1]));}catch{toast.show('Lỗi tải DangKy','error');}setLoading(false);};
   useEffect(()=>{load();},[]);
-  const filtered=rows.filter(r=>(r[2].toLowerCase().includes(search.toLowerCase())||r[3].includes(search)||r[6].toLowerCase().includes(search.toLowerCase()))&&(fStatus==='all'||r[13]===fStatus));
-  const counts={all:rows.length,pending:rows.filter(r=>r[13]==='pending').length,approved:rows.filter(r=>r[13]==='approved'||r[13]==='graded').length,rejected:rows.filter(r=>r[13]==='rejected').length};
+  const isApproved=r=>(r[13]==='approved'||r[13]==='graded');
+  const filtered=rows.filter(r=>(r[2].toLowerCase().includes(search.toLowerCase())||r[3].includes(search)||r[6].toLowerCase().includes(search.toLowerCase()))&&(fStatus==='all'||(fStatus==='approved'?isApproved(r):r[13]===fStatus)));
+  const counts={all:rows.length,pending:rows.filter(r=>r[13]==='pending').length,approved:rows.filter(isApproved).length,rejected:rows.filter(r=>r[13]==='rejected').length};
   return(
     <div className="space-y-6 anim-fade">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -460,7 +472,9 @@ function TabKLTN({toast}){
   const load=async()=>{setLoading(true);try{const d=await fetchCSV(SHEETS.KLTN);setRows(d.filter(r=>r[1]));}catch{toast.show('Lỗi tải KLTN','error');}setLoading(false);};
   useEffect(()=>{load();},[]);
   const stepLabel=s=>({0:'Chưa đăng ký',1:'Chờ duyệt đề cương',2:'Đang thực hiện',3:'Chuẩn bị bảo vệ',4:'Hoàn tất'}[parseInt(s)]||s||'--');
-  const filtered=rows.filter(r=>(r[2].toLowerCase().includes(search.toLowerCase())||r[3].includes(search)||r[5].toLowerCase().includes(search.toLowerCase()))&&(fStep==='all'||r[14]===fStep));
+  // Normalize step to string of integer so '1.0' from Sheets matches filter key '1'
+  const normStep=r=>String(parseInt(r[14])||0);
+  const filtered=rows.filter(r=>(r[2].toLowerCase().includes(search.toLowerCase())||r[3].includes(search)||r[5].toLowerCase().includes(search.toLowerCase()))&&(fStep==='all'||normStep(r)===fStep));
   return(
     <div className="space-y-6 anim-fade">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -476,7 +490,7 @@ function TabKLTN({toast}){
       <div className="flex gap-2 flex-wrap">
         {[{k:'all',l:'Tất cả'},{k:'1',l:'Chờ duyệt đề cương'},{k:'2',l:'Đang thực hiện'},{k:'3',l:'Chuẩn bị bảo vệ'},{k:'4',l:'Hoàn tất'}].map(f=>(
           <button key={f.k} onClick={()=>setFStep(f.k)} className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${fStep===f.k?'bg-primary text-white':'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}>
-            {f.l} ({f.k==='all'?rows.length:rows.filter(r=>r[14]===f.k).length})
+            {f.l} ({f.k==='all'?rows.length:rows.filter(r=>normStep(r)===f.k).length})
           </button>
         ))}
       </div>
@@ -520,7 +534,9 @@ function TabNotif({toast}){
   const [search,setSearch]=useState('');const [fRead,setFRead]=useState('all');
   const load=async()=>{setLoading(true);try{const d=await fetchCSV(SHEETS.NOTIF);setRows(d.filter(r=>r[1]).reverse());}catch{toast.show('Lỗi tải Notifications','error');}setLoading(false);};
   useEffect(()=>{load();},[]);
-  const filtered=rows.filter(r=>(r[1].toLowerCase().includes(search.toLowerCase())||r[2].toLowerCase().includes(search.toLowerCase()))&&(fRead==='all'||(fRead==='unread'&&r[3]==='unread')||(fRead==='read'&&r[3]==='read')));
+  // Sheet lưu 'false' = chưa đọc, 'true' = đã đọc (Apps Script appendRow ghi string)
+  const isUnread=r=>r[3]==='false'||r[3]===''||!r[3];
+  const filtered=rows.filter(r=>(r[1].toLowerCase().includes(search.toLowerCase())||r[2].toLowerCase().includes(search.toLowerCase()))&&(fRead==='all'||(fRead==='unread'&&isUnread(r))||(fRead==='read'&&!isUnread(r))));
   return(
     <div className="space-y-6 anim-fade">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -546,15 +562,15 @@ function TabNotif({toast}){
               <p className="text-sm font-medium">Không có thông báo</p>
             </div>
           ):filtered.map((r,i)=>(
-            <div key={i} className={`flex items-start gap-4 px-5 py-4 hover:bg-surface-container-low/50 transition-colors ${r[3]==='unread'?'bg-primary-fixed/20':''}`}>
-              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${r[3]==='unread'?'bg-primary':'bg-outline-variant'}`}/>
+            <div key={i} className={`flex items-start gap-4 px-5 py-4 hover:bg-surface-container-low/50 transition-colors ${isUnread(r)?'bg-primary-fixed/20':''}`}>
+              <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${isUnread(r)?'bg-primary':'bg-outline-variant'}`}/>
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-outline font-mono mb-0.5">{r[1]}</p>
                 <p className="text-sm text-on-surface font-medium">{r[2]}</p>
               </div>
               <div className="text-right flex-shrink-0">
                 <p className="text-[10px] text-on-surface-variant">{(r[0]||'').substring(0,16)||'--'}</p>
-                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold mt-1 inline-block ${r[3]==='unread'?'bg-primary text-white':'bg-surface-container text-on-surface-variant'}`}>{r[3]==='unread'?'Chưa đọc':'Đã đọc'}</span>
+                <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold mt-1 inline-block ${isUnread(r)?'bg-primary text-white':'bg-surface-container text-on-surface-variant'}`}>{isUnread(r)?'Chưa đọc':'Đã đọc'}</span>
               </div>
             </div>
           ))}
@@ -628,8 +644,9 @@ function TabReset({toast}){
       }
     }catch(e){
       toast.show('Lỗi kết nối Apps Script','error');
+    }finally{
+      setConfirm(null);
     }
-    setConfirm(null);
   }
 
   return(
