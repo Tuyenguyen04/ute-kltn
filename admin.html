@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js"></script>
 <script id="tailwind-config">
 tailwind.config={darkMode:"class",theme:{extend:{colors:{
   "primary":"#00317e","primary-container":"#0046ad","on-primary":"#ffffff",
@@ -283,13 +283,12 @@ function TabOverview({toast}){
     })();
   },[]);
 
-  if(loading) return <Spinner/>;
-  // [REMOVED] hdTotal card — committee assignment feature removed
+  if(loading||!stats) return (<Spinner/>);
   const cards=[
-    {label:'Sinh viên',value:stats?.sv,icon:'groups',color:'from-blue-500 to-blue-700',sub:'Đăng ký trong hệ thống'},
-    {label:'Giảng viên',value:stats?.gv,icon:'school',color:'from-purple-500 to-purple-700',sub:'Đang hoạt động'},
-    {label:'Đăng ký BCTT',value:stats?.dkTotal,icon:'assignment',color:'from-orange-400 to-orange-600',sub:`${stats?.dkPend} chờ · ${stats?.dkAppr} duyệt · ${stats?.dkRej} từ chối`},
-    {label:'Đăng ký KLTN',value:stats?.klTotal,icon:'menu_book',color:'from-teal-500 to-teal-700',sub:`${stats?.klPend} chờ duyệt · ${stats?.klAppr} đang thực hiện`},
+    {label:'Sinh viên',value:stats.sv,icon:'groups',color:'from-blue-500 to-blue-700',sub:'Đăng ký trong hệ thống'},
+    {label:'Giảng viên',value:stats.gv,icon:'school',color:'from-purple-500 to-purple-700',sub:'Đang hoạt động'},
+    {label:'Đăng ký BCTT',value:stats.dkTotal,icon:'assignment',color:'from-orange-400 to-orange-600',sub:`${stats.dkPend} chờ · ${stats.dkAppr} duyệt · ${stats.dkRej} từ chối`},
+    {label:'Đăng ký KLTN',value:stats.klTotal,icon:'menu_book',color:'from-teal-500 to-teal-700',sub:`${stats.klPend} chờ duyệt · ${stats.klAppr} đang thực hiện`},
   ];
   return(
     <div className="space-y-8 anim-fade">
