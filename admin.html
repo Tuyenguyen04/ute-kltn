@@ -56,7 +56,8 @@ const SS_ID   = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
 const SHEETS  = {
   SV:'Sinh viên đợt 1', GV:'Giảng viên phụ trách',
   DANGKY:'DangKy', KLTN:'DangKyKLTN',
-  HOIDONG:'HoiDongKLTN', NOTIF:'Notifications',
+  // [REMOVED] HOIDONG sheet reference — committee assignment feature removed
+  NOTIF:'Notifications',
 };
 const SESSION = {
   email: localStorage.getItem('ute_email')||'',
@@ -167,13 +168,13 @@ function ConfirmModal({title,desc,body,confirmLabel='Xác nhận',danger,onConfi
 // SIDEBAR
 // ════════════════════════════════════════════════════════════════
 function Sidebar({tab,setTab}){
+  // [REMOVED] hoidong nav item — committee assignment feature removed
   const nav=[
     {id:'overview',    icon:'dashboard',    label:'Tổng quan'},
     {id:'students',    icon:'groups',       label:'Sinh viên'},
     {id:'instructors', icon:'school',       label:'Giảng viên'},
     {id:'bctt',        icon:'assignment',   label:'Đăng ký BCTT'},
     {id:'kltn',        icon:'menu_book',    label:'Đăng ký KLTN'},
-    {id:'hoidong',     icon:'gavel',        label:'Xếp hội đồng'},
     {id:'notif',       icon:'notifications',label:'Thông báo'},
     {id:'reset',       icon:'restart_alt',  label:'Reset dữ liệu'},
   ];
@@ -221,7 +222,8 @@ function Sidebar({tab,setTab}){
 
 // ── HEADER ────────────────────────────────────────────────────────────────────
 function Header({tab}){
-  const titles={overview:'Tổng quan hệ thống',students:'Quản lý sinh viên',instructors:'Quản lý giảng viên',bctt:'Quản lý BCTT',kltn:'Quản lý KLTN',hoidong:'Xếp hội đồng KLTN',notif:'Thông báo hệ thống',reset:'Reset dữ liệu'};
+  // [REMOVED] hoidong title — committee assignment feature removed
+  const titles={overview:'Tổng quan hệ thống',students:'Quản lý sinh viên',instructors:'Quản lý giảng viên',bctt:'Quản lý BCTT',kltn:'Quản lý KLTN',notif:'Thông báo hệ thống',reset:'Reset dữ liệu'};
   return(
     <header className="fixed top-0 z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 shadow-sm" style={{left:'18rem',right:0}}>
       <div>
@@ -248,12 +250,12 @@ function TabOverview({toast}){
   useEffect(()=>{
     (async()=>{
       try{
-        const [sv,gv,dk,kl,hd]=await Promise.all([
+        // [REMOVED] HoiDong fetch — committee assignment feature removed
+        const [sv,gv,dk,kl]=await Promise.all([
           fetchCSV(SHEETS.SV).catch(()=>[]),
           fetchCSV(SHEETS.GV).catch(()=>[]),
           fetchCSV(SHEETS.DANGKY).catch(()=>[]),
           fetchCSV(SHEETS.KLTN).catch(()=>[]),
-          fetchCSV(SHEETS.HOIDONG).catch(()=>[]),
         ]);
         const dkV=dk.filter(r=>r[1]);const klV=kl.filter(r=>r[1]);
         setStats({
@@ -263,7 +265,6 @@ function TabOverview({toast}){
           dkRej:dkV.filter(r=>r[13]==='rejected').length,
           klTotal:klV.length, klPend:klV.filter(r=>r[11]==='pending').length,
           klAppr:klV.filter(r=>r[11]==='approved').length,
-          hdTotal:hd.filter(r=>r[0]).length,
         });
       }catch(e){toast.show('Không tải được thống kê','error');}
       setLoading(false);
@@ -272,12 +273,13 @@ function TabOverview({toast}){
 
   if(loading) return <Spinner/>;
   const cards=[
-    {label:'Sinh viên',value:stats?.sv,icon:'groups',color:'from-blue-500 to-blue-700',sub:'Đăng ký trong hệ thống'},
-    {label:'Giảng viên',value:stats?.gv,icon:'school',color:'from-purple-500 to-purple-700',sub:'Đang hoạt động'},
-    {label:'Đăng ký BCTT',value:stats?.dkTotal,icon:'assignment',color:'from-orange-400 to-orange-600',sub:`${stats?.dkPend} chờ · ${stats?.dkAppr} duyệt · ${stats?.dkRej} từ chối`},
-    {label:'Đăng ký KLTN',value:stats?.klTotal,icon:'menu_book',color:'from-teal-500 to-teal-700',sub:`${stats?.klPend} chờ duyệt · ${stats?.klAppr} đang thực hiện`},
-    {label:'Hội đồng KLTN',value:stats?.hdTotal,icon:'gavel',color:'from-rose-500 to-rose-700',sub:'Sinh viên đã xếp hội đồng'},
-  ];
+        // [REMOVED] hdTotal card — committee assignment feature removed
+        const cards=[
+	  {label:'Sinh viên',value:stats?.sv,icon:'groups',color:'from-blue-500 to-blue-700',sub:'Đăng ký trong hệ thống'},
+	  {label:'Giảng viên',value:stats?.gv,icon:'school',color:'from-purple-500 to-purple-700',sub:'Đang hoạt động'},
+	  {label:'Đăng ký BCTT',value:stats?.dkTotal,icon:'assignment',color:'from-orange-400 to-orange-600',sub:`${stats?.dkPend} chờ · ${stats?.dkAppr} duyệt · ${stats?.dkRej} từ chối`},
+	  {label:'Đăng ký KLTN',value:stats?.klTotal,icon:'menu_book',color:'from-teal-500 to-teal-700',sub:`${stats?.klPend} chờ duyệt · ${stats?.klAppr} đang thực hiện`},
+        ];
   return(
     <div className="space-y-8 anim-fade">
       <div>
@@ -508,198 +510,7 @@ function TabKLTN({toast}){
   );
 }
 
-// ════════════════════════════════════════════════════════════════
-// TAB: XẾP HỘI ĐỒNG
-// ════════════════════════════════════════════════════════════════
-function TabHoiDong({toast}){
-  const [kltnRows,setKltnRows]=useState([]);
-  const [gvList,  setGvList]  =useState([]);
-  const [hdMap,   setHdMap]   =useState({}); // maSo → hội đồng hiện tại
-  const [assign,  setAssign]  =useState({}); // maSo → {gvPhanBienEmail, truongHD, tv1, tv2, thuKy}
-  const [loading, setLoading] =useState(true);
-  const [saving,  setSaving]  =useState({});
-  const [search,  setSearch]  =useState('');
-  const [confirm, setConfirm] =useState(null); // {type:'delete', sv}
-
-  const load=async()=>{
-    setLoading(true);
-    try{
-      const [kl,gv,hd]=await Promise.all([
-        fetchCSV(SHEETS.KLTN),
-        fetchCSV(SHEETS.GV),
-        fetchCSV(SHEETS.HOIDONG),
-      ]);
-      // SV đủ điều kiện: step >= 2
-      const svList=kl.filter(r=>r[1]&&parseInt(r[14])>=2);
-      setKltnRows(svList);
-      setGvList(gv.filter(r=>r[1]));
-
-      // Build hdMap từ HoiDongKLTN (key=maSoSV = cột B)
-      const map={};
-      hd.filter(r=>r[0]).forEach(r=>{map[r[1]]={gvPhanBienEmail:r[4]||'',gvPhanBienName:r[3]||'',truongHD:r[5]||'',tv1:r[6]||'',tv2:r[7]||'',thuKy:r[8]||'',studentEmail:r[0]||''};});
-      setHdMap(map);
-
-      // Pre-fill assignments
-      const a={};
-      svList.forEach(r=>{
-        const maSo=r[3];
-        a[maSo]=map[maSo]?{...map[maSo]}:{gvPhanBienEmail:'',truongHD:'',tv1:'',tv2:'',thuKy:''};
-      });
-      setAssign(a);
-    }catch(e){toast.show('Không tải được dữ liệu','error');}
-    setLoading(false);
-  };
-  useEffect(()=>{load();},[]);
-
-  const gvByEmail=Object.fromEntries(gvList.map(r=>([r[3],{name:r[1],ma:r[2]}])));
-  const gvOpts=gvList.map(r=>({email:r[3],name:r[1],ma:r[2]}));
-
-  function setF(maSo,field,val){setAssign(p=>({...p,[maSo]:{...p[maSo],[field]:val}}));}
-
-  async function handleSave(sv){
-    const maSo=sv[3];
-    const a=assign[maSo]||{};
-    const gvPB=gvByEmail[a.gvPhanBienEmail]||{};
-    setSaving(p=>({...p,[maSo]:true}));
-    try{
-      const res=await apiPost({action:'saveHoiDong',studentEmail:sv[1],maSo,studentName:sv[2],gvPhanBienName:gvPB.name||'',gvPhanBienEmail:a.gvPhanBienEmail||'',truongHD:a.truongHD||'',tv1:a.tv1||'',tv2:a.tv2||'',thuKy:a.thuKy||''});
-      if(res.success){toast.show(`✅ Đã lưu hội đồng cho ${sv[2]}!`,'success');load();}
-      else toast.show(res.message||'Lưu thất bại','error');
-    }catch{toast.show('Lỗi kết nối','error');}
-    setSaving(p=>({...p,[maSo]:false}));
-  }
-
-  async function handleDelete(sv){
-    setSaving(p=>({...p,[sv[3]]:'del'}));
-    try{
-      const res=await apiPost({action:'deleteHoiDong',studentEmail:sv[1],maSo:sv[3]});
-      if(res.success){toast.show(`Đã xoá hội đồng của ${sv[2]}`,'warn');load();}
-      else toast.show(res.message||'Xoá thất bại','error');
-    }catch{toast.show('Lỗi kết nối','error');}
-    setSaving(p=>({...p,[sv[3]]:false}));
-    setConfirm(null);
-  }
-
-  const filtered=kltnRows.filter(r=>r[2].toLowerCase().includes(search.toLowerCase())||r[3].includes(search)||r[5].toLowerCase().includes(search.toLowerCase()));
-
-  const GvSel=({maSo,field})=>(
-    <select value={assign[maSo]?.[field]||''} onChange={e=>setF(maSo,field,e.target.value)}
-      className="w-full text-xs bg-white border border-outline-variant/30 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/20">
-      <option value="">-- Chọn GV --</option>
-      {gvOpts.map(g=><option key={g.email} value={g.email}>{g.name} ({g.ma})</option>)}
-    </select>
-  );
-  const TxtIn=({maSo,field,placeholder})=>(
-    <input value={assign[maSo]?.[field]||''} onChange={e=>setF(maSo,field,e.target.value)}
-      className="w-full text-xs bg-white border border-outline-variant/30 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/20"
-      placeholder={placeholder}/>
-  );
-
-  return(
-    <div className="space-y-6 anim-fade">
-      {confirm&&(
-        <ConfirmModal title="Xoá hội đồng" desc="Thao tác này sẽ xoá phân công hội đồng của sinh viên này." confirmLabel="Xoá" danger
-          onConfirm={()=>handleDelete(confirm.sv)} onClose={()=>setConfirm(null)}
-          body={<div className="bg-error-container/30 rounded-xl p-3 text-sm"><p className="font-bold text-on-error-container">{confirm.sv[2]} — {confirm.sv[3]}</p><p className="text-xs text-on-error-container/70 mt-1 line-clamp-1">{confirm.sv[5]}</p></div>}/>
-      )}
-
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-black text-on-surface">Xếp hội đồng KLTN</h2>
-          <p className="text-on-surface-variant text-sm mt-1">{kltnRows.length} SV đủ điều kiện (step ≥ 2) · {Object.keys(hdMap).length} đã xếp hội đồng</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={load} className="p-2 hover:bg-surface-container rounded-full transition-colors"><span className={`material-symbols-outlined text-on-surface-variant ${loading?'anim-spin':''}`}>refresh</span></button>
-          <SearchBar value={search} onChange={setSearch} placeholder="Tên, MSSV, đề tài..."/>
-        </div>
-      </div>
-
-      {/* Info box */}
-      <div className="bg-primary-fixed/40 border border-primary-fixed rounded-2xl p-4 flex items-start gap-3">
-        <span className="material-symbols-outlined text-primary mt-0.5 flex-shrink-0">info</span>
-        <div className="text-sm">
-          <p className="font-bold text-on-primary-fixed mb-1">Cách xếp hội đồng</p>
-          <p className="text-xs text-on-primary-fixed/80 leading-relaxed">Chỉ SV đã qua bước 2 (đề cương được duyệt) mới xuất hiện. Chọn <strong>GV phản biện</strong> từ danh sách, điền các thành viên còn lại và nhấn <strong>Lưu</strong>. Dữ liệu ghi thẳng vào sheet <code className="font-mono">HoiDongKLTN</code> và GV sẽ thấy ngay.</p>
-        </div>
-      </div>
-
-      {loading?<Spinner/>:filtered.length===0?(
-        <div className="flex flex-col items-center justify-center py-24 gap-4 bg-surface-container-lowest rounded-3xl">
-          <span className="material-symbols-outlined text-6xl opacity-10">gavel</span>
-          <p className="text-sm font-medium text-on-surface-variant">Chưa có sinh viên nào đủ điều kiện</p>
-          <p className="text-xs text-on-surface-variant/60 text-center">SV cần được GV duyệt đề cương (step ≥ 2)</p>
-        </div>
-      ):(
-        <div className="space-y-4">
-          {filtered.map((sv,i)=>{
-            const maSo=sv[3];
-            const inHD=!!hdMap[maSo];
-            const isSaving=saving[maSo];
-            const a=assign[maSo]||{};
-            return(
-              <div key={i} className={`bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden border-l-4 transition-shadow hover:shadow-md ${inHD?'border-primary':'border-outline-variant/30'}`}>
-                {/* SV info */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/10">
-                  <div className="flex items-center gap-3">
-                    <Av name={sv[2]} cls="w-10 h-10"/>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-bold text-on-surface">{sv[2]}</p>
-                        {inHD&&<span className="text-[9px] px-2 py-0.5 bg-primary text-white rounded-full font-black">ĐÃ XẾP</span>}
-                        <span className="text-[9px] px-2 py-0.5 bg-tertiary-fixed text-on-tertiary-fixed rounded-full font-black">Step {sv[14]}</span>
-                      </div>
-                      <p className="text-xs text-on-surface-variant">{maSo} · {sv[4]}</p>
-                      <p className="text-xs font-medium mt-0.5 line-clamp-1" style={{color:'#00317e'}}>📄 {sv[5]}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {inHD&&(
-                      <button onClick={()=>setConfirm({sv})} disabled={!!isSaving}
-                        className="px-3 py-1.5 text-xs font-bold text-error hover:bg-error-container rounded-lg transition-colors disabled:opacity-50">
-                        Xoá
-                      </button>
-                    )}
-                    <button onClick={()=>handleSave(sv)} disabled={!!isSaving}
-                      className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center gap-1.5 transition-opacity">
-                      {isSaving===true?<span className="material-symbols-outlined anim-spin text-sm">refresh</span>:<span className="material-symbols-outlined text-sm">save</span>}
-                      {inHD?'Cập nhật':'Lưu'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Form xếp hội đồng */}
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 p-5 bg-surface-container-low/30">
-                  {/* GV phản biện — dropdown */}
-                  <div className="xl:col-span-1">
-                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">
-                      <span className="material-symbols-outlined text-xs mr-1">rate_review</span>GV Phản biện
-                    </p>
-                    <GvSel maSo={maSo} field="gvPhanBienEmail"/>
-                    {a.gvPhanBienEmail&&<p className="text-[10px] text-primary mt-1 font-semibold">{gvByEmail[a.gvPhanBienEmail]?.name||''}</p>}
-                  </div>
-                  {/* Các vai trò còn lại — text input */}
-                  {[
-                    {field:'truongHD',label:'Trưởng hội đồng',icon:'star',ph:'Tên chủ tịch HĐ'},
-                    {field:'tv1',     label:'Thành viên 1',    icon:'person',ph:'Tên thành viên 1'},
-                    {field:'tv2',     label:'Thành viên 2',    icon:'person',ph:'Tên thành viên 2'},
-                    {field:'thuKy',   label:'Thư ký',          icon:'edit_note',ph:'Tên thư ký'},
-                  ].map(f=>(
-                    <div key={f.field}>
-                      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1.5">
-                        <span className="material-symbols-outlined text-xs mr-1">{f.icon}</span>{f.label}
-                      </p>
-                      <TxtIn maSo={maSo} field={f.field} placeholder={f.ph}/>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
+// [REMOVED] TabHoiDong component — committee assignment feature removed in v2.0
 
 // ════════════════════════════════════════════════════════════════
 // TAB: THÔNG BÁO
@@ -755,35 +566,89 @@ function TabNotif({toast}){
 
 // ════════════════════════════════════════════════════════════════
 // TAB: RESET DỮ LIỆU
+// [MODIFIED v2.0]
+//   - Removed 'hoidong' reset option (committee assignment removed)
+//   - Reset options now clearly map to backend action names
+//   - Added UI refresh signal after each successful reset
 // ════════════════════════════════════════════════════════════════
 function TabReset({toast}){
   const [confirm,setConfirm]=useState(null);
   const [log,setLog]=useState([]);
 
+  // Each option maps directly to a backend action name.
+  // [REMOVED] hoidong option — committee assignment feature removed
   const opts=[
-    {id:'bctt',   icon:'assignment',   title:'Reset BCTT',         desc:'Xoá toàn bộ DangKy. SV trở về chưa đăng ký, slot GV được hoàn lại.',       color:'from-orange-400 to-orange-600', danger:true,  action:'adminResetBCTT'},
-    {id:'kltn',   icon:'menu_book',    title:'Reset KLTN',         desc:'Xoá toàn bộ DangKyKLTN. SV KLTN về trạng thái chưa đăng ký.',              color:'from-teal-500 to-teal-700',     danger:true,  action:'adminResetKLTN'},
-    {id:'hoidong',icon:'gavel',        title:'Reset Hội đồng',     desc:'Xoá toàn bộ HoiDongKLTN. Mọi phân công hội đồng sẽ bị xoá.',              color:'from-rose-500 to-rose-700',     danger:true,  action:'adminResetHoiDong'},
-    {id:'notif',  icon:'notifications',title:'Xoá thông báo',      desc:'Xoá toàn bộ Notifications. Chuông thông báo của mọi người sẽ trống.',     color:'from-slate-500 to-slate-700',   danger:false, action:'adminResetNotif'},
-    {id:'gvslots',icon:'restore',      title:'Reset slot GV',      desc:'Đặt lại SL đăng ký = 0 và SL còn lại theo mặc định cho tất cả GV.',       color:'from-blue-500 to-blue-700',     danger:false, action:'adminResetGVSlots'},
+    {
+      id:'bctt',
+      icon:'assignment',
+      title:'Reset BCTT',
+      desc:'Xoá toàn bộ DangKy. Slot GV được hoàn lại tự động. SV trở về trạng thái chưa đăng ký.',
+      color:'from-orange-400 to-orange-600',
+      danger:true,
+      action:'adminResetBCTT',
+    },
+    {
+      id:'kltn',
+      icon:'menu_book',
+      title:'Reset KLTN',
+      desc:'Xoá toàn bộ DangKyKLTN. Slot GV KLTN được hoàn lại. SV trở về trạng thái chưa đăng ký.',
+      color:'from-teal-500 to-teal-700',
+      danger:true,
+      action:'adminResetKLTN',
+    },
+    {
+      id:'notif',
+      icon:'notifications',
+      title:'Xoá thông báo',
+      desc:'Xoá toàn bộ Notifications. Chuông thông báo của mọi người sẽ trống.',
+      color:'from-slate-500 to-slate-700',
+      danger:false,
+      action:'adminResetNotif',
+    },
+    {
+      id:'gvslots',
+      icon:'restore',
+      title:'Reset slot GV',
+      desc:'Đặt lại SL đăng ký = 0 và SL còn lại = số tối đa (cột E) cho tất cả GV BCTT và KLTN.',
+      color:'from-blue-500 to-blue-700',
+      danger:false,
+      action:'adminResetGVSlots',
+    },
   ];
 
   async function doReset(opt){
     try{
       const res=await apiPost({action:opt.action});
-      setLog(p=>[{time:new Date().toLocaleTimeString('vi-VN'),label:opt.title,ok:res.success,msg:res.message||''},...p].slice(0,20));
-      if(res.success) toast.show(`✅ ${opt.title} thành công!`,'success');
-      else toast.show(res.message||'Thất bại','error');
-    }catch{toast.show('Lỗi kết nối Apps Script','error');}
+      const entry={time:new Date().toLocaleTimeString('vi-VN'),label:opt.title,ok:res.success,msg:res.message||''};
+      setLog(p=>[entry,...p].slice(0,20));
+      if(res.success){
+        toast.show(`✅ ${opt.title} thành công!`,'success');
+      } else {
+        toast.show(res.message||'Thất bại','error');
+      }
+    }catch(e){
+      toast.show('Lỗi kết nối Apps Script','error');
+    }
     setConfirm(null);
   }
 
   return(
     <div className="space-y-8 anim-fade">
       {confirm&&(
-        <ConfirmModal title={confirm.title} desc="Thao tác KHÔNG THỂ hoàn tác!" confirmLabel="Tôi hiểu, tiến hành reset" danger
-          onConfirm={()=>doReset(confirm)} onClose={()=>setConfirm(null)}
-          body={<div className="bg-error-container/30 rounded-xl p-4"><p className="font-bold text-on-error-container text-sm">⚠ {confirm.title}</p><p className="text-xs text-on-error-container/80 mt-1">{confirm.desc}</p></div>}/>
+        <ConfirmModal
+          title={confirm.title}
+          desc="Thao tác KHÔNG THỂ hoàn tác!"
+          confirmLabel="Tôi hiểu, tiến hành reset"
+          danger
+          onConfirm={()=>doReset(confirm)}
+          onClose={()=>setConfirm(null)}
+          body={
+            <div className="bg-error-container/30 rounded-xl p-4">
+              <p className="font-bold text-on-error-container text-sm">⚠ {confirm.title}</p>
+              <p className="text-xs text-on-error-container/80 mt-1">{confirm.desc}</p>
+            </div>
+          }
+        />
       )}
 
       <div>
@@ -795,11 +660,15 @@ function TabReset({toast}){
         <span className="material-symbols-outlined text-error text-2xl mt-0.5 flex-shrink-0">warning</span>
         <div>
           <p className="font-bold text-on-error-container text-sm">Cảnh báo</p>
-          <p className="text-xs text-on-error-container/80 mt-1 leading-relaxed">Dữ liệu xoá trên Google Sheet <strong>không thể khôi phục</strong> qua hệ thống này. Mỗi lần reset là xoá vĩnh viễn toàn bộ dữ liệu trong sheet tương ứng (giữ lại dòng header).</p>
+          <p className="text-xs text-on-error-container/80 mt-1 leading-relaxed">
+            Dữ liệu xoá trên Google Sheet <strong>không thể khôi phục</strong> qua hệ thống này.
+            Mỗi lần reset là xoá vĩnh viễn toàn bộ dữ liệu trong sheet tương ứng (giữ lại dòng header).
+            Slot GV sẽ được hoàn lại tự động khi reset BCTT hoặc KLTN.
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-5">
         {opts.map(opt=>(
           <div key={opt.id} className="bg-surface-container-lowest rounded-2xl shadow-sm p-6 flex flex-col gap-4">
             <div className={`w-12 h-12 bg-gradient-to-br ${opt.color} rounded-2xl flex items-center justify-center shadow-sm`}>
@@ -809,8 +678,13 @@ function TabReset({toast}){
               <h3 className="font-bold text-on-surface text-sm">{opt.title}</h3>
               <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">{opt.desc}</p>
             </div>
-            <button onClick={()=>setConfirm(opt)}
-              className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${opt.danger?'bg-error text-white hover:opacity-90':'bg-surface-container text-on-surface hover:bg-surface-container-high'}`}>
+            <button
+              onClick={()=>setConfirm(opt)}
+              className={`w-full py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2
+                ${opt.danger
+                  ?'bg-error text-white hover:opacity-90'
+                  :'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                }`}>
               <span className="material-symbols-outlined text-sm">restart_alt</span>
               {opt.danger?'Reset ngay':'Thực hiện'}
             </button>
@@ -818,6 +692,7 @@ function TabReset({toast}){
         ))}
       </div>
 
+      {/* Operation log — shows history for current session only */}
       {log.length>0&&(
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm p-5">
           <h3 className="font-bold text-on-surface text-sm mb-3 flex items-center gap-2">
@@ -826,11 +701,12 @@ function TabReset({toast}){
           </h3>
           <div className="space-y-2">
             {log.map((r,i)=>(
-              <div key={i} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs ${r.ok?'bg-tertiary-fixed/30 text-on-tertiary-fixed':'bg-error-container/30 text-on-error-container'}`}>
+              <div key={i} className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs
+                ${r.ok?'bg-tertiary-fixed/30 text-on-tertiary-fixed':'bg-error-container/30 text-on-error-container'}`}>
                 <span className="material-symbols-outlined text-sm">{r.ok?'check_circle':'error'}</span>
                 <span className="font-mono text-[10px] opacity-60 flex-shrink-0">{r.time}</span>
                 <span className="font-semibold">{r.label}</span>
-                {r.msg&&<span className="opacity-60">{r.msg}</span>}
+                {r.msg&&<span className="opacity-60 truncate">{r.msg}</span>}
               </div>
             ))}
           </div>
@@ -867,7 +743,7 @@ function App(){
           {tab==='instructors' &&<TabInstructors toast={toast}/>}
           {tab==='bctt'        &&<TabBCTT        toast={toast}/>}
           {tab==='kltn'        &&<TabKLTN        toast={toast}/>}
-          {tab==='hoidong'     &&<TabHoiDong     toast={toast}/>}
+          {/* [REMOVED] hoidong tab — committee assignment feature removed */}
           {tab==='notif'       &&<TabNotif       toast={toast}/>}
           {tab==='reset'       &&<TabReset       toast={toast}/>}
         </div>
