@@ -403,6 +403,7 @@ async function fetchDangKyByGV(gvEmail) {
       internDuration  : r[17] || '',
       reportSubmitted : r[18] === 'true' || r[18] === true,
       reportDriveUrl  : r[19] || '',
+      xnttDriveUrl    : r[20] || '',
     };
     if (obj.status === 'pending') pendingList.push(obj);
     else if (obj.status === 'approved' || obj.status === 'graded') approvedList.push(obj);
@@ -1325,34 +1326,27 @@ function TabSinhVienHuongDan({toast}) {
                         </div>
                       )}
                     </td>
-
-                    {/* Giấy XNTT */}
+{/* Giấy XNTT */}
                     <td className="px-4 py-4 text-center">
-                      <div className="inline-flex flex-col items-center gap-0.5">
-                        <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container">
-                          <span className="material-symbols-outlined text-[20px] text-on-surface-variant/30">verified</span>
-                        </span>
-                        <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
-                      </div>
-                    </td>
-
-                    {/* Điểm số */}
-                    <td className="px-6 py-4">
-                      <div className="flex justify-center items-center gap-2">
-                        <input type="number" min="0" max="10" step="0.1"
-                          value={grades[sv.maSo] || ''} placeholder="--"
-                          onChange={e => setGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
-                          className="w-16 text-center py-1.5 bg-surface-container border border-outline-variant rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-container outline-none"/>
-                        <button onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)}
-                          disabled={!!saving[sv.maSo]}
-                          className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">
-                          {saving[sv.maSo]
-                            ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
-                            : <span className="material-symbols-outlined text-[16px]">save</span>}
+                      {sv.xnttDriveUrl ? (
+                        <button
+                          onClick={() => setViewerFile({ url: sv.xnttDriveUrl, studentName: sv.studentName, fileName: 'Giấy Xác Nhận Thực Tập' })}
+                          title="Xem / Tải Giấy XNTT"
+                          className="inline-flex flex-col items-center gap-0.5 group">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors">
+                            <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">verified</span>
+                          </span>
+                          <span className="text-[9px] font-bold text-tertiary">Xem / Tải</span>
                         </button>
-                      </div>
+                      ) : (
+                        <div className="inline-flex flex-col items-center gap-0.5">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container">
+                            <span className="material-symbols-outlined text-[20px] text-on-surface-variant/30">verified</span>
+                          </span>
+                          <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
+                        </div>
+                      )}
                     </td>
-
                     <td className="px-6 py-4">
                       <button onClick={() => toast.show('Hệ thống tin nhắn đang bảo trì!', 'warn')}
                         className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
