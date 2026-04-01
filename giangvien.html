@@ -71,8 +71,6 @@ async function apiGet(params){
   return r.json();
 }
 async function apiPost(body){
-  // Google Apps Script: gửi qua GET để tránh CORS preflight
-  // doGet() trong GAS phải xử lý tất cả action
   const qs = new URLSearchParams(
     Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v??'')]))
   ).toString();
@@ -83,8 +81,6 @@ async function apiPost(body){
   try{ return JSON.parse(text); }
   catch(e){ console.error('JSON parse error:', e); throw new Error('Response không phải JSON: '+text.slice(0,300)); }
 }
-// ── apiPost helper ────────────────────────────────────────────
-// Gửi JSON qua POST với Content-Type: text/plain (simple request, không trigger CORS preflight)
 async function _gasPost(body){
   const r = await fetch(API_URL, {
     method: 'POST',
@@ -98,7 +94,7 @@ async function _gasPost(body){
 }
 
 // ── Chunked file upload ───────────────────────────────────────
-const CHUNK_SIZE_BYTES = 3 * 1024 * 1024; // 3MB binary → ~4MB base64
+const CHUNK_SIZE_BYTES = 3 * 1024 * 1024;
 
 async function uploadFileInChunks(file, folderName, onProgress){
   const buffer = await new Promise((res,rej)=>{
@@ -111,8 +107,6 @@ async function uploadFileInChunks(file, folderName, onProgress){
   const bytes = new Uint8Array(buffer);
   const totalChunks = Math.ceil(bytes.length / CHUNK_SIZE_BYTES);
   const uploadId = Date.now() + '_' + Math.random().toString(36).slice(2,8);
-
-  console.log(`📤 Upload: ${file.name} (${(bytes.length/1024/1024).toFixed(1)}MB, ${totalChunks} chunks)`);
 
   for(let i=0; i<totalChunks; i++){
     const start = i * CHUNK_SIZE_BYTES;
@@ -153,8 +147,7 @@ async function uploadFileInChunks(file, folderName, onProgress){
   return finalRes.driveUrl;
 }
 
-// ── apiPostFile: tự động chọn direct hoặc chunked ────────────
-const DIRECT_UPLOAD_LIMIT = 15 * 1024 * 1024; // 15MB
+const DIRECT_UPLOAD_LIMIT = 15 * 1024 * 1024;
 
 async function apiPostFile(body, onProgress){
   const { _file, folderName, ...rest } = body;
@@ -182,7 +175,6 @@ async function apiPostFile(body, onProgress){
     }
   }
 
-  // Legacy fallback
   return await _gasPost(body);
 }
 
@@ -203,7 +195,7 @@ function useToast(){
   return{toast:t,show,hide:()=>setT(null)};
 }
 
-// ── AVATAR (giống trangchu.html) ──────────────────────────────────────────────
+// ── AVATAR ────────────────────────────────────────────────────────────────────
 function Av({name='',cls=''}){
   const parts=name.trim().split(' ').filter(Boolean);
   const ini=parts.length>=2
@@ -224,7 +216,7 @@ function Spinner({text='Đang tải...'}){
   );
 }
 
-// ── AVATAR MENU (header dropdown) ────────────────────────────────────────────
+// ── AVATAR MENU ───────────────────────────────────────────────────────────────
 function AvatarMenu(){
   const [open,setOpen]=useState(false);
   useEffect(()=>{
@@ -262,7 +254,7 @@ function AvatarMenu(){
   );
 }
 
-// ── SIDEBAR (y chang trangchu.html, chỉ đổi nav items cho GV) ────────────────
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
 function Sidebar({tab, setTab, logout}){
   const navItems=[
     {id:'dashboard',  icon:'dashboard',        label:'Thông tin chung'},
@@ -272,13 +264,11 @@ function Sidebar({tab, setTab, logout}){
   ];
   return(
     <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-72 bg-slate-50 rounded-r-3xl z-50 p-4 overflow-y-auto">
-      {/* Logo — giống trangchu */}
       <div className="mb-6 px-4 flex items-center gap-3">
         <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">U</div>
         <span className="text-2xl font-black text-blue-900 tracking-tight">UTE Hub</span>
       </div>
 
-      {/* Profile GV — cùng style với SV ở trangchu */}
       <div className="mb-6 p-4 bg-surface-container rounded-2xl">
         <div className="flex flex-col items-start gap-2">
           <Av name={SESSION.name} cls="w-12 h-12"/>
@@ -291,7 +281,6 @@ function Sidebar({tab, setTab, logout}){
         </div>
       </div>
 
-      {/* Nav items */}
       <nav className="flex-1 space-y-1">
         {navItems.map(item=>(
           <button key={item.id} onClick={()=>setTab(item.id)}
@@ -303,7 +292,6 @@ function Sidebar({tab, setTab, logout}){
         ))}
       </nav>
 
-      {/* Logout ở cuối sidebar */}
       <div className="mt-4 pt-4 border-t border-outline-variant/20">
         <button onClick={logout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-error font-semibold hover:bg-error-container/20 transition-colors text-sm">
@@ -315,14 +303,13 @@ function Sidebar({tab, setTab, logout}){
   );
 }
 
-// ── HEADER (copy y chang trangchu.html) ───────────────────────────────────────
+// ── HEADER ────────────────────────────────────────────────────────────────────
 function Header({notifications=[]}){
   const [showNoti,setShowNoti]=useState(false);
   return(
     <header className="fixed top-0 z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 shadow-sm" style={{left:'18rem',right:0}}>
       <h1 className="font-headline text-base font-extrabold uppercase tracking-wide text-blue-900">ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</h1>
       <div className="flex items-center gap-4">
-        {/* Bell */}
         <div className="relative">
           <button onClick={()=>setShowNoti(v=>!v)} className="relative p-2 hover:bg-surface-container rounded-full transition-colors">
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
@@ -353,7 +340,6 @@ function Header({notifications=[]}){
             </div>
           )}
         </div>
-        {/* VN Flag */}
         <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full">
           <svg width="20" height="14" viewBox="0 0 20 14" style={{borderRadius:'2px',flexShrink:0}}>
             <rect width="20" height="14" fill="#DA251D"/>
@@ -361,7 +347,6 @@ function Header({notifications=[]}){
           </svg>
           <span className="text-xs font-bold text-on-surface">VN</span>
         </div>
-        {/* Avatar */}
         <AvatarMenu/>
       </div>
     </header>
@@ -369,7 +354,7 @@ function Header({notifications=[]}){
 }
 
 // ================================================================
-// SHEET CONFIG (CSV direct read — không qua Apps Script)
+// SHEET CONFIG
 // ================================================================
 const SS_ID_CSV   = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
 const SHEET_DANGKY_TAB  = 'DangKy';
@@ -377,7 +362,6 @@ const SHEET_KLTN_TAB    = 'DangKyKLTN';
 const SHEET_HOIDONG_TAB = 'HoiDongKLTN';
 const SHEET_NOTIF_TAB   = 'Notifications';
 
-// ── CSV PARSER CHUNG ──────────────────────────────────────────────────────────
 function parseCsvLine(line) {
   const cols = []; let cur = '', inQ = false;
   for (let j = 0; j < line.length; j++) {
@@ -396,14 +380,9 @@ async function fetchSheetCSV(sheetTab) {
   if (!res.ok) throw new Error('Không tải được sheet: ' + sheetTab);
   const text = await res.text();
   const lines = text.trim().split('\n');
-  return lines.slice(1).map(parseCsvLine); // bỏ dòng header
+  return lines.slice(1).map(parseCsvLine);
 }
 
-// ── ĐỌC DANGKY theo email GV ─────────────────────────────────────────────────
-// Sheet DangKy:
-//  A=Timestamp B=StudentEmail C=StudentName D=MaSo E=Nganh F=Type G=Topic
-//  H=Company I=InstructorName J=InstructorEmail K=InstructorId L=Term
-//  M=Note N=Status O=Grade P=Semester Q=Position R=InternDuration
 async function fetchDangKyByGV(gvEmail) {
   const rows = await fetchSheetCSV(SHEET_DANGKY_TAB);
   const pendingList = [], approvedList = [];
@@ -423,8 +402,7 @@ async function fetchDangKyByGV(gvEmail) {
       position        : r[16] || '',
       internDuration  : r[17] || '',
       reportSubmitted : r[18] === 'true' || r[18] === true,
-      reportDriveUrl  : r[19] || '',  // cột T — link Drive file SV nộp
-      plagiarismUrl   : r[20] || '',  // cột U — link Drive file đạo văn GV upload
+      reportDriveUrl  : r[19] || '',
     };
     if (obj.status === 'pending') pendingList.push(obj);
     else if (obj.status === 'approved' || obj.status === 'graded') approvedList.push(obj);
@@ -432,11 +410,6 @@ async function fetchDangKyByGV(gvEmail) {
   return { pendingList, approvedList };
 }
 
-// ── ĐỌC DANGKY KLTN theo email GV ────────────────────────────────────────────
-// Sheet DangKyKLTN:
-//  A=Timestamp B=StudentEmail C=StudentName D=MaSo E=Nganh F=Topic
-//  G=InstructorName H=InstructorEmail I=InstructorId J=Term K=Note
-//  L=Status M=Grade N=KltnGradeLocked O=Step
 async function fetchKLTNByGV(gvEmail) {
   const rows = await fetchSheetCSV(SHEET_KLTN_TAB);
   const pendingOutline = [], activeList = [];
@@ -455,28 +428,21 @@ async function fetchKLTNByGV(gvEmail) {
       grade        : r[12] !== '' ? parseFloat(r[12]) : null,
       step,
     };
-    // Step 1 = đã đăng ký, chờ GV duyệt đề cương
     if (step === 1 && obj.status === 'pending') pendingOutline.push(obj);
-    // Step 2+ = đang thực hiện / bảo vệ / hoàn tất
     else if (step >= 2) activeList.push(obj);
   }
   return { pendingOutline, activeList };
 }
 
-// ── ĐỌC HỘI ĐỒNG theo email GV ───────────────────────────────────────────────
-// Sheet HoiDongKLTN:
-//  A=EmailSV B=MaSoSV C=HoTenSV D=HoTenGVPB E=EmailGVPB
-//  F=TruongHD G=ThanhVien1 H=ThanhVien2 I=ThuKy
 async function fetchHoiDongByGV(gvEmail) {
   const rows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
-  // Lọc các dòng GV xuất hiện trong bất kỳ vai trò nào
   const email = gvEmail.toLowerCase().trim();
   return rows.filter(r =>
-    (r[4]||'').toLowerCase().trim() === email || // GV Phản biện
-    (r[5]||'').toLowerCase().includes(email)  || // Trưởng HĐ
-    (r[6]||'').toLowerCase().includes(email)  || // TV1
-    (r[7]||'').toLowerCase().includes(email)  || // TV2
-    (r[8]||'').toLowerCase().includes(email)     // Thư ký
+    (r[4]||'').toLowerCase().trim() === email ||
+    (r[5]||'').toLowerCase().includes(email)  ||
+    (r[6]||'').toLowerCase().includes(email)  ||
+    (r[7]||'').toLowerCase().includes(email)  ||
+    (r[8]||'').toLowerCase().includes(email)
   ).map(r => ({
     studentEmail   : r[0] || '',
     maSo           : r[1] || '',
@@ -490,13 +456,10 @@ async function fetchHoiDongByGV(gvEmail) {
   }));
 }
 
-// ── ĐỌC NOTIFICATIONS theo email GV ─────────────────────────────────────────
-// Sheet Notifications: A=Timestamp B=ForEmail C=Message D=Read
 async function fetchGVNotifications(gvEmail) {
   try {
     const rows = await fetchSheetCSV(SHEET_NOTIF_TAB);
     const email = gvEmail.toLowerCase().trim();
-    // Lấy 10 thông báo mới nhất gửi đến GV này (forEmail=gvEmail)
     return rows
       .filter(r => (r[1]||'').toLowerCase().trim() === email)
       .slice(-10).reverse()
@@ -586,14 +549,12 @@ function RejectOutlineModal({request, onConfirm, onClose}) {
           </div>
         </div>
 
-        {/* Thông tin đề tài */}
         <div className="bg-surface-container-low rounded-2xl p-4 mb-5 space-y-1">
           <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Đề tài KLTN</p>
           <p className="font-bold text-on-surface text-sm leading-snug">{request.topic}</p>
           <p className="text-xs text-on-surface-variant">{request.studentName} • {request.maSo}</p>
         </div>
 
-        {/* Lý do */}
         <div className="mb-6">
           <label className="text-sm font-semibold text-on-surface-variant block mb-2">
             Lý do từ chối đề cương <span className="text-error">*</span>
@@ -656,20 +617,18 @@ function TabThongTinChung({toast, addGVNotification}) {
       const res = await apiPost({ action:'updateStatus', studentEmail: req.studentEmail, status:'approved' });
       if (res.success) {
         toast.show(`✅ Đã duyệt đề tài của ${req.studentName}!`, 'success');
-        // Lưu thông báo cho SV vào sheet Notifications
         await apiPost({
           action: 'saveNotification',
           forEmail: req.studentEmail,
           message: `✅ GV ${SESSION.name} đã duyệt đề tài "${req.topic}" của bạn!`,
         });
-        // Push thông báo local lên chuông GV (xác nhận hành động)
         addGVNotification({ message: `Đã duyệt đề tài cho ${req.studentName}`, time: 'Vừa xong' });
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
         setApprovedList(prev => [{ ...req, status:'approved' }, ...prev]);
-} else {
-  console.error('Server trả về lỗi:', res);
-  toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error');
-}
+      } else {
+        console.error('Server trả về lỗi:', res);
+        toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error');
+      }
     } catch(e) { console.error('Approve error:', e); toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setProcessingId(null);
   }
@@ -707,7 +666,6 @@ function TabThongTinChung({toast, addGVNotification}) {
         <RejectModal request={rejectTarget} onConfirm={handleReject} onClose={() => setRejectTarget(null)}/>
       )}
 
-      {/* Profile + Stats */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col md:flex-row gap-6 items-center">
           <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-4xl shadow-lg flex-shrink-0">
@@ -748,11 +706,8 @@ function TabThongTinChung({toast, addGVNotification}) {
         </div>
       </section>
 
-      {/* Main grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
-
-          {/* Yêu cầu chờ duyệt */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
@@ -791,8 +746,6 @@ function TabThongTinChung({toast, addGVNotification}) {
                       </div>
                       <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-secondary-container/20 text-on-secondary-container flex-shrink-0">BCTT</span>
                     </div>
-
-                    {/* Chi tiết */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded-xl mb-4">
                       {[
                         { label:'Đơn vị TT',     val: r.company       },
@@ -812,7 +765,6 @@ function TabThongTinChung({toast, addGVNotification}) {
                         </div>
                       )}
                     </div>
-
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleApprove(r)}
@@ -837,7 +789,6 @@ function TabThongTinChung({toast, addGVNotification}) {
             )}
           </section>
 
-          {/* Sinh viên đang hướng dẫn */}
           <section>
             <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-primary">group</span>
@@ -888,7 +839,6 @@ function TabThongTinChung({toast, addGVNotification}) {
           </section>
         </div>
 
-        {/* Right: hoạt động gần đây */}
         <div>
           <section className="bg-surface-container p-6 rounded-2xl">
             <h3 className="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
@@ -906,10 +856,8 @@ function TabThongTinChung({toast, addGVNotification}) {
   );
 }
 
-// ── FILE VIEWER MODAL (Hướng 3) ───────────────────────────────────────────────
-// Embed Drive file trực tiếp trong modal — GV xem + tải về không cần mở Drive
+// ── FILE VIEWER MODAL ─────────────────────────────────────────────────────────
 function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) {
-  // Trích file ID từ mọi dạng Drive URL
   function getDriveId(u) {
     const m = u.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
     return m ? m[1] : null;
@@ -919,7 +867,6 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) 
   const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : null;
   const [iframeLoaded, setIframeLoaded] = React.useState(false);
 
-  // Đóng khi click backdrop
   function onBackdrop(e){ if(e.target===e.currentTarget) onClose(); }
 
   return (
@@ -929,13 +876,11 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) 
       <div className="bg-white rounded-3xl shadow-2xl flex flex-col anim-slide overflow-hidden"
         style={{width:'min(960px,96vw)',height:'min(90vh,800px)'}}>
 
-        {/* ── Header ── */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/20 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPlagiarism ? 'bg-tertiary-fixed' : 'bg-primary-fixed'}`}>
-              <span className={`material-symbols-outlined fill-icon text-xl`}
-                style={{color: isPlagiarism ? '#003f29' : undefined}}
-                className={`material-symbols-outlined fill-icon text-xl ${!isPlagiarism ? 'text-primary' : ''}`}>
+              <span className={`material-symbols-outlined fill-icon text-xl ${!isPlagiarism ? 'text-primary' : ''}`}
+                style={isPlagiarism ? {color:'#003f29'} : {}}>
                 {isPlagiarism ? 'policy' : 'description'}
               </span>
             </div>
@@ -951,7 +896,6 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) 
           </div>
 
           <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-            {/* Nút Tải về — download thẳng không qua UI Drive */}
             {downloadUrl && (
               <a href={downloadUrl}
                 download
@@ -960,7 +904,6 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) 
                 Tải về
               </a>
             )}
-            {/* Nút đóng */}
             <button onClick={onClose}
               className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">
               <span className="material-symbols-outlined text-on-surface-variant">close</span>
@@ -968,9 +911,7 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) 
           </div>
         </div>
 
-        {/* ── Viewer ── */}
         <div className="relative flex-1 bg-surface-container-low overflow-hidden">
-          {/* Loading skeleton */}
           {!iframeLoaded && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-on-surface-variant z-10 bg-surface-container-low">
               <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
@@ -995,7 +936,6 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) 
           )}
         </div>
 
-        {/* ── Footer hint ── */}
         <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10 flex-shrink-0 flex items-center justify-between">
           <p className="text-[11px] text-on-surface-variant">
             <span className="material-symbols-outlined text-[14px] align-middle mr-1">info</span>
@@ -1014,87 +954,6 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) 
   );
 }
 
-// ── PLAGIARISM UPLOAD CELL ────────────────────────────────────────────────────
-// GV upload file kết quả kiểm tra đạo văn cho từng SV
-// Sau khi upload: hiện nút "Xem / Tải" mở FileViewerModal (dùng chung)
-function PlagiarismUploadCell({ sv, toast, onUploaded, onView }) {
-  const fileRef = React.useRef(null);
-  const [uploading, setUploading] = React.useState(false);
-  const [progress, setProgress]   = React.useState(0);
-
-  async function handleFile(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const okTypes = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword','image/png','image/jpeg','text/plain'];
-    if (!okTypes.includes(file.type) && !file.name.match(/\.(pdf|docx?|txt|png|jpe?g)$/i)) {
-      toast.show('Chỉ chấp nhận PDF, Word, TXT hoặc ảnh!', 'error'); return;
-    }
-    if (file.size > 50 * 1024 * 1024) { toast.show('File tối đa 50 MB!', 'error'); return; }
-
-    setUploading(true); setProgress(0);
-    try {
-      const res = await apiPostFile({
-        action   : 'savePlagiarism',
-        email    : sv.studentEmail,
-        folderName: 'DaovanBCTT_UTE',
-        _file    : file,
-      }, pct => setProgress(pct));
-      if (res.success) {
-        toast.show(`Đã lưu file đạo văn cho ${sv.studentName}`, 'success');
-        onUploaded(res.driveUrl || '');
-      } else {
-        toast.show(res.message || 'Upload thất bại!', 'error');
-      }
-    } catch(err) {
-      toast.show('Lỗi upload: ' + err.message, 'error');
-    }
-    setUploading(false);
-    e.target.value = '';
-  }
-
-  return (
-    <div className="inline-flex flex-col items-center gap-0.5">
-      {sv.plagiarismUrl ? (
-        // Đã có file — hiện nút xem + nút đổi file
-        <div className="flex flex-col items-center gap-1">
-          <button
-            onClick={() => onView(sv.plagiarismUrl, sv.studentName)}
-            title="Xem / Tải file đạo văn"
-            className="inline-flex flex-col items-center gap-0.5 group">
-            <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors">
-              <span className="material-symbols-outlined fill-icon text-[20px]" style={{color:'#003f29'}}>policy</span>
-            </span>
-            <span className="text-[9px] font-bold" style={{color:'#003f29'}}>Xem / Tải</span>
-          </button>
-          {/* Nút đổi file nhỏ */}
-          <button onClick={() => fileRef.current?.click()} disabled={uploading}
-            title="Đổi file đạo văn"
-            className="text-[9px] text-on-surface-variant/50 hover:text-primary underline disabled:opacity-40">
-            {uploading ? 'Đang upload...' : 'Đổi file'}
-          </button>
-        </div>
-      ) : (
-        // Chưa có file — hiện nút upload
-        <button onClick={() => fileRef.current?.click()} disabled={uploading}
-          title="Upload file kết quả đạo văn"
-          className="inline-flex flex-col items-center gap-0.5 group">
-          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container group-hover:bg-surface-container-high transition-colors disabled:opacity-50">
-            {uploading
-              ? <span className="material-symbols-outlined text-[20px] anim-spin text-primary">refresh</span>
-              : <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40">upload_file</span>}
-          </span>
-          <span className="text-[9px] text-on-surface-variant/40">
-            {uploading ? (progress>0?`${progress}%`:'Uploading...') : 'Upload'}
-          </span>
-        </button>
-      )}
-      <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
-        className="hidden" onChange={handleFile}/>
-    </div>
-  );
-}
-
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
 function TabSinhVienHuongDan({toast}) {
   const [search,   setSearch]   = React.useState('');
@@ -1103,12 +962,10 @@ function TabSinhVienHuongDan({toast}) {
   const [grades,   setGrades]   = React.useState({});
   const [saving,   setSaving]   = React.useState({});
 
-  // ── Modal xem file báo cáo SV ───────────────────────────────
-  const [viewerFile, setViewerFile] = React.useState(null); // { url, studentName }
+  const [viewerFile, setViewerFile] = React.useState(null);
 
-  // ── KLTN state ──────────────────────────────────────────────
-  const [kltnPending,  setKltnPending]  = React.useState([]); // step=1, chờ duyệt đề cương
-  const [kltnActive,   setKltnActive]   = React.useState([]); // step>=2
+  const [kltnPending,  setKltnPending]  = React.useState([]);
+  const [kltnActive,   setKltnActive]   = React.useState([]);
   const [kltnLoading,  setKltnLoading]  = React.useState(true);
   const [kltnProcessing, setKltnProcessing] = React.useState(null);
   const [rejectOutlineTarget, setRejectOutlineTarget] = React.useState(null);
@@ -1134,7 +991,6 @@ function TabSinhVienHuongDan({toast}) {
     })();
   }, []);
 
-  // ── Duyệt đề cương KLTN ─────────────────────────────────────
   async function handleApproveOutline(sv) {
     setKltnProcessing(sv.studentEmail);
     try {
@@ -1155,7 +1011,6 @@ function TabSinhVienHuongDan({toast}) {
     setKltnProcessing(null);
   }
 
-  // ── Từ chối đề cương KLTN (kèm lý do) ───────────────────────
   async function handleRejectOutline(sv, reason) {
     setKltnProcessing(sv.studentEmail);
     try {
@@ -1221,7 +1076,6 @@ function TabSinhVienHuongDan({toast}) {
   return (
     <div className="space-y-6 anim-fade">
 
-      {/* Modal từ chối đề cương */}
       {rejectOutlineTarget && (
         <RejectOutlineModal
           request={rejectOutlineTarget}
@@ -1230,7 +1084,6 @@ function TabSinhVienHuongDan({toast}) {
         />
       )}
 
-      {/* Modal xem file báo cáo SV — Hướng 3 */}
       {viewerFile && (
         <FileViewerModal
           url={viewerFile.url}
@@ -1266,13 +1119,11 @@ function TabSinhVienHuongDan({toast}) {
         ))}
       </div>
 
-      {/* ══════════════════════════════════════════════════════════
-          SECTION: ĐỀ CƯƠNG KLTN CHỜ DUYỆT
-      ══════════════════════════════════════════════════════════ */}
+      {/* KLTN CHỜ DUYỆT */}
       <section>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-tertiary-container" style={{color:'#00593c'}}>description</span>
+            <span className="material-symbols-outlined" style={{color:'#00593c'}}>description</span>
             Đề cương KLTN chờ duyệt
             {!kltnLoading && kltnPending.length > 0 && (
               <span className="bg-error text-white text-[10px] font-black px-2 py-0.5 rounded-full">
@@ -1312,7 +1163,6 @@ function TabSinhVienHuongDan({toast}) {
                   </span>
                 </div>
 
-                {/* Chi tiết */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded-xl mb-4 text-xs">
                   <div>
                     <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ngành</p>
@@ -1355,9 +1205,7 @@ function TabSinhVienHuongDan({toast}) {
         )}
       </section>
 
-      {/* ══════════════════════════════════════════════════════════
-          SECTION: KLTN ĐANG THỰC HIỆN
-      ══════════════════════════════════════════════════════════ */}
+      {/* KLTN ĐANG THỰC HIỆN */}
       {kltnActive.length > 0 && (
         <section>
           <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
@@ -1407,9 +1255,7 @@ function TabSinhVienHuongDan({toast}) {
         </section>
       )}
 
-      {/* ══════════════════════════════════════════════════════════
-          SECTION: BCTT — sinh viên hướng dẫn (giữ nguyên)
-      ══════════════════════════════════════════════════════════ */}
+      {/* BCTT */}
       <div>
         <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
           <span className="material-symbols-outlined text-primary">assignment</span>
@@ -1429,14 +1275,14 @@ function TabSinhVienHuongDan({toast}) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
-                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','File BC','File đạo văn','Điểm số',''].map((h, i) => (
-                    <th key={i} className={`px-4 py-4 ${i===6?'text-center':i===4||i===5?'text-center':''}`}>{h}</th>
+                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','File BC','Điểm số',''].map((h, i) => (
+                    <th key={i} className={`px-4 py-4 ${i===5?'text-center':i===4?'text-center':''}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="8" className="px-6 py-16 text-center text-on-surface-variant text-sm">
+                  <tr><td colSpan="7" className="px-6 py-16 text-center text-on-surface-variant text-sm">
                     <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
                     Không tìm thấy sinh viên
                   </td></tr>
@@ -1458,7 +1304,7 @@ function TabSinhVienHuongDan({toast}) {
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{sv.company || '--'}</td>
                     <td className="px-6 py-4 text-xs text-on-surface-variant">{sv.term || '--'}</td>
 
-                    {/* ── Cột File BC — Hướng 3: xem + tải trong modal ── */}
+                    {/* File BC */}
                     <td className="px-4 py-4 text-center">
                       {sv.reportSubmitted && sv.reportDriveUrl ? (
                         <button
@@ -1480,18 +1326,7 @@ function TabSinhVienHuongDan({toast}) {
                       )}
                     </td>
 
-                    {/* ── Cột File đạo văn — GV upload kết quả kiểm tra ── */}
-                    <td className="px-4 py-4 text-center">
-                      <PlagiarismUploadCell
-                        sv={sv}
-                        toast={toast}
-                        onUploaded={(url) => setStudents(prev =>
-                          prev.map(s => s.maSo === sv.maSo ? { ...s, plagiarismUrl: url } : s)
-                        )}
-                        onView={(url, name) => setViewerFile({ url, studentName: name, isPlagiarism: true })}
-                      />
-                    </td>
-
+                    {/* Điểm số */}
                     <td className="px-6 py-4">
                       <div className="flex justify-center items-center gap-2">
                         <input type="number" min="0" max="10" step="0.1"
@@ -1507,6 +1342,7 @@ function TabSinhVienHuongDan({toast}) {
                         </button>
                       </div>
                     </td>
+
                     <td className="px-6 py-4">
                       <button onClick={() => toast.show('Hệ thống tin nhắn đang bảo trì!', 'warn')}
                         className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
@@ -1528,7 +1364,6 @@ function TabSinhVienHuongDan({toast}) {
 }
 
 // ── TAB 3: SINH VIÊN PHẢN BIỆN ───────────────────────────────────────────────
-// Đọc từ sheet HoiDongKLTN — lọc các dòng có GV này là GV phản biện (cột E)
 function TabPhanBien({toast}) {
   const [students, setStudents] = React.useState([]);
   const [loading,  setLoading]  = React.useState(true);
@@ -1540,7 +1375,6 @@ function TabPhanBien({toast}) {
     (async () => {
       setLoading(true);
       try {
-        // Lấy toàn bộ HoiDongKLTN rồi lọc dòng GV này là phản biện
         const rows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
         const email = SESSION.email.toLowerCase().trim();
         const pbList = rows
@@ -1684,7 +1518,6 @@ function TabPhanBien({toast}) {
 }
 
 // ── TAB 4: HỘI ĐỒNG ──────────────────────────────────────────────────────────
-// Hiển thị toàn bộ các sinh viên có GV này trong hội đồng (bất kỳ vai trò)
 function TabHoiDong({toast}) {
   const [hdList,   setHdList]   = React.useState([]);
   const [loading,  setLoading]  = React.useState(true);
@@ -1848,11 +1681,9 @@ function App() {
   const [tab,  setTab]  = React.useState('dashboard');
   const toast            = useToast();
 
-  // Thông báo chuông GV — được push khi duyệt/từ chối + tải từ sheet khi login
   const [notifications, setNotifications] = React.useState([]);
 
   React.useEffect(() => {
-    // Tải thông báo dành cho GV này từ sheet Notifications
     (async () => {
       const notis = await fetchGVNotifications(SESSION.email);
       if (notis.length > 0) setNotifications(notis);
