@@ -1275,14 +1275,14 @@ function TabSinhVienHuongDan({toast}) {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
-                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','File BC','Điểm số',''].map((h, i) => (
-                    <th key={i} className={`px-4 py-4 ${i===5?'text-center':i===4?'text-center':''}`}>{h}</th>
+                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','File BC','Giấy XNTT','Điểm số',''].map((h, i) => (
+                    <th key={i} className={`px-4 py-4 ${i===4 || i===5 || i===6 ? 'text-center' : ''}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="7" className="px-6 py-16 text-center text-on-surface-variant text-sm">
+                  <tr><td colSpan="8" className="px-6 py-16 text-center text-on-surface-variant text-sm">
                     <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
                     Không tìm thấy sinh viên
                   </td></tr>
@@ -1326,6 +1326,16 @@ function TabSinhVienHuongDan({toast}) {
                       )}
                     </td>
 
+                    {/* Giấy XNTT */}
+                    <td className="px-4 py-4 text-center">
+                      <div className="inline-flex flex-col items-center gap-0.5">
+                        <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container">
+                          <span className="material-symbols-outlined text-[20px] text-on-surface-variant/30">verified</span>
+                        </span>
+                        <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
+                      </div>
+                    </td>
+
                     {/* Điểm số */}
                     <td className="px-6 py-4">
                       <div className="flex justify-center items-center gap-2">
@@ -1362,7 +1372,6 @@ function TabSinhVienHuongDan({toast}) {
     </div>
   );
 }
-
 // ── TAB 3: SINH VIÊN PHẢN BIỆN ───────────────────────────────────────────────
 function TabPhanBien({toast}) {
   const [students, setStudents] = React.useState([]);
