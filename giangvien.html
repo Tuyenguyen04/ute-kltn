@@ -1216,41 +1216,96 @@ function TabSinhVienHuongDan({toast}) {
           <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden border border-outline-variant/15">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
-                    {['Sinh viên','Đề tài KLTN','Học kỳ','Tiến độ'].map((h, idx) => (
-                      <th key={idx} className="px-6 py-4">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-container">
-                  {kltnActive.map((sv, i) => {
-                    const sl = stepLabel(sv.step);
-                    return (
-                      <tr key={i} className="hover:bg-surface-container-low transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <Av name={sv.studentName} cls="w-9 h-9 flex-shrink-0"/>
-                            <div>
-                              <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
-                              <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 max-w-[220px]">
-                          <p className="text-sm font-medium line-clamp-2">{sv.topic}</p>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-on-surface-variant">{sv.term || '--'}</td>
-                        <td className="px-6 py-4">
-                          <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold ${sl.color}`}>
-                            {sl.text}
+              <thead>
+                <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
+                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','File BC','Giấy XNTT','Điểm số',''].map((h, i) => (
+                    <th key={i} className={`px-4 py-4 ${i===4 || i===5 || i===6 ? 'text-center' : ''}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-container">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan="8" className="px-6 py-16 text-center text-on-surface-variant text-sm">
+                    <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
+                    Không tìm thấy sinh viên
+                  </td></tr>
+                ) : filtered.map(sv => (
+                  <tr key={sv.maSo} className="hover:bg-surface-container-low transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                        <div>
+                          <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
+                          <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
+                          <p className="text-xs text-outline italic truncate max-w-[130px]">{sv.studentEmail}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 max-w-[200px]">
+                      <p className="text-sm font-medium line-clamp-2">{sv.topic}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{sv.company || '--'}</td>
+                    <td className="px-6 py-4 text-xs text-on-surface-variant">{sv.term || '--'}</td>
+
+                    {/* File BC */}
+                    <td className="px-4 py-4 text-center">
+                      {sv.reportSubmitted && sv.reportDriveUrl ? (
+                        <button
+                          onClick={() => setViewerFile({ url: sv.reportDriveUrl, studentName: sv.studentName })}
+                          title="Xem / Tải báo cáo"
+                          className="inline-flex flex-col items-center gap-0.5 group">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors">
+                            <span className="material-symbols-outlined fill-icon text-[20px] text-primary">description</span>
                           </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          <span className="text-[9px] font-bold text-primary">Xem / Tải</span>
+                        </button>
+                      ) : (
+                        <div className="inline-flex flex-col items-center gap-0.5">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container">
+                            <span className="material-symbols-outlined text-[20px] text-on-surface-variant/30">description</span>
+                          </span>
+                          <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Giấy XNTT */}
+                    <td className="px-4 py-4 text-center">
+                      <div className="inline-flex flex-col items-center gap-0.5">
+                        <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container">
+                          <span className="material-symbols-outlined text-[20px] text-on-surface-variant/30">verified</span>
+                        </span>
+                        <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
+                      </div>
+                    </td>
+
+                    {/* Điểm số */}
+                    <td className="px-6 py-4">
+                      <div className="flex justify-center items-center gap-2">
+                        <input type="number" min="0" max="10" step="0.1"
+                          value={grades[sv.maSo] || ''} placeholder="--"
+                          onChange={e => setGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
+                          className="w-16 text-center py-1.5 bg-surface-container border border-outline-variant rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary-container outline-none"/>
+                        <button onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)}
+                          disabled={!!saving[sv.maSo]}
+                          className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50">
+                          {saving[sv.maSo]
+                            ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
+                            : <span className="material-symbols-outlined text-[16px]">save</span>}
+                        </button>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <button onClick={() => toast.show('Hệ thống tin nhắn đang bảo trì!', 'warn')}
+                        className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
+                        <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
             </div>
           </div>
         </section>
