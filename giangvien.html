@@ -255,13 +255,24 @@ function AvatarMenu(){
 }
 
 // ── SIDEBAR ───────────────────────────────────────────────────────────────────
-function Sidebar({tab, setTab, logout}){
-  const navItems=[
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function Sidebar({tab, setTab, logout, role}){
+  const baseNav = [
     {id:'dashboard',  icon:'dashboard',        label:'Thông tin chung'},
     {id:'sinhvien',   icon:'group',             label:'Sinh viên hướng dẫn'},
     {id:'phanbien',   icon:'rate_review',       label:'Sinh viên phản biện'},
     {id:'hoidong',    icon:'gavel',             label:'Hội đồng'},
   ];
+  
+  // 3 Menu dành riêng cho Trưởng bộ môn
+  const tbmNav = [
+    {id:'phancong_pb', icon:'assignment_ind',   label:'Phân công phản biện'},
+    {id:'phancong_hd', icon:'manage_accounts',  label:'Phân công hội đồng'},
+    {id:'thongke',     icon:'bar_chart',        label:'Thống kê'},
+  ];
+
+  const navItems = role === 'truongbomon' ? [...baseNav, ...tbmNav] : baseNav;
+
   return(
     <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-72 bg-slate-50 rounded-r-3xl z-50 p-4 overflow-y-auto">
       <div className="mb-6 px-4 flex items-center gap-3">
@@ -276,7 +287,10 @@ function Sidebar({tab, setTab, logout}){
             <h4 className="font-bold text-on-surface text-sm truncate">{SESSION.name||'Giảng viên'}</h4>
             <p className="text-xs text-on-surface-variant font-medium">Mã GV: {SESSION.maGV}</p>
             <p className="text-xs text-on-surface-variant truncate">{SESSION.email}</p>
-            <span className="inline-block mt-1.5 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-black rounded-full tracking-wider">GV</span>
+            {/* Đã sửa lại dùng chung màu xanh bình thường */}
+            <span className="inline-block mt-1.5 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-black rounded-full tracking-wider">
+              {role === 'truongbomon' ? 'TRƯỞNG BỘ MÔN' : 'GIẢNG VIÊN'}
+            </span>
           </div>
         </div>
       </div>
@@ -302,7 +316,6 @@ function Sidebar({tab, setTab, logout}){
     </aside>
   );
 }
-
 // ── HEADER ────────────────────────────────────────────────────────────────────
 function Header({notifications=[]}){
   const [showNoti,setShowNoti]=useState(false);
@@ -1671,7 +1684,63 @@ function TabHoiDong({toast}) {
     </div>
   );
 }
+// ── TAB 5: PHÂN CÔNG PHẢN BIỆN (TBM) ──────────────────────────────────────────
+function TabPhanCongPhanBien({toast}) {
+  return (
+    <div className="space-y-6 anim-fade">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-on-surface tracking-tight">Phân công Phản biện</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Cập nhật Giảng viên phản biện cho sinh viên</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+        <span className="material-symbols-outlined text-7xl opacity-10">assignment_ind</span>
+        <p className="text-base font-bold text-on-surface-variant">Giao diện Phân công Phản biện</p>
+        <p className="text-sm text-on-surface-variant/60 text-center">Đang chờ kết nối Google Apps Script...</p>
+      </div>
+    </div>
+  );
+}
 
+// ── TAB 6: PHÂN CÔNG HỘI ĐỒNG (TBM) ──────────────────────────────────────────
+function TabPhanCongHoiDong({toast}) {
+  return (
+    <div className="space-y-6 anim-fade">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-on-surface tracking-tight">Phân công Hội đồng</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Thiết lập Chủ tịch, Ủy viên, Thư ký Hội đồng</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+        <span className="material-symbols-outlined text-7xl opacity-10">manage_accounts</span>
+        <p className="text-base font-bold text-on-surface-variant">Giao diện Phân công Hội đồng</p>
+        <p className="text-sm text-on-surface-variant/60 text-center">Đang chờ kết nối Google Apps Script...</p>
+      </div>
+    </div>
+  );
+}
+
+// ── TAB 7: THỐNG KÊ (TBM) ────────────────────────────────────────────────────
+function TabThongKe({toast}) {
+  return (
+    <div className="space-y-6 anim-fade">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-on-surface tracking-tight">Thống kê dữ liệu</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Theo dõi tiến độ và điểm số tổng hợp</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+        <span className="material-symbols-outlined text-7xl opacity-10">bar_chart</span>
+        <p className="text-base font-bold text-on-surface-variant">Giao diện Thống kê</p>
+        <p className="text-sm text-on-surface-variant/60 text-center">Đang chờ kết nối Google Apps Script...</p>
+      </div>
+    </div>
+  );
+}
+// ── APP ROOT ──────────────────────────────────────────────────────────────────
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
 function App() {
   React.useEffect(() => {
@@ -1697,36 +1766,47 @@ function App() {
     setNotifications(prev => [noti, ...prev].slice(0, 20));
   }
 
+  const baseNavMobile = [
+    {id:'dashboard', icon:'dashboard',   l:'Tổng quan'},
+    {id:'sinhvien',  icon:'group',        l:'Hướng dẫn'},
+    {id:'phanbien',  icon:'rate_review',  l:'Phản biện'},
+    {id:'hoidong',   icon:'gavel',        l:'Hội đồng'},
+  ];
+  const tbmNavMobile = [
+    {id:'phancong_pb', icon:'assignment_ind',  l:'PC.PB'},
+    {id:'phancong_hd', icon:'manage_accounts', l:'PC.HĐ'},
+    {id:'thongke',     icon:'bar_chart',       l:'Thống kê'},
+  ];
+  const navMobile = SESSION.role === 'truongbomon' ? [...baseNavMobile, ...tbmNavMobile] : baseNavMobile;
+
   return (
     <div className="min-h-screen bg-background">
       {toast.toast && <Toast {...toast.toast} onClose={toast.hide}/>}
 
-      <Sidebar tab={tab} setTab={setTab}
+      <Sidebar tab={tab} setTab={setTab} role={SESSION.role}
         logout={() => { localStorage.clear(); window.location.href = 'login.html'; }}/>
 
       <Header notifications={notifications}/>
 
-      <main className="pt-24 pb-10 px-6 min-h-screen" style={{marginLeft:'18rem'}}>
+      <main className="pt-24 pb-20 md:pb-10 px-6 min-h-screen" style={{marginLeft:'18rem'}}>
         <div className="max-w-7xl mx-auto">
-          {tab === 'dashboard' && <TabThongTinChung toast={toast} addGVNotification={addGVNotification}/>}
-          {tab === 'sinhvien'  && <TabSinhVienHuongDan toast={toast}/>}
-          {tab === 'phanbien'  && <TabPhanBien toast={toast}/>}
-          {tab === 'hoidong'   && <TabHoiDong toast={toast}/>}
+          {tab === 'dashboard'   && <TabThongTinChung toast={toast} addGVNotification={addGVNotification}/>}
+          {tab === 'sinhvien'    && <TabSinhVienHuongDan toast={toast}/>}
+          {tab === 'phanbien'    && <TabPhanBien toast={toast}/>}
+          {tab === 'hoidong'     && <TabHoiDong toast={toast}/>}
+          
+          {SESSION.role === 'truongbomon' && tab === 'phancong_pb' && <TabPhanCongPhanBien toast={toast}/>}
+          {SESSION.role === 'truongbomon' && tab === 'phancong_hd' && <TabPhanCongHoiDong toast={toast}/>}
+          {SESSION.role === 'truongbomon' && tab === 'thongke'     && <TabThongKe toast={toast}/>}
         </div>
       </main>
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 bg-white/90 backdrop-blur-lg rounded-t-3xl shadow-2xl">
-        {[
-          {id:'dashboard', icon:'dashboard',   l:'Tổng quan'},
-          {id:'sinhvien',  icon:'group',        l:'Hướng dẫn'},
-          {id:'phanbien',  icon:'rate_review',  l:'Phản biện'},
-          {id:'hoidong',   icon:'gavel',        l:'Hội đồng'},
-        ].map(it => (
+      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-start sm:justify-around items-center px-2 pb-4 pt-2 bg-white/90 backdrop-blur-lg rounded-t-3xl shadow-2xl overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        {navMobile.map(it => (
           <button key={it.id} onClick={() => setTab(it.id)}
-            className={`flex flex-col items-center justify-center px-3 py-2 rounded-2xl transition-all ${tab===it.id?'bg-blue-50 text-blue-800':'text-slate-400'}`}>
+            className={`flex flex-col items-center justify-center min-w-[70px] px-2 py-2 rounded-2xl transition-all ${tab===it.id?'bg-blue-50 text-blue-800':'text-slate-400'}`}>
             <span className="material-symbols-outlined text-2xl">{it.icon}</span>
-            <span className="text-[10px] font-semibold mt-1">{it.l}</span>
+            <span className="text-[10px] font-semibold mt-1 whitespace-nowrap">{it.l}</span>
           </button>
         ))}
       </nav>
