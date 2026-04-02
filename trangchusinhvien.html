@@ -1328,37 +1328,7 @@ function Registration({onSuccess,instructorList,loadingGV}){
   );
 
   // ── Right info panel ───────────────────────────────────────────
-  const RightPanel=()=>(
-    <div className="space-y-5">
-      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary"><span className="material-symbols-outlined">info</span></div>
-          <h3 className="font-headline font-extrabold text-on-surface">Lưu ý đăng ký</h3>
-        </div>
-        <ul className="space-y-4">
-          {[
-            'Thời hạn chỉnh sửa thông tin cơ bản là 05 ngày sau khi đợt đăng ký kết thúc.',
-            'Vui lòng đọc kỹ các thông tin để tránh những sai sót không đáng có.',
-            'Mỗi sinh viên chỉ được chọn 1 giảng viên hướng dẫn.',
-          ].map((n,i)=>(
-            <li key={i} className="flex gap-3 text-sm text-on-surface-variant leading-relaxed">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0"/>{n}
-            </li>
-          ))}
-        </ul>
-      </div>
-      <div className="bg-secondary-container/20 border border-secondary-container/30 rounded-3xl p-6">
-        <div className="flex items-center justify-between mb-3">
-          <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full text-[10px] font-bold uppercase">Sắp hết hạn</span>
-          <span className="material-symbols-outlined text-secondary-container">alarm</span>
-        </div>
-        <p className="font-headline font-bold text-on-secondary-container text-base mb-3">Đợt 1 kết thúc trong 3 ngày</p>
-        <div className="w-full bg-secondary-container/20 h-2 rounded-full overflow-hidden">
-          <div className="bg-secondary-container h-full rounded-full" style={{width:'80%'}}/>
-        </div>
-      </div>
-    </div>
-  );
+  const RightPanel=()=>null;
 
   return(
     <div className="anim-fade">
@@ -1411,15 +1381,6 @@ function Registration({onSuccess,instructorList,loadingGV}){
                   </p>
                 </div>
               </div>
-            </div>
-
-            {/* Lưu ý */}
-            <div className="mx-8 mb-6 flex items-start gap-2 px-4 py-3 bg-secondary-container/10 rounded-xl">
-              <span className="material-symbols-outlined text-secondary text-base mt-0.5 flex-shrink-0">info</span>
-              <p className="text-xs text-on-surface-variant leading-relaxed">
-                Sau khi xác nhận, <strong>email thông báo</strong> sẽ được gửi tự động đến GV.
-                Yêu cầu sẽ được ghi nhận và hiện trong <strong>Lịch sử hoạt động</strong> với trạng thái <em>Đang chờ duyệt</em>.
-              </p>
             </div>
 
             {/* Actions */}
@@ -1696,13 +1657,6 @@ function Registration({onSuccess,instructorList,loadingGV}){
                   </div>
                 )}
               </div>
-              {/* Lưu ý */}
-              <div className="bg-surface-container p-5 rounded-2xl border-l-4 border-primary flex gap-4 items-start">
-                <span className="material-symbols-outlined text-primary">campaign</span>
-                <p className="text-sm text-on-surface-variant italic leading-relaxed">
-                  Sau khi xác nhận, hệ thống sẽ gửi email thông báo đến <strong>{selGV?.email}</strong>. Giảng viên sẽ duyệt hoặc từ chối đề tài.
-                </p>
-              </div>
               <div className="flex items-center justify-between pt-2">
                 <button onClick={()=>setStep(2)} className="flex items-center gap-2 px-8 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all">
                   <span className="material-symbols-outlined">arrow_back</span>Quay lại
@@ -1865,15 +1819,6 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
               className="w-full bg-surface-container-low rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/50 resize-none text-sm"
               placeholder="VD: Em đã hoàn thành đầy đủ các nội dung theo yêu cầu..."/>
           </div>
-
-          {/* Lưu ý */}
-          <div className="flex items-start gap-3 bg-secondary-container/10 border border-secondary-container/20 rounded-2xl p-4">
-            <span className="material-symbols-outlined text-secondary text-base mt-0.5">campaign</span>
-            <p className="text-xs text-on-surface-variant leading-relaxed italic">
-              Sau khi nộp, hệ thống sẽ gửi email thông báo đến GV hướng dẫn. GV sẽ chấm điểm trong vòng <strong>2 tuần</strong> kể từ ngày kết thúc đợt <strong>{semLabel}</strong>. Bạn chỉ được nộp <strong>một lần</strong>.
-            </p>
-          </div>
-        </div>
 
         {/* Footer */}
         <div className="flex flex-col gap-3 px-8 pb-8 pt-4 border-t border-outline-variant/10 flex-shrink-0">
@@ -2385,23 +2330,6 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
 
   const RightPanel=()=>(
     <div className="space-y-5">
-      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary"><span className="material-symbols-outlined">info</span></div>
-          <h3 className="font-headline font-extrabold text-on-surface">Lưu ý đăng ký KLTN</h3>
-        </div>
-        <ul className="space-y-4">
-          {[
-            'Đề tài KLTN phải phù hợp với ngành đào tạo và có tính ứng dụng thực tiễn.',
-            'Mỗi sinh viên chỉ được đăng ký 1 giảng viên hướng dẫn KLTN.',
-            'Bạn có thể giữ lại GV hướng dẫn BCTT hoặc chọn GV mới cho KLTN.',
-          ].map((n,i)=>(
-            <li key={i} className="flex gap-3 text-sm text-on-surface-variant leading-relaxed">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0"/>{n}
-            </li>
-          ))}
-        </ul>
-      </div>
       {/* Nhắc BCTT đã pass */}
       <div className="bg-primary-fixed/40 border border-primary-fixed-dim/30 rounded-3xl p-6">
         <div className="flex items-center gap-2 mb-3">
