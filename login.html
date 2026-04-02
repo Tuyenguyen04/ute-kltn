@@ -213,7 +213,28 @@ async function handleGoogleLogin(response){
       setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
       return;
     }
+// Dán code này vào phần xử lý sau khi Google trả về email thành công
+async function handleGoogleLoginSuccess(googleEmail) {
+    // 1. Gọi API lên App Script để dò email này trong các Sheet
+    const response = await fetch(`${API_URL}?action=login&email=${googleEmail}`);
+    const data = await response.json();
 
+    if (data.success) {
+        // 2. Nếu có trong Sheet, lấy đúng cái quyền (role) từ App Script trả về
+        localStorage.setItem('ute_email', data.email);
+        localStorage.setItem('ute_role', data.role); // data.role sẽ tự động là 'truongbomon' hoặc 'giangvien'
+        localStorage.setItem('ute_name', data.name);
+        
+        // 3. Chuyển hướng
+        if (data.role === 'sinhvien') {
+            window.location.href = 'trangchu.html';
+        } else {
+            window.location.href = 'giangvien.html';
+        }
+    } else {
+        alert("Email này chưa được cấp quyền truy cập hệ thống!");
+    }
+}
     // ── Kiểm tra sheet Sinh viên ──────────────────────────────────
     const sv = findEmailInRows(rowsSV, email);
     if(sv){
