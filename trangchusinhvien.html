@@ -1239,6 +1239,9 @@ function Registration({onSuccess,instructorList,loadingGV}){
     if(!form.semester){toast.show('Vui lòng chọn học kỳ!','error');return;}
     if(!form.position.trim()){toast.show('Vui lòng nhập vị trí thực tập!','error');return;}
     if(!form.internDuration.trim()){toast.show('Vui lòng nhập thời gian thực tập!','error');return;}
+    const durNum = parseFloat(form.internDuration);
+    if(isNaN(durNum)||durNum<=0){toast.show('Thời gian thực tập phải là số hợp lệ!','error');return;}
+    if(durNum < 2){toast.show('Thời gian thực tập tối thiểu là 2 tháng!','error');return;}
     setStep(2);window.scrollTo(0,0);
   }
   function next2(){
@@ -1521,10 +1524,31 @@ function Registration({onSuccess,instructorList,loadingGV}){
                     placeholder="VD: Nhân viên kinh doanh, Kế toán..."/>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-on-surface-variant">Thời gian thực tập <span className="text-error">*</span></label>
-                  <input value={form.internDuration} onChange={e=>setForm(f=>({...f,internDuration:e.target.value}))}
-                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60"
-                    placeholder="VD: 3 tháng, 16 tuần..."/>
+                  <label className="text-sm font-semibold text-on-surface-variant">Thời gian thực tập (tháng) <span className="text-error">*</span></label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.5"
+                    value={form.internDuration}
+                    onChange={e=>{
+                      const v=e.target.value;
+                      // Chỉ cho phép số (số tự nhiên hoặc thập phân), không âm
+                      if(v===''||(/^\d*\.?\d*$/.test(v)&&parseFloat(v)>=0)) setForm(f=>({...f,internDuration:v}));
+                    }}
+                    onKeyDown={e=>{
+                      // Chặn ký tự không phải số, dấu chấm, Backspace, Delete, mũi tên
+                      if(!/[\d.]/.test(e.key)&&!['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(e.key)) e.preventDefault();
+                    }}
+                    className={`w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 text-on-surface placeholder:text-outline/60
+                      ${form.internDuration&&parseFloat(form.internDuration)<2
+                        ?'ring-2 ring-error/40 focus:ring-error/50'
+                        :'focus:ring-primary/20'}`}
+                    placeholder="VD: 2, 3, 2.5..."/>
+                  {form.internDuration!==''&&(
+                    parseFloat(form.internDuration)<2
+                      ?<p className="text-xs text-error font-medium flex items-center gap-1"><span className="material-symbols-outlined text-sm">warning</span>Tối thiểu 2 tháng mới được chọn giảng viên</p>
+                      :<p className="text-xs text-tertiary-container font-medium flex items-center gap-1"><span className="material-symbols-outlined text-sm">check_circle</span>Hợp lệ</p>
+                  )}
                 </div>
                 <div className="md:col-span-2 space-y-2">
                   <label className="text-sm font-semibold text-on-surface-variant">Ghi chú (tùy chọn)</label>
