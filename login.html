@@ -178,9 +178,6 @@ function doLogin(){
   }
 }
 
-// ── URL App Script — ĐIỀN VÀO ĐÂY ───────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbxx2THd7pQ6YhH6NXwWPIWSWpX1q37xgMks67jxdFf9A5OoGpnssmJVd0XzJvHZsnZP/exec;
-
 // ── Callback từ Google Sign-In ────────────────────────────────────────────────
 async function handleGoogleLogin(response){
   // Giải mã JWT để lấy email và tên từ Google account
@@ -191,39 +188,48 @@ async function handleGoogleLogin(response){
   showOverlay('success','⏳','Đang kiểm tra quyền truy cập...','');
 
   try {
-    // Xoá sạch session cũ
+    // Xoá sạch session cũ trước khi lưu mới
     localStorage.clear();
 
-    // Gọi App Script để lấy role chính xác
-    const res  = await fetch(`${API_URL}?action=login&email=${encodeURIComponent(email)}`);
-    const data = await res.json();
+    // Tải song song cả 2 sheet
+    const [csvSV, csvGV] = await Promise.all([
+      fetchSheetCSV(SHEET_SV),
+      fetchSheetCSV(SHEET_GV),
+    ]);
 
-    if(!data.success){
-      showOverlay('error','🚫', data.message || 'Email không có trong danh sách được phép.','');
-      setTimeout(hideOverlay, 3000);
+    const rowsSV = parseCSV(csvSV);
+    const rowsGV = parseCSV(csvGV);
+
+    // ── Kiểm tra sheet Giảng viên TRƯỚC ──────────────────────────
+    // (để tránh trường hợp GV bị nhầm sang SV nếu email trùng)
+    const gv = findEmailInRows(rowsGV, email);
+    if(gv){
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'giangvien');           // hardcode, không lấy từ sheet
+      localStorage.setItem('ute_name',  gv.name || nameGG);
+      localStorage.setItem('ute_maSo',  gv.maSo || '');
+      localStorage.setItem('ute_nganh', gv.nganh || '');
+      showOverlay('success','🎉','Chào mừng Giảng viên ' + (gv.name||nameGG) + '!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
       return;
     }
 
-    // Lưu thông tin user vào localStorage
-    localStorage.setItem('ute_email', data.email  || email);
-    localStorage.setItem('ute_role',  data.role   || 'sinhvien');
-    localStorage.setItem('ute_name',  data.name   || nameGG);
-    localStorage.setItem('ute_maSo',  data.maSo   || '');
-    localStorage.setItem('ute_nganh', data.nganh  || '');
-
-    const role = data.role || 'sinhvien';
-    const name = data.name || nameGG;
-
-    // Chuyển hướng theo role
-    if(role === 'sinhvien'){
-      showOverlay('success','🎉','Chào mừng ' + name + '!','Đang chuyển hướng...');
+    // ── Kiểm tra sheet Sinh viên ──────────────────────────────────
+    const sv = findEmailInRows(rowsSV, email);
+    if(sv){
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'sinhvien');            // hardcode, không lấy từ sheet
+      localStorage.setItem('ute_name',  sv.name || nameGG);
+      localStorage.setItem('ute_maSo',  sv.maSo || '');
+      localStorage.setItem('ute_nganh', sv.nganh || '');
+      showOverlay('success','🎉','Chào mừng ' + (sv.name||nameGG) + '!','Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'trangchusinhvien.html'; }, 2000);
-    } else {
-      // giangvien hoặc truongbomon đều vào giangvien.html
-      // (giangvien.html sẽ tự hiện đúng menu theo role)
-      showOverlay('success','🎉','Chào mừng ' + name + '!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
+      return;
     }
+
+    // Email không có trong cả 2 sheet
+    showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
+    setTimeout(hideOverlay, 3000);
 
   } catch(err){
     console.error('Login error:', err);
@@ -234,3 +240,5 @@ async function handleGoogleLogin(response){
 </script>
 </body>
 </html>
+
+
