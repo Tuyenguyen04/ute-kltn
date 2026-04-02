@@ -1053,7 +1053,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
               icon:'upload_file',
               iconBg:'bg-secondary-container/20',
               iconTx:'text-secondary',
-              action:'Nộp báo cáo thực tập',
+              action:'Nộp hồ sơ thực tập (BC + Giấy XNTT)',
               topic,
               detail:`GV ${instr?.name||'--'} đang chấm điểm`,
               sub:'Thời gian chấm: tối đa 2 tuần',
@@ -1687,12 +1687,14 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
   const sem     = dashData?.semester||'';
   const semLabel= sem==='D1-HK1-2526'?'Đợt 1 – HK1 NH25-26':sem==='D2-HK1-2526'?'Đợt 2 – HK1 NH25-26':sem==='D1-HK2-2526'?'Đợt 1 – HK2 NH25-26':sem==='D2-HK2-2526'?'Đợt 2 – HK2 NH25-26':'--';
 
-  const [file,setFile]   = useState(null);
-  const [note,setNote]   = useState('');
-  const [step,setStep]   = useState(1); // 1=chọn file | 2=confirm
+  const [file,setFile]         = useState(null);
+  const [fileXNTT,setFileXNTT] = useState(null);
+  const [note,setNote]         = useState('');
+  const [step,setStep]         = useState(1); // 1=chọn file | 2=confirm
   const [submitting,setSubmitting] = useState(false);
-  const [progress,setProgress] = useState(0);
-  const [done,setDone]   = useState(false);
+  const [progress,setProgress]     = useState(0);
+  const [progressLabel,setProgressLabel] = useState('');
+  const [done,setDone]         = useState(false);
 
   function pickFile(e){
     const f=e.target.files[0];
@@ -1705,10 +1707,24 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
     setFile(f);
   }
 
+  function pickXNTT(e){
+    const f=e.target.files[0];
+    if(!f) return;
+    const ok=['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword','application/zip','application/x-zip-compressed'];
+    if(!ok.some(t=>f.type===t)&&!f.name.match(/\.(pdf|docx?|zip)$/i)){
+      toast.show('Chỉ chấp nhận file PDF, Word hoặc ZIP!','error'); return;
+    }
+    if(f.size>50*1024*1024){toast.show('File tối đa 50 MB!','error');return;}
+    setFileXNTT(f);
+  }
+
   async function submit(){
     if(!file){toast.show('Vui lòng chọn file báo cáo!','error');return;}
+    if(!fileXNTT){toast.show('Vui lòng chọn file Giấy xác nhận thực tập!','error');return;}
     setSubmitting(true); setProgress(0);
     try{
+      // Bước 1: Upload Báo cáo
+      setProgressLabel('Đang upload Báo cáo...');
       const res=await apiPostFile({
         action:'submitReport',
         email:SESSION.email,
@@ -1721,9 +1737,32 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
         note:note.trim(),
         folderName:'BaoCaoTT_UTE',
         _file:file,
-      }, pct=>setProgress(pct));
-      if(res?.success){setDone(true);}
-      else{toast.show(res?.message||'Gửi thất bại. Thử lại.','error');setSubmitting(false);}
+      }, pct=>setProgress(Math.round(pct*0.5)));
+
+      if(!res?.success){toast.show(res?.message||'Gửi BC thất bại. Thử lại.','error');setSubmitting(false);return;}
+
+      // Bước 2: Upload Giấy XNTT
+      setProgressLabel('Đang upload Giấy xác nhận...');
+      const resXNTT=await apiPostFile({
+        action:'submitXNTT',
+        email:SESSION.email,
+        name:SESSION.name,
+        maSo:SESSION.maSo,
+        topic,
+        semester:sem,
+        instructorEmail:instr?.email||'',
+        instructorName:instr?.name||'',
+        folderName:'GiayXNTT_UTE',
+        _file:fileXNTT,
+      }, pct=>setProgress(50+Math.round(pct*0.5)));
+
+      if(resXNTT?.success||resXNTT?.message?.includes('success')||resXNTT?.driveUrl){
+        setDone(true);
+      } else {
+        // BC đã nộp thành công, XNTT thất bại → vẫn coi là thành công BC nhưng thông báo
+        toast.show('Báo cáo đã nộp! Lỗi upload giấy XNTT: '+(resXNTT?.message||'Thử lại sau.'),'warn');
+        setDone(true);
+      }
     }catch(e){
       toast.show('Lỗi upload: '+e.message,'error');
       setSubmitting(false);
@@ -1739,10 +1778,14 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
         <div className="w-24 h-24 bg-tertiary-fixed-dim text-on-tertiary-fixed rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg anim-pop">
           <span className="material-symbols-outlined fill-icon text-5xl">task_alt</span>
         </div>
-        <h3 className="text-2xl font-headline font-black text-on-surface mb-3 leading-tight">Nộp báo cáo thành công!</h3>
+        <h3 className="text-2xl font-headline font-black text-on-surface mb-3 leading-tight">Nộp hồ sơ thành công!</h3>
         <p className="text-on-surface-variant text-sm mb-2 leading-relaxed">
           GV <strong>{instr?.name}</strong> đã nhận được thông báo qua email.
         </p>
+        <div className="p-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant mb-4 leading-relaxed text-left space-y-1">
+          <p>✅ <strong>Báo cáo thực tập</strong> — đã nộp thành công</p>
+          <p>✅ <strong>Giấy xác nhận thực tập</strong> — đã nộp thành công</p>
+        </div>
         <div className="p-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant mb-8 leading-relaxed">
           📧 <strong>{instr?.email}</strong><br/>
           GV sẽ chấm điểm trong vòng <strong>2 tuần</strong> kể từ ngày kết thúc đợt thực tập <strong>{semLabel}</strong>.
@@ -1790,7 +1833,7 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
             </div>
           </div>
 
-          {/* Upload zone */}
+          {/* Upload zone — File báo cáo */}
           <div>
             <label className="text-sm font-semibold text-on-surface-variant block mb-2">
               File báo cáo <span className="text-error">*</span>
@@ -1818,6 +1861,34 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
             )}
           </div>
 
+          {/* Upload zone — Giấy xác nhận thực tập */}
+          <div>
+            <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+              Giấy xác nhận thực tập <span className="text-error">*</span>
+              <span className="text-xs font-normal ml-2 opacity-60">PDF / Word / ZIP · tối đa 50 MB</span>
+            </label>
+            {!fileXNTT?(
+              <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-secondary/30 rounded-2xl bg-secondary-fixed/10 cursor-pointer hover:bg-secondary-fixed/20 transition-colors group">
+                <span className="material-symbols-outlined text-4xl text-secondary/40 group-hover:text-secondary/70 transition-colors mb-2">verified</span>
+                <span className="text-sm font-medium text-secondary/60 group-hover:text-secondary transition-colors">Kéo thả hoặc bấm để chọn file</span>
+                <input type="file" accept=".pdf,.doc,.docx,.zip" className="hidden" onChange={pickXNTT}/>
+              </label>
+            ):(
+              <div className="flex items-center gap-4 p-4 bg-secondary-fixed/20 border border-secondary-container/40 rounded-2xl">
+                <div className="w-12 h-12 rounded-xl bg-secondary-container/30 flex items-center justify-center text-on-secondary-container flex-shrink-0">
+                  <span className="material-symbols-outlined">verified</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-on-surface text-sm truncate">{fileXNTT.name}</p>
+                  <p className="text-xs text-on-surface-variant">{fmtSize(fileXNTT.size)}</p>
+                </div>
+                <button onClick={()=>setFileXNTT(null)} className="p-1.5 hover:bg-error-container/30 rounded-full transition-colors">
+                  <span className="material-symbols-outlined text-sm text-on-surface-variant">close</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Ghi chú */}
           <div>
             <label className="text-sm font-semibold text-on-surface-variant block mb-2">Ghi chú cho GV (tuỳ chọn)</label>
@@ -1832,7 +1903,7 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
           {submitting&&progress>0&&(
             <div className="w-full">
               <div className="flex justify-between text-xs text-on-surface-variant mb-1">
-                <span>{progress<100?'Đang upload file...':'Đang xử lý...'}</span>
+                <span>{progress<100?(progressLabel||'Đang upload file...'):'Đang xử lý...'}</span>
                 <span>{progress}%</span>
               </div>
               <div className="w-full bg-surface-container rounded-full h-2">
@@ -1845,7 +1916,7 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
             className="px-6 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all text-sm disabled:opacity-50">
             Hủy bỏ
           </button>
-          <button onClick={submit} disabled={!file||submitting}
+          <button onClick={submit} disabled={!file||!fileXNTT||submitting}
             className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm">
             {submitting
               ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang upload{progress>0?` ${progress}%`:''}...</>
