@@ -374,7 +374,7 @@ const SHEET_DANGKY_TAB  = 'DangKy';
 const SHEET_KLTN_TAB    = 'DangKyKLTN';
 const SHEET_HOIDONG_TAB = 'HoiDongKLTN';
 const SHEET_NOTIF_TAB   = 'Notifications';
-
+const SHEET_USERS_TAB   = 'Users';
 function parseCsvLine(line) {
   const cols = []; let cur = '', inQ = false;
   for (let j = 0; j < line.length; j++) {
@@ -1686,42 +1686,247 @@ function TabHoiDong({toast}) {
 }
 // ── TAB 5: PHÂN CÔNG PHẢN BIỆN (TBM) ──────────────────────────────────────────
 function TabPhanCongPhanBien({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [teachers, setTeachers] = React.useState([]);
+  const [loading, setLoading]   = React.useState(true);
+  const [saving, setSaving]     = React.useState({});
+
+  React.useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      // Tải DS Sinh viên KLTN đã duyệt
+      const kltnRows = await fetchSheetCSV(SHEET_KLTN_TAB);
+      const kltnList = kltnRows.filter(r => r[11] === 'approved').map(r => ({
+        studentEmail: r[1], studentName: r[2], maSo: r[3], topic: r[5], gvhd: r[6]
+      }));
+
+      // Tải DS phân công hiện tại từ Hội Đồng
+      let hdMap = {};
+      try {
+        const hdRows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
+        hdRows.forEach(r => { hdMap[r[0]] = { gvPhanBienEmail: r[4], gvPhanBienName: r[3] }; });
+      } catch(e) {} // Bỏ qua nếu sheet HoiDong chưa có
+
+      // Gộp data
+      setStudents(kltnList.map(sv => ({
+        ...sv,
+        pbEmail: hdMap[sv.studentEmail]?.gvPhanBienEmail || '',
+        pbName: hdMap[sv.studentEmail]?.gvPhanBienName || ''
+      })));
+
+      // Tải DS Giảng viên từ bảng Users
+      const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
+      const gvList = userRows.filter(r => r[2] === 'giangvien' || r[2] === 'truongbomon').map(r => ({
+        email: r[0], name: r[3]
+      }));
+      setTeachers(gvList);
+
+    } catch(e) { toast.show('Lỗi tải dữ liệu!', 'error'); }
+    setLoading(false);
+  }
+
+  async function handleSave(sv) {
+    if (!sv.pbEmail) { toast.show('Vui lòng chọn GV phản biện!', 'warn'); return; }
+    setSaving(prev => ({...prev, [sv.maSo]: true}));
+    try {
+      const pbName = teachers.find(t => t.email === sv.pbEmail)?.name || '';
+      const res = await apiPost({
+        action: 'assignCouncil', studentEmail: sv.studentEmail, maSo: sv.maSo, studentName: sv.studentName,
+        gvPhanBienEmail: sv.pbEmail, gvPhanBienName: pbName
+      });
+      if(res.success) toast.show('Đã lưu GV phản biện!', 'success');
+      else toast.show('Lưu thất bại', 'error');
+    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+    setSaving(prev => ({...prev, [sv.maSo]: false}));
+  }
+
   return (
     <div className="space-y-6 anim-fade">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-black text-on-surface tracking-tight">Phân công Phản biện</h2>
-          <p className="text-on-surface-variant mt-1 text-sm">Cập nhật Giảng viên phản biện cho sinh viên</p>
+          <p className="text-on-surface-variant mt-1 text-sm">Chọn GV phản biện cho sinh viên thực hiện KLTN</p>
         </div>
       </div>
-      <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
-        <span className="material-symbols-outlined text-7xl opacity-10">assignment_ind</span>
-        <p className="text-base font-bold text-on-surface-variant">Giao diện Phân công Phản biện</p>
-        <p className="text-sm text-on-surface-variant/60 text-center">Đang chờ kết nối Google Apps Script...</p>
-      </div>
+
+      {loading ? <Spinner text="Đang tải dữ liệu sinh viên và giảng viên..."/> : (
+        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden border border-outline-variant/15">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse" style={{minWidth:'800px'}}>
+              <thead>
+                <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left">Sinh viên</th>
+                  <th className="px-6 py-4 text-left">Đề tài & GVHD</th>
+                  <th className="px-6 py-4 text-left w-64">Giảng viên Phản biện</th>
+                  <th className="px-6 py-4 text-center w-32">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-container">
+                {students.map(sv => (
+                  <tr key={sv.maSo} className="hover:bg-surface-container-low/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                        <div>
+                          <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
+                          <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium line-clamp-2">{sv.topic}</p>
+                      <p className="text-xs text-secondary font-semibold mt-1">GVHD: {sv.gvhd}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <select value={sv.pbEmail} 
+                        onChange={(e) => setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, pbEmail: e.target.value} : s))}
+                        className="w-full text-sm bg-surface-container border border-outline-variant/40 rounded-xl px-3 py-2.5 outline-none focus:ring-2 focus:ring-primary/30">
+                        <option value="">-- Chọn GV Phản biện --</option>
+                        {teachers.filter(t => t.name !== sv.gvhd).map(t => (
+                          <option key={t.email} value={t.email}>{t.name} ({t.email})</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <button onClick={() => handleSave(sv)} disabled={saving[sv.maSo]}
+                        className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 w-full">
+                        {saving[sv.maSo] ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span> : 'Lưu'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── TAB 6: PHÂN CÔNG HỘI ĐỒNG (TBM) ──────────────────────────────────────────
 function TabPhanCongHoiDong({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [teachers, setTeachers] = React.useState([]);
+  const [loading, setLoading]   = React.useState(true);
+  const [saving, setSaving]     = React.useState({});
+
+  React.useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const kltnRows = await fetchSheetCSV(SHEET_KLTN_TAB);
+      const kltnList = kltnRows.filter(r => r[11] === 'approved').map(r => ({
+        studentEmail: r[1], studentName: r[2], maSo: r[3]
+      }));
+
+      let hdMap = {};
+      try {
+        const hdRows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
+        hdRows.forEach(r => { hdMap[r[0]] = { truongHD: r[5], thanhVien1: r[6], thanhVien2: r[7], thuKy: r[8] }; });
+      } catch(e) {}
+
+      setStudents(kltnList.map(sv => ({
+        ...sv,
+        truongHD: hdMap[sv.studentEmail]?.truongHD || '',
+        thanhVien1: hdMap[sv.studentEmail]?.thanhVien1 || '',
+        thanhVien2: hdMap[sv.studentEmail]?.thanhVien2 || '',
+        thuKy: hdMap[sv.studentEmail]?.thuKy || ''
+      })));
+
+      const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
+      const gvList = userRows.filter(r => r[2] === 'giangvien' || r[2] === 'truongbomon').map(r => ({
+        email: r[0], name: r[3]
+      }));
+      setTeachers(gvList);
+
+    } catch(e) { toast.show('Lỗi tải dữ liệu!', 'error'); }
+    setLoading(false);
+  }
+
+  async function handleSave(sv) {
+    setSaving(prev => ({...prev, [sv.maSo]: true}));
+    try {
+      const res = await apiPost({
+        action: 'assignCouncil', studentEmail: sv.studentEmail, maSo: sv.maSo, studentName: sv.studentName,
+        truongHD: sv.truongHD, thanhVien1: sv.thanhVien1, thanhVien2: sv.thanhVien2, thuKy: sv.thuKy
+      });
+      if(res.success) toast.show('Đã cập nhật Hội đồng!', 'success');
+      else toast.show('Cập nhật thất bại', 'error');
+    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+    setSaving(prev => ({...prev, [sv.maSo]: false}));
+  }
+
+  const updateField = (maSo, field, val) => {
+    setStudents(prev => prev.map(s => s.maSo === maSo ? {...s, [field]: val} : s));
+  };
+
   return (
     <div className="space-y-6 anim-fade">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-black text-on-surface tracking-tight">Phân công Hội đồng</h2>
-          <p className="text-on-surface-variant mt-1 text-sm">Thiết lập Chủ tịch, Ủy viên, Thư ký Hội đồng</p>
+          <p className="text-on-surface-variant mt-1 text-sm">Thiết lập Chủ tịch, Ủy viên, Thư ký Hội đồng cho sinh viên</p>
         </div>
       </div>
-      <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
-        <span className="material-symbols-outlined text-7xl opacity-10">manage_accounts</span>
-        <p className="text-base font-bold text-on-surface-variant">Giao diện Phân công Hội đồng</p>
-        <p className="text-sm text-on-surface-variant/60 text-center">Đang chờ kết nối Google Apps Script...</p>
-      </div>
+
+      {loading ? <Spinner text="Đang tải dữ liệu hội đồng..."/> : (
+        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden border border-outline-variant/15">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse" style={{minWidth:'900px'}}>
+              <thead>
+                <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left w-64">Sinh viên</th>
+                  <th className="px-6 py-4 text-left">Thành phần Hội đồng KLTN</th>
+                  <th className="px-6 py-4 text-center w-32">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-container">
+                {students.map(sv => (
+                  <tr key={sv.maSo} className="hover:bg-surface-container-low/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                        <div>
+                          <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
+                          <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        {[ {label:'Chủ tịch HĐ', key:'truongHD'}, {label:'Thư ký', key:'thuKy'},
+                           {label:'Ủy viên 1', key:'thanhVien1'}, {label:'Ủy viên 2', key:'thanhVien2'} ].map(field => (
+                          <div key={field.key} className="flex flex-col gap-1">
+                            <span className="text-[10px] font-bold text-on-surface-variant uppercase">{field.label}</span>
+                            <select value={sv[field.key]} onChange={(e) => updateField(sv.maSo, field.key, e.target.value)}
+                              className="w-full text-xs bg-surface-container border border-outline-variant/40 rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-primary/30">
+                              <option value="">-- Trống --</option>
+                              {teachers.map(t => <option key={t.email} value={`${t.name} (${t.email})`}>{t.name}</option>)}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <button onClick={() => handleSave(sv)} disabled={saving[sv.maSo]}
+                        className="px-4 py-2 bg-tertiary-container text-on-tertiary font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 w-full text-xs shadow-sm">
+                        {saving[sv.maSo] ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span> : 'Lưu HĐ'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
 // ── TAB 7: THỐNG KÊ (TBM) ────────────────────────────────────────────────────
 function TabThongKe({toast}) {
   return (
