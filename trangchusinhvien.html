@@ -444,12 +444,19 @@ function Sidebar({tab,setTab,kltnUnlocked,bcttDisabled,logout,notifCount}){
 }
 
 // ── HEADER ────────────────────────────────────────────────────────────────────
-function Header({notifications}){
+function Header({notifications,onRefresh,refreshing}){
   const [showNoti,setShowNoti]=useState(false);
   return(
     <header className="fixed top-0 z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 shadow-sm" style={{left:'18rem',right:0}}>
       <h1 className="font-headline text-base font-extrabold uppercase tracking-wide text-blue-900">ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</h1>
       <div className="flex items-center gap-4">
+        {/* Nút làm mới dữ liệu */}
+        <button onClick={onRefresh} disabled={refreshing}
+          title="Làm mới dữ liệu"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold">
+          <span className={`material-symbols-outlined text-base ${refreshing?'anim-spin':''}`}>refresh</span>
+          <span className="hidden sm:inline">{refreshing?'Đang tải...':'Làm mới'}</span>
+        </button>
         <div className="relative">
           <button onClick={()=>setShowNoti(v=>!v)} className="relative p-2 hover:bg-surface-container rounded-full transition-colors">
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
@@ -2646,7 +2653,9 @@ function App(){
     // Admin → chuyển sang trangchu (hoặc admin.html nếu có)
   },[]);
 
-  const [tab,setTab]=useState('dashboard');
+  const [tab,setTab]=useState(()=>sessionStorage.getItem('ute_tab')||'dashboard');
+  // Persist tab mỗi khi đổi để reload giữ nguyên vị trí
+  const setTabPersist=useCallback((t)=>{sessionStorage.setItem('ute_tab',t);setTab(t);},[]);
   const [dashData,setDashData]=useState(null);
   const [loadingDash,setLoadingDash]=useState(true);
   const [instructorList,setInstructorList]=useState([]);
@@ -2726,7 +2735,7 @@ function App(){
   },[tab]);
 
   function handleRegSuccess(){
-    setTab('dashboard');
+    setTabPersist('dashboard');
     setDashData(null);
     loadDash();
     toast.show('Đăng ký thành công! Đang chờ giảng viên xác nhận.','success');
@@ -2735,7 +2744,7 @@ function App(){
   function handleChangeTopic(){
     // Reset instructor list để tải lại từ API
     setInstructorList([]);
-    setTab('registration');
+    setTabPersist('registration');
   }
 
   function handleSubmitReportSuccess(){
@@ -2753,11 +2762,23 @@ function App(){
   }
 
   function handleKltnRegSuccess(){
-    setTab('dashboard');
+    setTabPersist('dashboard');
     setDashData(null);
     loadDash();
     toast.show('Đăng ký KLTN thành công! Đang chờ giảng viên xác nhận.','success');
   }
+
+  // ── Làm mới dữ liệu thủ công (nút Refresh trên Header) ────────
+  const handleRefresh = useCallback(async()=>{
+    if(loadingDash) return;
+    setDashData(null);
+    setNotifications([]);
+    // Reset danh sách GV để fetch lại nếu đang ở tab đó
+    setInstructorList([]);
+    setKltnInstructorList([]);
+    await loadDash();
+    toast.show('Đã cập nhật dữ liệu mới nhất!','success');
+  },[loadingDash,loadDash]);
 
   return(
     <div className="min-h-screen bg-background">
@@ -2782,14 +2803,14 @@ function App(){
       )}
 
       <Sidebar
-        tab={tab} setTab={setTab}
+        tab={tab} setTab={setTabPersist}
         kltnUnlocked={kltnUnlocked}
         bcttDisabled={bcttDisabled}
-        logout={()=>{localStorage.clear();window.location.href='login.html';}}
+        logout={()=>{localStorage.clear();sessionStorage.removeItem('ute_tab');window.location.href='login.html';}}
         notifCount={notifications.length}
       />
 
-      <Header notifications={notifications}/>
+      <Header notifications={notifications} onRefresh={handleRefresh} refreshing={loadingDash}/>
 
       <main className="pt-24 pb-10 px-6 min-h-screen" style={{marginLeft:'18rem'}}>
         <div className="w-full">
@@ -2797,10 +2818,10 @@ function App(){
             <Dashboard
               dashData={dashData}
               loading={loadingDash}
-              onRegister={()=>setTab('registration')}
+              onRegister={()=>setTabPersist('registration')}
               onChangeTopic={handleChangeTopic}
               onSubmitReport={()=>setShowSubmitReport(true)}
-              onRegisterKLTN={()=>setTab('kltn')}
+              onRegisterKLTN={()=>setTabPersist('kltn')}
               onSubmitKLTN={()=>setShowSubmitKLTN(true)}
               toast={toast}
               kltnUnlocked={kltnUnlocked}
@@ -2831,7 +2852,7 @@ function App(){
           {id:'dashboard',icon:'home',l:'Trang chủ'},
           {id:'registration',icon:'assignment_turned_in',l:'Đăng ký'},
         ].map(it=>(
-          <button key={it.id} onClick={()=>{ if(it.id==='dashboard'||!bcttDisabled) setTab(it.id); }}
+          <button key={it.id} onClick={()=>{ if(it.id==='dashboard'||!bcttDisabled) setTabPersist(it.id); }}
             className={`flex flex-col items-center justify-center px-4 py-2 rounded-2xl transition-all ${tab===it.id?'bg-blue-50 text-blue-800':'text-slate-400'}`}>
             <span className="material-symbols-outlined text-2xl">{it.icon}</span>
             <span className="text-[10px] font-semibold mt-1">{it.l}</span>
