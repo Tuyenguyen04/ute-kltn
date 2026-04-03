@@ -91,13 +91,14 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh
 </div>
 
 <script>
+<script>
 const ADMIN_USER = 'admin', ADMIN_PASS = 'ute2025';
 
 // ── Cấu hình Google Sheet ─────────────────────────────────────────────────────
 const SHEET_ID = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
 const SHEET_SV = 'Sinh viên đợt 1';
 const SHEET_GV = 'Giảng viên phụ trách';
-const SHEET_TBM = 'Trưởng bộ môn'; // Quan trọng: Khai báo sheet TBM
+const SHEET_TBM = 'Trưởng bộ môn'; 
 
 // ── Helper UI ─────────────────────────────────────────────────────────────────
 function ce(id){ document.getElementById(id).classList.remove('has-error'); }
@@ -113,15 +114,20 @@ function hideOverlay(){
   document.getElementById('overlay').className = 'overlay';
 }
 
-// ── Đọc CSV trực tiếp từ Google Sheet ────────────────────────────────────────
+// ── Đọc CSV trực tiếp từ Google Sheet (Có chống lỗi) ──────────────────────────
 async function fetchSheetCSV(sheetName){
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('Không tải được sheet: ' + sheetName);
-  return res.text();
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+    const res = await fetch(url);
+    if(!res.ok) return ''; // Không tải được thì trả về rỗng, không làm sập web
+    return await res.text();
+  } catch (error) {
+    return '';
+  }
 }
 
 function parseCSV(text){
+  if(!text) return [];
   return text.trim().split('\n').map(line => {
     const cols = [];
     let cur = '', inQ = false;
@@ -136,35 +142,35 @@ function parseCSV(text){
   });
 }
 
-// Tìm SV / GV (Cột F = Ngành)
+// Tìm SV / GV (Cột F = Ngành -> index 5)
 function findEmailInRows(rows, email){
   for(let i = 1; i < rows.length; i++){
     const row = rows[i];
     if(!row || row.length < 4) continue;
-    const rowEmail = (row[3] || '').replace(/"/g, '').trim().toLowerCase();
-    if(rowEmail === email.toLowerCase()){
+    const rowEmail = String(row[3] || '').replace(/"/g, '').trim().toLowerCase();
+    if(rowEmail === email){
       return {
-        name  : (row[1] || '').replace(/"/g, '').trim(),
-        maSo  : (row[2] || '').replace(/"/g, '').trim(),
-        role  : (row[4] || '').replace(/"/g, '').trim(),
-        nganh : (row[5] || '').replace(/"/g, '').trim(),
+        name  : String(row[1] || '').replace(/"/g, '').trim(),
+        maSo  : String(row[2] || '').replace(/"/g, '').trim(),
+        role  : String(row[4] || '').replace(/"/g, '').trim(),
+        nganh : String(row[5] || '').replace(/"/g, '').trim(),
       };
     }
   }
   return null;
 }
 
-// Tìm TBM (Cột H = Ngành)
+// Tìm TBM (Cột H = Ngành -> index 7)
 function findTBMInRows(rows, email){
   for(let i = 1; i < rows.length; i++){
     const row = rows[i];
     if(!row || row.length < 4) continue;
-    const rowEmail = (row[3] || '').replace(/"/g, '').trim().toLowerCase();
-    if(rowEmail === email.toLowerCase()){
+    const rowEmail = String(row[3] || '').replace(/"/g, '').trim().toLowerCase();
+    if(rowEmail === email){
       return {
-        name  : (row[1] || '').replace(/"/g, '').trim(),
-        maSo  : (row[2] || '').replace(/"/g, '').trim(),
-        nganh : (row[7] || '').replace(/"/g, '').trim(),
+        name  : String(row[1] || '').replace(/"/g, '').trim(),
+        maSo  : String(row[2] || '').replace(/"/g, '').trim(),
+        nganh : String(row[7] || '').replace(/"/g, '').trim(),
       };
     }
   }
@@ -199,37 +205,21 @@ async function handleGoogleLogin(response){
     const email   = payload.email.toLowerCase().trim();
     const nameGG  = payload.name || email.split('@')[0];
 
-    // ========================================================
-    // 🔴 ÉP QUYỀN TRƯỞNG BỘ MÔN (Dùng để bỏ qua lỗi Sheet)
-    // ========================================================
-    if(email === 'lalahehe464@gmail.com') {
-        localStorage.clear();
-        localStorage.setItem('ute_email', email);
-        localStorage.setItem('ute_role',  'truongbomon'); // Ép quyền TBM
-        localStorage.setItem('ute_name',  'PGS.TS. Trần P');
-        localStorage.setItem('ute_maSo',  '534');
-        localStorage.setItem('ute_nganh', 'Khoa học máy tính');
-        
-        showOverlay('success','🎉','Chào mừng Trưởng bộ môn!','Đang chuyển hướng...');
-        setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 1500);
-        return; 
-    }
-    // ========================================================
+    showOverlay('success','⏳','Đang tải dữ liệu...','');
 
-    showOverlay('success','⏳','Đang kiểm tra quyền truy cập...','');
+    // Tải dữ liệu độc lập, cái nào lỗi thì bỏ qua không sập các cái khác
+    const csvTBM = await fetchSheetCSV(SHEET_TBM);
+    const csvGV  = await fetchSheetCSV(SHEET_GV);
+    const csvSV  = await fetchSheetCSV(SHEET_SV);
 
-    localStorage.clear();
-    const [csvSV, csvGV, csvTBM] = await Promise.all([
-      fetchSheetCSV(SHEET_SV),
-      fetchSheetCSV(SHEET_GV),
-      fetchSheetCSV(SHEET_TBM)
-    ]);
-
-    const rowsSV = parseCSV(csvSV);
-    const rowsGV = parseCSV(csvGV);
     const rowsTBM = parseCSV(csvTBM);
+    const rowsGV  = parseCSV(csvGV);
+    const rowsSV  = parseCSV(csvSV);
 
-    // Kiểm tra TBM
+    // Xóa session cũ
+    localStorage.clear();
+
+    // 1. Kiểm tra TBM
     const tbm = findTBMInRows(rowsTBM, email);
     if(tbm){
       localStorage.setItem('ute_email', email);
@@ -237,12 +227,12 @@ async function handleGoogleLogin(response){
       localStorage.setItem('ute_name',  tbm.name || nameGG);
       localStorage.setItem('ute_maSo',  tbm.maSo || '');
       localStorage.setItem('ute_nganh', tbm.nganh || '');
-      showOverlay('success','🎉','Chào mừng Trưởng bộ môn!','Đang chuyển hướng...');
+      showOverlay('success','🎉','Chào mừng Trưởng bộ môn ' + (tbm.name || nameGG) + '!','Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
       return;
     }
 
-    // Kiểm tra GV
+    // 2. Kiểm tra GV
     const gv = findEmailInRows(rowsGV, email);
     if(gv){
       localStorage.setItem('ute_email', email);
@@ -250,12 +240,12 @@ async function handleGoogleLogin(response){
       localStorage.setItem('ute_name',  gv.name || nameGG);
       localStorage.setItem('ute_maSo',  gv.maSo || '');
       localStorage.setItem('ute_nganh', gv.nganh || '');
-      showOverlay('success','🎉','Chào mừng Giảng viên!','Đang chuyển hướng...');
+      showOverlay('success','🎉','Chào mừng Giảng viên ' + (gv.name || nameGG) + '!','Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
       return;
     }
 
-    // Kiểm tra SV
+    // 3. Kiểm tra SV
     const sv = findEmailInRows(rowsSV, email);
     if(sv){
       localStorage.setItem('ute_email', email);
@@ -263,18 +253,19 @@ async function handleGoogleLogin(response){
       localStorage.setItem('ute_name',  sv.name || nameGG);
       localStorage.setItem('ute_maSo',  sv.maSo || '');
       localStorage.setItem('ute_nganh', sv.nganh || '');
-      showOverlay('success','🎉','Chào mừng Sinh viên!','Đang chuyển hướng...');
+      showOverlay('success','🎉','Chào mừng ' + (sv.name || nameGG) + '!','Đang chuyển hướng...');
+      // Lưu ý: Đổi tên file này nếu web SV của bạn tên khác nhé (mình để trangchusinhvien.html theo code cũ)
       setTimeout(()=>{ window.location.href = 'trangchusinhvien.html'; }, 2000);
       return;
     }
 
-    // Nếu không thuộc diện nào
-    showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','');
+    // Nếu không khớp ai
+    showOverlay('error','🚫','Bạn chưa được cấp quyền đăng nhập.','Vui lòng liên hệ Admin.');
     setTimeout(hideOverlay, 3000);
 
   } catch(err){
-    console.error(err);
-    showOverlay('error','⚠️','Lỗi kết nối hoặc xử lý dữ liệu.','');
+    console.error("LỖI ĐĂNG NHẬP:", err);
+    showOverlay('error','⚠️','Hệ thống đang bảo trì hoặc mạng yếu.','Vui lòng nhấn F5 thử lại.');
     setTimeout(hideOverlay, 3000);
   }
 }
