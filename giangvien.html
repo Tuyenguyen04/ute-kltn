@@ -871,7 +871,7 @@ function TabThongTinChung({toast, addGVNotification}) {
 }
 
 // ── FILE VIEWER MODAL ─────────────────────────────────────────────────────────
-function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) {
+function FileViewerModal({ url, studentName, fileName, isPlagiarism, isXNTT, onClose }) {
   function getDriveId(u) {
     const m = u.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
     return m ? m[1] : null;
@@ -892,15 +892,15 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, onClose }) 
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/20 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPlagiarism ? 'bg-tertiary-fixed' : 'bg-primary-fixed'}`}>
-              <span className={`material-symbols-outlined fill-icon text-xl ${!isPlagiarism ? 'text-primary' : ''}`}
-                style={isPlagiarism ? {color:'#003f29'} : {}}>
-                {isPlagiarism ? 'policy' : 'description'}
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPlagiarism ? 'bg-tertiary-fixed' : isXNTT ? 'bg-tertiary-fixed' : 'bg-primary-fixed'}`}>
+              <span className={`material-symbols-outlined fill-icon text-xl`}
+                style={isPlagiarism || isXNTT ? {color:'#003f29'} : {color:'#0046ad'}}>
+                {isPlagiarism ? 'policy' : isXNTT ? 'verified' : 'description'}
               </span>
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest leading-none mb-0.5">
-                {isPlagiarism ? 'Kết quả kiểm tra đạo văn' : 'Báo cáo thực tập'}
+                {isPlagiarism ? 'Kết quả kiểm tra đạo văn' : fileName ? fileName : 'Báo cáo thực tập'}
               </p>
               <h3 className="font-black text-on-surface text-sm truncate leading-snug">{studentName}</h3>
               {fileName && (
@@ -1102,6 +1102,9 @@ function TabSinhVienHuongDan({toast}) {
         <FileViewerModal
           url={viewerFile.url}
           studentName={viewerFile.studentName}
+          fileName={viewerFile.fileName}
+          isPlagiarism={viewerFile.isPlagiarism}
+          isXNTT={viewerFile.isXNTT}
           onClose={() => setViewerFile(null)}
         />
       )}
@@ -1343,7 +1346,7 @@ function TabSinhVienHuongDan({toast}) {
                     <td className="px-4 py-4 text-center">
                       {sv.xnttDriveUrl ? (
                         <button
-                          onClick={() => setViewerFile({ url: sv.xnttDriveUrl, studentName: sv.studentName, fileName: 'Giấy Xác Nhận Thực Tập' })}
+                          onClick={() => setViewerFile({ url: sv.xnttDriveUrl, studentName: sv.studentName, fileName: 'Giấy Xác Nhận Thực Tập', isXNTT: true })}
                           title="Xem / Tải Giấy XNTT"
                           className="inline-flex flex-col items-center gap-0.5 group">
                           <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors">
@@ -1360,7 +1363,36 @@ function TabSinhVienHuongDan({toast}) {
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4">
+                    {/* Điểm số */}
+                    <td className="px-4 py-4">
+                      {sv.grade != null && sv.status === 'graded' ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-2xl font-black text-primary">{sv.grade.toFixed(1)}</span>
+                          <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
+                        </div>
+                      ) : sv.reportSubmitted ? (
+                        <div className="flex flex-col gap-1.5 w-[110px]">
+                          <input
+                            type="number" min="0" max="10" step="0.1"
+                            value={grades[sv.maSo] ?? ''}
+                            onChange={e => setGrades(prev => ({...prev, [sv.maSo]: e.target.value}))}
+                            placeholder="0–10"
+                            className="w-full text-sm font-bold text-center bg-surface-container-low border border-outline-variant/40 rounded-xl px-2 py-2 outline-none focus:ring-2 focus:ring-primary/30"
+                          />
+                          <button
+                            onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)}
+                            disabled={saving[sv.maSo]}
+                            className="w-full py-1.5 bg-primary text-white text-[10px] font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-1">
+                            {saving[sv.maSo]
+                              ? <span className="material-symbols-outlined anim-spin text-xs">refresh</span>
+                              : <><span className="material-symbols-outlined text-xs">save</span>Lưu điểm</>}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-on-surface-variant/40 italic">Chờ nộp BC</span>
+                      )}
+                    </td>
+                    <td className="px-2 py-4 text-center">
                       <button onClick={() => toast.show('Hệ thống tin nhắn đang bảo trì!', 'warn')}
                         className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
                         <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
