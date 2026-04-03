@@ -204,12 +204,20 @@ async function handleGoogleLogin(response){
     // (để tránh trường hợp GV bị nhầm sang SV nếu email trùng)
     const gv = findEmailInRows(rowsGV, email);
     if(gv){
+      // Xác định role dựa vào cột E trong sheet
+      const roleRaw = gv.role.toLowerCase();
+      const role = roleRaw.includes('trưởng') ? 'truongbomon' : 'giangvien';
+
       localStorage.setItem('ute_email', email);
-      localStorage.setItem('ute_role',  'giangvien');           // hardcode, không lấy từ sheet
+      localStorage.setItem('ute_role',  role);
       localStorage.setItem('ute_name',  gv.name || nameGG);
       localStorage.setItem('ute_maSo',  gv.maSo || '');
       localStorage.setItem('ute_nganh', gv.nganh || '');
-      showOverlay('success','🎉','Chào mừng Giảng viên ' + (gv.name||nameGG) + '!','Đang chuyển hướng...');
+
+      const greeting = role === 'truongbomon'
+        ? 'Chào mừng Trưởng bộ môn ' + (gv.name || nameGG) + '!'
+        : 'Chào mừng Giảng viên '    + (gv.name || nameGG) + '!';
+      showOverlay('success','🎉', greeting, 'Đang chuyển hướng...');
       setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
       return;
     }
