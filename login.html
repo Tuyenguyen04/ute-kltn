@@ -180,60 +180,67 @@ function doLogin(){
 
 // ── Callback từ Google Sign-In ────────────────────────────────────────────────
 async function handleGoogleLogin(response){
-  // Giải mã JWT để lấy email và tên từ Google account
   const payload = JSON.parse(atob(response.credential.split('.')[1]));
-  const email   = payload.email;
+  const email   = payload.email.toLowerCase().trim();
   const nameGG  = payload.name || email.split('@')[0];
+
+  // ========================================================
+  // 🔴 ĐOẠN CODE TEST: ÉP QUYỀN TRƯỞNG BỘ MÔN CHO EMAIL CỦA BẠN
+  // ========================================================
+  if(email === 'lalahehe464@gmail.com') {
+      localStorage.clear();
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'truongbomon'); // Ép quyền TBM
+      localStorage.setItem('ute_name',  'PGS.TS. Trần P');
+      localStorage.setItem('ute_maSo',  '534');
+      localStorage.setItem('ute_nganh', 'Khoa học máy tính');
+      
+      showOverlay('success','🎉','Chào mừng Trưởng bộ môn!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 1500);
+      return; // Dừng luôn, không cần đọc Google Sheet nữa
+  }
+  // ========================================================
 
   showOverlay('success','⏳','Đang kiểm tra quyền truy cập...','');
 
   try {
-    // Xoá sạch session cũ trước khi lưu mới
     localStorage.clear();
-
-    // Tải song song cả 2 sheet
-    const [csvSV, csvGV] = await Promise.all([
-      fetchSheetCSV(SHEET_SV),
-      fetchSheetCSV(SHEET_GV),
+    const [csvSV, csvGV, csvTBM] = await Promise.all([
+      fetchSheetCSV(SHEET_SV), fetchSheetCSV(SHEET_GV), fetchSheetCSV(SHEET_TBM)
     ]);
+    const rowsSV = parseCSV(csvSV); const rowsGV = parseCSV(csvGV); const rowsTBM = parseCSV(csvTBM);
 
-    const rowsSV = parseCSV(csvSV);
-    const rowsGV = parseCSV(csvGV);
+    // Kiểm tra TBM
+    const tbm = findTBMInRows(rowsTBM, email);
+    if(tbm){
+      localStorage.setItem('ute_email', email); localStorage.setItem('ute_role', 'truongbomon');
+      localStorage.setItem('ute_name', tbm.name || nameGG); localStorage.setItem('ute_maSo', tbm.maSo || '');
+      showOverlay('success','🎉','Chào mừng Trưởng bộ môn!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000); return;
+    }
 
-    // ── Kiểm tra sheet Giảng viên TRƯỚC ──────────────────────────
-    // (để tránh trường hợp GV bị nhầm sang SV nếu email trùng)
+    // Kiểm tra Giảng viên
     const gv = findEmailInRows(rowsGV, email);
     if(gv){
-      localStorage.setItem('ute_email', email);
-      localStorage.setItem('ute_role',  'giangvien');           // hardcode, không lấy từ sheet
-      localStorage.setItem('ute_name',  gv.name || nameGG);
-      localStorage.setItem('ute_maSo',  gv.maSo || '');
-      localStorage.setItem('ute_nganh', gv.nganh || '');
-      showOverlay('success','🎉','Chào mừng Giảng viên ' + (gv.name||nameGG) + '!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
-      return;
+      localStorage.setItem('ute_email', email); localStorage.setItem('ute_role', 'giangvien');
+      localStorage.setItem('ute_name', gv.name || nameGG); localStorage.setItem('ute_maSo', gv.maSo || '');
+      showOverlay('success','🎉','Chào mừng Giảng viên!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000); return;
     }
 
-    // ── Kiểm tra sheet Sinh viên ──────────────────────────────────
+    // Kiểm tra Sinh viên
     const sv = findEmailInRows(rowsSV, email);
     if(sv){
-      localStorage.setItem('ute_email', email);
-      localStorage.setItem('ute_role',  'sinhvien');            // hardcode, không lấy từ sheet
-      localStorage.setItem('ute_name',  sv.name || nameGG);
-      localStorage.setItem('ute_maSo',  sv.maSo || '');
-      localStorage.setItem('ute_nganh', sv.nganh || '');
-      showOverlay('success','🎉','Chào mừng ' + (sv.name||nameGG) + '!','Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'trangchusinhvien.html'; }, 2000);
-      return;
+      localStorage.setItem('ute_email', email); localStorage.setItem('ute_role', 'sinhvien');
+      localStorage.setItem('ute_name', sv.name || nameGG); localStorage.setItem('ute_maSo', sv.maSo || '');
+      showOverlay('success','🎉','Chào mừng Sinh viên!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href = 'trangchu.html'; }, 2000); return;
     }
 
-    // Email không có trong cả 2 sheet
-    showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
+    showOverlay('error','🚫','Không có quyền truy cập.','');
     setTimeout(hideOverlay, 3000);
-
   } catch(err){
-    console.error('Login error:', err);
-    showOverlay('error','⚠️','Lỗi kết nối. Vui lòng thử lại.','');
+    showOverlay('error','⚠️','Lỗi kết nối.','');
     setTimeout(hideOverlay, 3000);
   }
 }
