@@ -53,7 +53,7 @@ borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"}}
 const {useState,useEffect,useCallback} = React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbzZzAmFCogftzuP2yXUbApjUslCyiLhG_0Ijf9Ca7xTnITZm7P2aeE6JB0Fq1E2sg0G/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxgP6aY_uj6GBG1HGfk3Eddi4yL09I6kBVh4D1NMjDjn8C47nDo7QiLHqEtfUkOIoxG/exec';
 
 // 5 ngành khớp đúng cột Ngành trong sheet GV
 const NGANH_LIST = ['QLCN','Kế toán','Thương mại điện tử','Kinh doanh quốc tế','Logistic'];
@@ -187,7 +187,7 @@ async function _gasPost(body){
 //
 const CHUNK_SIZE_BYTES = 3 * 1024 * 1024; // 3MB binary → ~4MB base64
 
-async function uploadFileInChunks(file, folderName, onProgress){
+async function uploadFileInChunks(file, folderName, onProgress, extraFinalizeParams){
   // Đọc toàn bộ file thành ArrayBuffer
   const buffer = await new Promise((res,rej)=>{
     const r=new FileReader();
@@ -238,11 +238,13 @@ async function uploadFileInChunks(file, folderName, onProgress){
   }
 
   // Finalize: ghép và lưu file trên GAS
+  // [v2.6] Truyền thêm nganh/gvName/gvEmail/subFolder để GAS lưu đúng folder cấu trúc
   const finalRes = await _gasPost({
     action:'finalizeUpload',
     uploadId, totalChunks,
     fileName:file.name, mimeType:file.type||'application/octet-stream',
     folderName,
+    ...(extraFinalizeParams||{}),
   });
   if(!finalRes.success) throw new Error(finalRes.message||'Finalize thất bại');
   console.log('🎉 Upload hoàn tất:', finalRes.driveUrl);
@@ -255,7 +257,7 @@ async function uploadFileInChunks(file, folderName, onProgress){
 const DIRECT_UPLOAD_LIMIT = 15 * 1024 * 1024; // 15MB
 
 async function apiPostFile(body, onProgress){
-  const { _file, folderName, ...rest } = body;
+  const { _file, folderName, nganh, gvName, gvEmail, subFolder, ...rest } = body;
 
   // Nếu body truyền _file object (File API) → dùng chunked logic
   if(_file && _file instanceof File){
@@ -276,7 +278,13 @@ async function apiPostFile(body, onProgress){
       return result;
     } else {
       // Chunked upload
-      const driveUrl = await uploadFileInChunks(_file, folderName||'Upload_UTE', onProgress);
+      // Chunked upload: truyền nganh/gvName/gvEmail/subFolder vào finalizeUpload để lưu đúng folder
+      const extraFinalizeParams = {};
+      if(nganh) extraFinalizeParams.nganh = nganh;
+      if(gvName) extraFinalizeParams.gvName = gvName;
+      if(gvEmail) extraFinalizeParams.gvEmail = gvEmail;
+      if(subFolder) extraFinalizeParams.subFolder = subFolder;
+      const driveUrl = await uploadFileInChunks(_file, folderName||'Upload_UTE', onProgress, extraFinalizeParams);
       // Gọi action chính với driveUrl (không có fileBase64)
       return await _gasPost({ ...rest, driveUrl,
         fileName:_file.name, mimeType:_file.type||'application/octet-stream',
@@ -1725,6 +1733,11 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
     try{
       // Bước 1: Upload Báo cáo
       setProgressLabel('Đang upload Báo cáo...');
+      // [v2.6] Truyền nganh/gvName/gvEmail/subFolder để đúng folder Drive cấu trúc
+      const nganh  = dashData?.nganh || SESSION.nganh || '';
+      const gvName = instr?.name  || '';
+      const gvMail = instr?.email || '';
+
       const res=await apiPostFile({
         action:'submitReport',
         email:SESSION.email,
@@ -1732,10 +1745,11 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
         maSo:SESSION.maSo,
         topic,
         semester:sem,
-        instructorEmail:instr?.email||'',
-        instructorName:instr?.name||'',
+        instructorEmail:gvMail,
+        instructorName:gvName,
         note:note.trim(),
         folderName:'BaoCaoTT_UTE',
+        nganh, gvName, gvEmail:gvMail, subFolder:'BCTT',
         _file:file,
       }, pct=>setProgress(Math.round(pct*0.5)));
 
@@ -1750,16 +1764,18 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
         maSo:SESSION.maSo,
         topic,
         semester:sem,
-        instructorEmail:instr?.email||'',
-        instructorName:instr?.name||'',
+        instructorEmail:gvMail,
+        instructorName:gvName,
         folderName:'GiayXNTT_UTE',
+        nganh, gvName, gvEmail:gvMail, subFolder:'GiayXNTT',
         _file:fileXNTT,
       }, pct=>setProgress(50+Math.round(pct*0.5)));
 
-      if(resXNTT?.success||resXNTT?.message?.includes('success')||resXNTT?.driveUrl){
+      // [v2.6] Chỉ coi thành công khi GAS trả success:true rõ ràng
+      if(resXNTT?.success){
         setDone(true);
       } else {
-        // BC đã nộp thành công, XNTT thất bại → vẫn coi là thành công BC nhưng thông báo
+        // BC đã nộp thành công, XNTT thất bại → cảnh báo nhưng vẫn cho tiếp tục
         toast.show('Báo cáo đã nộp! Lỗi upload giấy XNTT: '+(resXNTT?.message||'Thử lại sau.'),'warn');
         setDone(true);
       }
