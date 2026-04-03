@@ -1744,7 +1744,7 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
       // Bước 2: Upload Giấy XNTT
       setProgressLabel('Đang upload Giấy xác nhận...');
       const resXNTT=await apiPostFile({
-        action:'submitXNTT',
+        action:'savePlagiarism',
         email:SESSION.email,
         name:SESSION.name,
         maSo:SESSION.maSo,
