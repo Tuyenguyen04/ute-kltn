@@ -2721,39 +2721,55 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
     </div>
   );
 }
-
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
 function App(){
   // ── Auth guard + role routing ──────────────────────────────────
-  useEffect(()=>{
-    const role=localStorage.getItem('ute_role');
-    const email=localStorage.getItem('ute_email');
-    if(!role||!email){
-      window.location.href='login.html';
+  useEffect(() => {
+    const role = localStorage.getItem('ute_role');
+    const email = localStorage.getItem('ute_email');
+
+    // Nếu chưa đăng nhập thì đuổi về trang login
+    if (!role || !email) {
+      window.location.href = 'login.html';
       return;
     }
-    // Giảng viên → chuyển sang giangvien.html
-    if(role==='giangvien'){
-      window.location.href='giangvien.html';
+
+    // Chuẩn hóa role về chữ thường, cắt khoảng trắng để so sánh không bị lỗi
+    const safeRole = role.toLowerCase().trim();
+
+    // 1. FIX LỖI NHẢY TRANG: 
+    // Nếu đúng là tài khoản Sinh viên thì CHẶN LUÔN tại đây, ép ở lại trang này.
+    if (safeRole.includes('sinh') || safeRole === 'sv') {
+      return; // Dừng hàm, không cho chạy xuống lệnh chuyển sang trang giảng viên
+    }
+
+    // Nếu đúng là Giảng viên thì mới chuyển sang giangvien.html
+    if (safeRole.includes('giảng') || safeRole === 'giangvien' || safeRole === 'gv') {
+      window.location.href = 'giangvien.html';
       return;
     }
-    // Admin → chuyển sang trangchu (hoặc admin.html nếu có)
-  },[]);
+  }, []);
 
-  const [tab,setTab]=useState(()=>sessionStorage.getItem('ute_tab')||'dashboard');
-  // Persist tab mỗi khi đổi để reload giữ nguyên vị trí
-  const setTabPersist=useCallback((t)=>{sessionStorage.setItem('ute_tab',t);setTab(t);},[]);
-  const [dashData,setDashData]=useState(null);
-  const [loadingDash,setLoadingDash]=useState(true);
-  const [instructorList,setInstructorList]=useState([]);
-  const [loadingGV,setLoadingGV]=useState(false);
-  const [notifications,setNotifications]=useState([]);
-  const [showSubmitReport,setShowSubmitReport]=useState(false);
-  const [showSubmitKLTN,setShowSubmitKLTN]=useState(false);
-  const [kltnInstructorList,setKltnInstructorList]=useState([]);
-  const [loadingKltnGV,setLoadingKltnGV]=useState(false);
-  const toast=useToast();
+  // 2. FIX LỖI RELOAD BỊ ĐỔI GIAO DIỆN (Mất tab đang xem)
+  // Thay sessionStorage bằng localStorage để trình duyệt ghi nhớ Tab vĩnh viễn
+  const [tab, setTab] = useState(() => localStorage.getItem('ute_tab') || 'dashboard');
+  
+  // Lưu tab vào localStorage mỗi khi người dùng chuyển trang
+  const setTabPersist = useCallback((t) => {
+    localStorage.setItem('ute_tab', t);
+    setTab(t);
+  }, []);
 
+  const [dashData, setDashData] = useState(null);
+  const [loadingDash, setLoadingDash] = useState(true);
+  const [instructorList, setInstructorList] = useState([]);
+  const [loadingGV, setLoadingGV] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showSubmitReport, setShowSubmitReport] = useState(false);
+  const [showSubmitKLTN, setShowSubmitKLTN] = useState(false);
+  const [kltnInstructorList, setKltnInstructorList] = useState([]);
+  const [loadingKltnGV, setLoadingKltnGV] = useState(false);
+  const toast = useToast();
   // ── Tính unlock/disable trạng thái KLTN ────────────────────────
   const grade=dashData?.grade;
   const locked=dashData?.gradeLocked||false;
