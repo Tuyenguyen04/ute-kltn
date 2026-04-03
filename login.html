@@ -237,6 +237,184 @@ async function handleGoogleLogin(response){
     setTimeout(hideOverlay, 3000);
   }
 }
+<script>
+const ADMIN_USER = 'admin', ADMIN_PASS = 'ute2025';
+
+// ── Cấu hình Google Sheet ─────────────────────────────────────────────────────
+const SHEET_ID = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
+const SHEET_SV = 'Sinh viên đợt 1';
+const SHEET_GV = 'Giảng viên phụ trách';
+const SHEET_TBM = 'Trưởng bộ môn'; // Thêm sheet Trưởng bộ môn
+
+// ── Helper UI ─────────────────────────────────────────────────────────────────
+function ce(id){ document.getElementById(id).classList.remove('has-error'); }
+
+function showOverlay(type, icon, msg, sub){
+  const ov = document.getElementById('overlay');
+  document.getElementById('ov-icon').textContent = icon;
+  document.getElementById('ov-msg').textContent  = msg;
+  document.getElementById('ov-sub').textContent  = sub || '';
+  ov.className = 'overlay show ' + type;
+}
+function hideOverlay(){
+  document.getElementById('overlay').className = 'overlay';
+}
+
+// ── Đọc CSV trực tiếp từ Google Sheet ────────────────────────────────────────
+async function fetchSheetCSV(sheetName){
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('Không tải được sheet: ' + sheetName);
+  return res.text();
+}
+
+function parseCSV(text){
+  return text.trim().split('\n').map(line => {
+    const cols = [];
+    let cur = '', inQ = false;
+    for(let i = 0; i < line.length; i++){
+      const c = line[i];
+      if(c === '"'){ inQ = !inQ; }
+      else if(c === ',' && !inQ){ cols.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    cols.push(cur.trim());
+    return cols;
+  });
+}
+
+// Tìm Sinh viên / Giảng viên (Cột F = Ngành -> index 5)
+function findEmailInRows(rows, email){
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row || row.length < 4) continue;
+    const rowEmail = (row[3] || '').replace(/"/g, '').trim().toLowerCase();
+    if(rowEmail === email.toLowerCase()){
+      return {
+        name  : (row[1] || '').replace(/"/g, '').trim(),
+        maSo  : (row[2] || '').replace(/"/g, '').trim(),
+        role  : (row[4] || '').replace(/"/g, '').trim(),
+        nganh : (row[5] || '').replace(/"/g, '').trim(), 
+      };
+    }
+  }
+  return null;
+}
+
+// Tìm Trưởng bộ môn (Cột H = Ngành -> index 7 theo cấu trúc GS của bạn)
+function findTBMInRows(rows, email){
+  for(let i = 1; i < rows.length; i++){
+    const row = rows[i];
+    if(!row || row.length < 4) continue;
+    const rowEmail = (row[3] || '').replace(/"/g, '').trim().toLowerCase();
+    if(rowEmail === email.toLowerCase()){
+      return {
+        name  : (row[1] || '').replace(/"/g, '').trim(),
+        maSo  : (row[2] || '').replace(/"/g, '').trim(),
+        nganh : (row[7] || '').replace(/"/g, '').trim(), // Cột H
+      };
+    }
+  }
+  return null;
+}
+
+// ── Đăng nhập Admin ──────────────────────────────────────────────────────────
+function doLogin(){
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  let ok = true;
+  if(!u){ document.getElementById('fu').classList.add('has-error'); ok=false; }
+  if(!p){ document.getElementById('fp').classList.add('has-error'); ok=false; }
+  if(!ok) return;
+
+  if(u === ADMIN_USER && p === ADMIN_PASS){
+    localStorage.setItem('ute_email', 'admin');
+    localStorage.setItem('ute_role',  'admin');
+    localStorage.setItem('ute_name',  'Administrator');
+    localStorage.setItem('ute_maSo',  'ADMIN');
+    showOverlay('success','✅','Đăng nhập thành công!','Đang chuyển hướng...');
+    setTimeout(()=>{ window.location.href = 'admin.html'; }, 2000);
+  } else {
+    showOverlay('error','🚫','Tên đăng nhập hoặc mật khẩu không đúng.','');
+    setTimeout(hideOverlay, 3000);
+  }
+}
+
+// ── Callback từ Google Sign-In ────────────────────────────────────────────────
+async function handleGoogleLogin(response){
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  const email   = payload.email;
+  const nameGG  = payload.name || email.split('@')[0];
+
+  showOverlay('success','⏳','Đang kiểm tra quyền truy cập...','');
+
+  try {
+    localStorage.clear();
+
+    // Tải song song cả 3 sheet (Thêm sheet TBM)
+    const [csvSV, csvGV, csvTBM] = await Promise.all([
+      fetchSheetCSV(SHEET_SV),
+      fetchSheetCSV(SHEET_GV),
+      fetchSheetCSV(SHEET_TBM) // <--- MỚI
+    ]);
+
+    const rowsSV = parseCSV(csvSV);
+    const rowsGV = parseCSV(csvGV);
+    const rowsTBM = parseCSV(csvTBM); // <--- MỚI
+
+    // ── 1. Kiểm tra sheet Trưởng bộ môn TRƯỚC TIÊN ─────────────────
+    // Phải kiểm tra trước vì TBM cũng có thể nằm trong danh sách GV
+    const tbm = findTBMInRows(rowsTBM, email);
+    if(tbm){
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'truongbomon'); // Gán đúng role
+      localStorage.setItem('ute_name',  tbm.name || nameGG);
+      localStorage.setItem('ute_maSo',  tbm.maSo || '');
+      localStorage.setItem('ute_nganh', tbm.nganh || '');
+      
+      showOverlay('success','🎉','Chào mừng Trưởng bộ môn ' + (tbm.name||nameGG) + '!','Đang chuyển hướng...');
+      
+      // LƯU Ý: Chuyển hướng tới trang dashboard của TBM (hoặc giangvien.html nếu bạn gộp chung giao diện)
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000); 
+      return;
+    }
+
+    // ── 2. Kiểm tra sheet Giảng viên ──────────────────────────────
+    const gv = findEmailInRows(rowsGV, email);
+    if(gv){
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'giangvien');
+      localStorage.setItem('ute_name',  gv.name || nameGG);
+      localStorage.setItem('ute_maSo',  gv.maSo || '');
+      localStorage.setItem('ute_nganh', gv.nganh || '');
+      showOverlay('success','🎉','Chào mừng Giảng viên ' + (gv.name||nameGG) + '!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
+      return;
+    }
+
+    // ── 3. Kiểm tra sheet Sinh viên ───────────────────────────────
+    const sv = findEmailInRows(rowsSV, email);
+    if(sv){
+      localStorage.setItem('ute_email', email);
+      localStorage.setItem('ute_role',  'sinhvien');
+      localStorage.setItem('ute_name',  sv.name || nameGG);
+      localStorage.setItem('ute_maSo',  sv.maSo || '');
+      localStorage.setItem('ute_nganh', sv.nganh || '');
+      showOverlay('success','🎉','Chào mừng ' + (sv.name||nameGG) + '!','Đang chuyển hướng...');
+      setTimeout(()=>{ window.location.href = 'trangchusinhvien.html'; }, 2000);
+      return;
+    }
+
+    // Email không có trong cả 3 sheet
+    showOverlay('error','🚫','Bạn chưa đủ điều kiện để đăng nhập.','Email không có trong danh sách được phép');
+    setTimeout(hideOverlay, 3000);
+
+  } catch(err){
+    console.error('Login error:', err);
+    showOverlay('error','⚠️','Lỗi kết nối. Vui lòng thử lại.','');
+    setTimeout(hideOverlay, 3000);
+  }
+}
 </script>
 </body>
 </html>
