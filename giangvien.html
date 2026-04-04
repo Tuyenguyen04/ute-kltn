@@ -2308,15 +2308,13 @@ function TabThongKe({toast}) {
   );
 }
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
-// ── APP ROOT ──────────────────────────────────────────────────────────────────
 function App() {
   React.useEffect(() => {
     const role  = localStorage.getItem('ute_role');
     const email = localStorage.getItem('ute_email');
     if (!role || !email) { window.location.href = 'login.html'; return; }
-    if (role === 'sinhvien') { window.location.href = 'trangchu.html'; return; }
+    if (role === 'sinhvien') { window.location.href = 'trangchusinhvien.html'; return; } 
   }, []);
-
   const [tab,  setTab]  = React.useState('dashboard');
   const toast            = useToast();
 
