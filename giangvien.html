@@ -1086,16 +1086,17 @@ function TabSinhVienHuongDan({toast}) {
       setKltnLoading(false);
     })();
   }, []);
-
-  async function handleApproveOutline(sv) {
+async function handleApproveOutline(sv) {
     setKltnProcessing(sv.studentEmail);
     try {
+      // Đã sửa 'updateStatus' thành 'updateKLTNStatus' và thêm step: 2
       const res = await apiPost({
-        action: 'updateStatus',
-        type: 'kltn',
+        action: 'updateKLTNStatus', 
         studentEmail: sv.studentEmail,
         status: 'approved',
+        step: 2 // Cập nhật sang bước 2 (Đang thực hiện)
       });
+      
       if (res.success) {
         toast.show(`✅ Đã duyệt đề cương của ${sv.studentName}!`, 'success');
         setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail));
@@ -1106,17 +1107,17 @@ function TabSinhVienHuongDan({toast}) {
     } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setKltnProcessing(null);
   }
-
-  async function handleRejectOutline(sv, reason) {
+async function handleRejectOutline(sv, reason) {
     setKltnProcessing(sv.studentEmail);
     try {
+      // Đã sửa 'updateStatus' thành 'updateKLTNStatus' và 'reason' thành 'note'
       const res = await apiPost({
-        action: 'updateStatus',
-        type: 'kltn',
+        action: 'updateKLTNStatus',
         studentEmail: sv.studentEmail,
         status: 'rejected',
-        reason: reason || '',
+        note: reason || '', 
       });
+      
       if (res.success) {
         toast.show(`Đã từ chối đề cương của ${sv.studentName}.`, 'warn');
         setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail));
@@ -1127,7 +1128,6 @@ function TabSinhVienHuongDan({toast}) {
     setKltnProcessing(null);
     setRejectOutlineTarget(null);
   }
-
   const filtered = students.filter(s =>
     s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
   );
