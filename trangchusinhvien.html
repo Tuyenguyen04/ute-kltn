@@ -732,14 +732,16 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             return(
               <>
                 {/* KLTNActionPanel + Hành trình KLTN cùng hàng */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-                  <KLTNActionPanel
-                    dashData={dashData}
-                    onRegisterKLTN={onRegisterKLTN}
-                    onSubmitKLTN={onSubmitKLTN}
-                    toast={toast}
-                  />
-                  <section className="h-full p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+                  <div className="md:col-span-7 h-full">
+                    <KLTNActionPanel
+                      dashData={dashData}
+                      onRegisterKLTN={onRegisterKLTN}
+                      onSubmitKLTN={onSubmitKLTN}
+                      toast={toast}
+                    />
+                  </div>
+                  <section className="md:col-span-5 h-full p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
                     <div className="flex items-center justify-between mb-8">
                       <h3 className="text-lg font-bold">Hành trình KLTN</h3>
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black
