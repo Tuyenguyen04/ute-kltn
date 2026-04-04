@@ -2352,51 +2352,53 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
 }
 
 // ── KLTN REGISTRATION FLOW ───────────────────────────────────────────────────
-function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
+// GV hướng dẫn KLTN = GV hướng dẫn BCTT, không được đổi.
+// Chỉ 2 bước: (1) Nhập đề tài + chọn đợt → (2) Xác nhận + hiển thị GV cố định
+function KLTNRegistration({onSuccess,dashData}){
   const [step,setStep]=useState(1);
-  const [form,setForm]=useState({topic:'',category:'',semester:'',startDate:'',note:''});
-  const [selGV,setSelGV]=useState(null);
+  const [form,setForm]=useState({topic:'',semester:'',startDate:'',note:''});
   const [showConfirm,setShowConfirm]=useState(false);
   const [showSuccess,setShowSuccess]=useState(false);
   const [submitting,setSubmitting]=useState(false);
   const toast=useToast();
 
-  // Lấy GV hướng dẫn BCTT làm gợi ý mặc định (SV có thể chọn lại)
+  // GV cố định từ BCTT — không cho đổi
   const bcttInstr = dashData?.instructor||null;
+  const gv = bcttInstr
+    ? { name: bcttInstr.name||'', email: bcttInstr.email||'', id: bcttInstr.id||'' }
+    : null;
 
   function setSem(v){setForm(f=>({...f,semester:v,startDate:SEM_DATE[v]||''}))}
 
   function next1(){
     if(!form.topic.trim()){toast.show('Vui lòng nhập tên đề tài KLTN!','error');return;}
-    if(!form.category){toast.show('Vui lòng chọn ngành!','error');return;}
-    if(!form.semester){toast.show('Vui lòng chọn học kỳ!','error');return;}
+    if(!form.semester){toast.show('Vui lòng chọn đợt / học kỳ!','error');return;}
+    if(!gv){toast.show('Không tìm thấy thông tin giảng viên hướng dẫn BCTT!','error');return;}
     setStep(2);window.scrollTo(0,0);
   }
-  function next2(){
-    if(!selGV){toast.show('Vui lòng chọn giảng viên hướng dẫn!','error');return;}
-    setStep(3);window.scrollTo(0,0);
-  }
+
+  const termLabel = form.semester==='D1-HK1-2526'?'Đợt 1 - HK1 NH25-26'
+    :form.semester==='D2-HK1-2526'?'Đợt 2 - HK1 NH25-26'
+    :form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26'
+    :form.semester==='D2-HK2-2526'?'Đợt 2 - HK2 NH25-26':'';
 
   async function confirm(){
+    if(!gv){toast.show('Không có thông tin giảng viên!','error');return;}
     setSubmitting(true);
     try{
-      const termLabel = form.semester==='D1-HK1-2526'?'Đợt 1 - HK1 NH25-26'
-        :form.semester==='D2-HK1-2526'?'Đợt 2 - HK1 NH25-26'
-        :form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26'
-        :'Đợt 2 - HK2 NH25-26';
-      // GAS: action='submitKLTN' ghi vào sheet DangKyKLTN (không phải submitRegistration)
       const res=await apiPost({
-        action:'submitKLTN',
+        action:'submitRegistration',
+        type:'kltn',
         email:SESSION.email,
         name:SESSION.name,
         maSo:SESSION.maSo,
-        nganh:SESSION.nganh||form.category,
-        topic:form.topic,
-        instructorName:selGV.name,
-        instructorEmail:selGV.email,
-        instructorId:selGV.id||selGV.code,
+        nganh:SESSION.nganh||dashData?.nganh||'',
+        topic:form.topic.trim(),
+        instructorName:gv.name,
+        instructorEmail:gv.email,
+        instructorId:gv.id,
         term:termLabel,
-        note:form.note||'',
+        note:form.note.trim()||'',
       });
       if(res.success){
         setShowConfirm(false);
@@ -2411,7 +2413,7 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
     }
   }
 
-  const STEPS=['Thông tin KLTN','Chọn Giảng viên','Hoàn tất'];
+  const STEPS=['Thông tin KLTN','Xác nhận & Gửi'];
   const StepBar=()=>(
     <nav className="flex items-center gap-2 w-full mb-6">
       {STEPS.map((l,i)=>{
@@ -2432,21 +2434,6 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
     </nav>
   );
 
-  const RightPanel=()=>(
-    <div className="space-y-5">
-      {/* Nhắc BCTT đã pass */}
-      <div className="bg-primary-fixed/40 border border-primary-fixed-dim/30 rounded-3xl p-6">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="material-symbols-outlined text-primary">verified</span>
-          <span className="font-bold text-on-primary-fixed text-sm">Điều kiện đã đạt</span>
-        </div>
-        <p className="text-xs text-on-primary-fixed/80 leading-relaxed">
-          Bạn đã hoàn thành BCTT với điểm đạt yêu cầu. Bây giờ bạn có thể đăng ký Khóa Luận Tốt Nghiệp.
-        </p>
-      </div>
-    </div>
-  );
-
   return(
     <div className="anim-fade">
       {toast.toast&&<Toast {...toast.toast} onClose={toast.hide}/>}
@@ -2459,17 +2446,22 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
               <span className="material-symbols-outlined text-4xl">school</span>
             </div>
             <h2 className="font-headline font-extrabold text-2xl text-on-surface mb-3">Xác nhận đăng ký KLTN?</h2>
-            <p className="text-on-surface-variant mb-2 leading-relaxed">Hệ thống sẽ ghi nhận và gửi thông báo đến:</p>
+            <p className="text-on-surface-variant mb-2 leading-relaxed text-sm">Hệ thống sẽ ghi nhận và gửi thông báo đến:</p>
             <div className="mb-6 px-4 py-3 bg-surface-container-low rounded-xl w-full text-sm">
-              <p className="font-bold text-on-surface">{selGV?.name}</p>
-              <p className="text-on-surface-variant text-xs mt-1">📧 {selGV?.email}</p>
+              <p className="font-bold text-on-surface">{gv?.name}</p>
+              <p className="text-on-surface-variant text-xs mt-1">📧 {gv?.email}</p>
             </div>
             <div className="flex flex-col w-full gap-3">
               <button onClick={confirm} disabled={submitting}
                 className="w-full py-4 bg-primary text-white font-bold rounded-2xl shadow-lg hover:bg-primary-container transition-all flex items-center justify-center gap-2 disabled:opacity-70">
-                {submitting?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>:'Xác nhận & Gửi'}
+                {submitting
+                  ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>
+                  :<><span className="material-symbols-outlined text-sm">send</span>Xác nhận & Gửi</>}
               </button>
-              <button onClick={()=>setShowConfirm(false)} className="w-full py-4 text-on-surface font-bold rounded-2xl hover:bg-surface-container transition-all">Hủy bỏ</button>
+              <button onClick={()=>setShowConfirm(false)} disabled={submitting}
+                className="w-full py-4 text-on-surface font-bold rounded-2xl hover:bg-surface-container transition-all disabled:opacity-50">
+                Hủy bỏ
+              </button>
             </div>
           </div>
         </div>
@@ -2484,10 +2476,10 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
             </div>
             <h3 className="text-2xl font-headline font-black text-on-surface mb-3 leading-tight">Đăng ký KLTN thành công!</h3>
             <p className="text-on-surface-variant text-sm mb-2 leading-relaxed">
-              Yêu cầu đã được gửi đến giảng viên <strong>{selGV?.name}</strong>.
+              Yêu cầu đã được gửi đến giảng viên <strong>{gv?.name}</strong>.
             </p>
             <div className="p-3 bg-surface-container-low rounded-xl text-xs text-on-surface-variant mb-8">
-              📧 Email thông báo đã gửi tới {selGV?.email}
+              📧 Email thông báo đã gửi tới {gv?.email}
             </div>
             <button onClick={onSuccess} className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20">
               Về trang chủ
@@ -2496,237 +2488,166 @@ function KLTNRegistration({onSuccess,instructorList,loadingGV,dashData}){
         </div>
       )}
 
-      <div className="w-full">
-        <div className="w-full space-y-5">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <span className="px-3 py-1 bg-primary-fixed text-on-primary-fixed text-[10px] font-black rounded-full tracking-wider">KLTN</span>
-              <h2 className="text-3xl font-headline font-extrabold text-on-surface tracking-tight">Đăng ký Khóa Luận Tốt Nghiệp</h2>
-            </div>
-            <p className="text-on-surface-variant text-sm">Vui lòng cung cấp đầy đủ thông tin đề tài và giảng viên hướng dẫn.</p>
+      <div className="w-full space-y-5">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="px-3 py-1 bg-primary-fixed text-on-primary-fixed text-[10px] font-black rounded-full tracking-wider">KLTN</span>
+            <h2 className="text-3xl font-headline font-extrabold text-on-surface tracking-tight">Đăng ký Khóa Luận Tốt Nghiệp</h2>
           </div>
-          <StepBar/>
-
-          {/* STEP 1 — Thông tin KLTN */}
-          {step===1&&(
-            <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm anim-fade">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-semibold text-on-surface-variant">Tên đề tài KLTN <span className="text-error">*</span></label>
-                  <input value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}
-                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60"
-                    placeholder="Nhập tên đề tài khóa luận tốt nghiệp..."/>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-on-surface-variant">Ngành <span className="text-error">*</span></label>
-                  <div className="relative">
-                    <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}
-                      className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface">
-                      <option value="">Chọn ngành</option>
-                      {NGANH_LIST.map(n=><option key={n} value={n}>{n}</option>)}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-on-surface-variant">Đợt - Học kỳ <span className="text-error">*</span></label>
-                  <div className="relative">
-                    <select value={form.semester} onChange={e=>setSem(e.target.value)}
-                      className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface">
-                      <option value="">Chọn học kỳ</option>
-                      <option value="D1-HK1-2526">Đợt 1 - HK1 NH25-26</option>
-                      <option value="D2-HK1-2526">Đợt 2 - HK1 NH25-26</option>
-                      <option value="D1-HK2-2526">Đợt 1 - HK2 NH25-26</option>
-                      <option value="D2-HK2-2526">Đợt 2 - HK2 NH25-26</option>
-                    </select>
-                    <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-on-surface-variant">Thời gian bắt đầu</label>
-                  <div className="flex items-center gap-3 bg-surface-container border border-outline-variant/20 rounded-xl px-4 py-4 text-on-surface-variant cursor-not-allowed">
-                    <span className="material-symbols-outlined text-sm">lock</span>
-                    <span>{form.startDate||'Tự động sau khi chọn học kỳ'}</span>
-                  </div>
-                </div>
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-semibold text-on-surface-variant">Ghi chú (tùy chọn)</label>
-                  <textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} rows={3}
-                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60 resize-none"
-                    placeholder="Mô tả tóm tắt đề tài, hướng nghiên cứu..."/>
-                </div>
-              </div>
-              <div className="flex justify-end pt-6 border-t border-outline-variant/10 mt-6">
-                <button onClick={next1}
-                  className="bg-gradient-to-br from-primary to-primary-container text-white px-10 py-4 rounded-xl font-headline font-bold text-sm shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2">
-                  Tiếp theo <span className="material-symbols-outlined text-sm">arrow_forward</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 2 — Chọn Giảng viên */}
-          {step===2&&(
-            <div className="anim-fade space-y-4">
-              {/* Gợi ý GV BCTT cũ */}
-              {bcttInstr&&bcttInstr.name&&(
-                <div className="flex items-center gap-4 p-4 bg-primary-fixed/20 border border-primary-fixed-dim/30 rounded-2xl">
-                  <span className="material-symbols-outlined text-primary text-xl">tips_and_updates</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-on-surface">Gợi ý: GV hướng dẫn BCTT của bạn</p>
-                    <p className="text-xs text-on-surface-variant truncate">{bcttInstr.name} — {bcttInstr.email}</p>
-                  </div>
-                  <button onClick={()=>{
-                    // Tìm GV này trong instructorList để set đúng object
-                    const found=instructorList.find(iv=>iv.email===bcttInstr.email);
-                    if(found)setSelGV(found);
-                    else setSelGV({name:bcttInstr.name,email:bcttInstr.email,id:bcttInstr.id,code:bcttInstr.id,nganh:SESSION.nganh,slConLai:1,slDangKi:0});
-                  }}
-                    className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container transition-all flex-shrink-0">
-                    Chọn GV này
-                  </button>
-                </div>
-              )}
-
-              {loadingGV?(
-                <Spinner text="Đang tải danh sách giảng viên..."/>
-              ):(
-                <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                      <thead>
-                        <tr className="bg-surface-container-low text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">
-                          <th className="px-6 py-4">Giảng viên</th>
-                          <th className="px-5 py-4">Mã / Email</th>
-                          <th className="px-5 py-4">Ngành</th>
-                          <th className="px-5 py-4">Còn nhận</th>
-                          <th className="px-5 py-4 text-right">Chọn</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-outline-variant/10">
-                        {instructorList.filter(iv=>!form.category||iv.nganh===form.category).length===0?(
-                          <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-on-surface-variant">Không có dữ liệu giảng viên</td></tr>
-                        ):instructorList.filter(iv=>!form.category||iv.nganh===form.category).map((iv,idx)=>{
-                          const rem=typeof iv.slConLai==='number'?iv.slConLai:parseInt(iv.slConLai)||0;
-                          const full=rem<=0;
-                          const total=rem+((typeof iv.slDangKi==='number'?iv.slDangKi:0)||0);
-                          const pct=total>0?Math.min(100,Math.round(((total-rem)/total)*100)):full?100:0;
-                          const ini=iv.name.trim().split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
-                          const sel=selGV?.email===iv.email;
-                          return(
-                            <tr key={idx} onClick={()=>!full&&setSelGV(iv)}
-                              className={`transition-colors ${full?'opacity-50 bg-surface-container-low/40 cursor-not-allowed':sel?'bg-blue-50':'hover:bg-blue-50/30 cursor-pointer'}`}>
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="h-10 w-10 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xs flex-shrink-0">{ini}</div>
-                                  <div>
-                                    <p className={`font-bold text-sm ${sel?'text-primary':'text-on-surface'}`}>{iv.name}</p>
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${full?'bg-error-container text-on-error-container':'bg-primary-fixed text-on-primary-fixed'}`}>
-                                      {full?'Đã đầy':'Còn chỗ'}
-                                    </span>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-5 py-4">
-                                <p className="text-sm font-medium text-on-surface">GV{iv.id||iv.code}</p>
-                                <p className="text-xs text-on-surface-variant truncate max-w-[140px]">{iv.email}</p>
-                              </td>
-                              <td className="px-5 py-4"><span className="px-2 py-1 rounded-lg bg-surface-container text-xs font-semibold">{iv.nganh}</span></td>
-                              <td className="px-5 py-4">
-                                <div className="w-20 bg-surface-container-highest h-1.5 rounded-full overflow-hidden mb-1">
-                                  <div className={`h-full rounded-full ${full?'bg-error':pct>=70?'bg-secondary-container':'bg-primary'}`} style={{width:`${pct}%`}}/>
-                                </div>
-                                <p className="text-xs font-bold text-on-surface-variant">
-                                  <span className={full?'text-error':'text-primary'}>{rem}</span> còn lại
-                                </p>
-                              </td>
-                              <td className="px-5 py-4 text-right">
-                                <input type="radio" name="gv_kltn" disabled={full} checked={sel}
-                                  onChange={()=>!full&&setSelGV(iv)}
-                                  className="h-5 w-5 text-primary border-outline-variant focus:ring-primary cursor-pointer disabled:cursor-not-allowed"/>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <button onClick={()=>setStep(1)} className="flex items-center gap-2 px-6 py-3 rounded-xl border border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-colors">
-                  <span className="material-symbols-outlined">arrow_back</span>Quay lại
-                </button>
-                <button onClick={next2} className="flex items-center gap-2 px-8 py-3 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-bold shadow-lg hover:scale-[1.02] transition-all">
-                  Tiếp theo <span className="material-symbols-outlined">arrow_forward</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3 — Rà soát */}
-          {step===3&&(
-            <div className="anim-fade space-y-5">
-              <div>
-                <h3 className="text-2xl font-headline font-extrabold text-on-surface mb-1">Rà soát thông tin đăng ký KLTN</h3>
-                <p className="text-on-surface-variant text-sm">Kiểm tra kỹ trước khi xác nhận gửi yêu cầu.</p>
-              </div>
-              <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-outline-variant/10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-primary-fixed rounded-xl text-primary"><span className="material-symbols-outlined fill-icon">school</span></div>
-                  <h4 className="font-headline font-bold text-lg">Phần 1: Thông tin KLTN</h4>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
-                  {[
-                    {l:'Tên đề tài KLTN',v:form.topic},
-                    {l:'Ngành',v:form.category},
-                    {l:'Thời gian bắt đầu',v:form.startDate},
-                    {l:'Học kỳ',v:form.semester==='D1-HK1-2526'?'Đợt 1 - HK1 NH25-26':form.semester==='D2-HK1-2526'?'Đợt 2 - HK1 NH25-26':form.semester==='D1-HK2-2526'?'Đợt 1 - HK2 NH25-26':'Đợt 2 - HK2 NH25-26'},
-                    {l:'Ghi chú',v:form.note||'(không có)'},
-                  ].map((r,i)=>(
-                    <div key={i} className={r.l.includes('đề tài')?'md:col-span-2':''}>
-                      <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">{r.l}</label>
-                      <p className="text-on-surface font-semibold">{r.v}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-outline-variant/10">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-primary-fixed rounded-xl text-primary"><span className="material-symbols-outlined fill-icon">person_check</span></div>
-                  <h4 className="font-headline font-bold text-lg">Phần 2: Giảng viên hướng dẫn KLTN</h4>
-                </div>
-                {selGV&&(
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-                    <Av name={selGV.name} cls="w-16 h-16 rounded-2xl text-xl flex-shrink-0"/>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
-                      {[{l:'Họ và tên',v:selGV.name},{l:'Mã GV',v:`GV${selGV.id||selGV.code}`},{l:'Email',v:selGV.email}].map((r,i)=>(
-                        <div key={i}>
-                          <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">{r.l}</label>
-                          <p className={`font-bold text-on-surface text-sm ${i===2?'text-primary break-all':''}`}>{r.v}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="bg-surface-container p-5 rounded-2xl border-l-4 border-primary flex gap-4 items-start">
-                <span className="material-symbols-outlined text-primary">campaign</span>
-                <p className="text-sm text-on-surface-variant italic leading-relaxed">
-                  Sau khi xác nhận, hệ thống sẽ gửi email thông báo đến <strong>{selGV?.email}</strong>. Giảng viên sẽ duyệt hoặc từ chối đề tài KLTN.
-                </p>
-              </div>
-              <div className="flex items-center justify-between pt-2">
-                <button onClick={()=>setStep(2)} className="flex items-center gap-2 px-8 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all">
-                  <span className="material-symbols-outlined">arrow_back</span>Quay lại
-                </button>
-                <button onClick={()=>setShowConfirm(true)} className="px-12 py-3 rounded-xl bg-primary text-white font-bold shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2">
-                  Xác nhận đăng ký <span className="material-symbols-outlined">send</span>
-                </button>
-              </div>
-            </div>
-          )}
+          <p className="text-on-surface-variant text-sm">Giảng viên hướng dẫn được giữ nguyên từ BCTT.</p>
         </div>
+        <StepBar/>
+
+        {/* STEP 1 — Thông tin KLTN */}
+        {step===1&&(
+          <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm anim-fade space-y-6">
+
+            {/* Banner GV cố định */}
+            {gv?(
+              <div className="flex items-center gap-4 p-4 bg-primary-fixed/30 border border-primary-fixed-dim/40 rounded-2xl">
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white flex-shrink-0">
+                  <span className="material-symbols-outlined text-base fill-icon">person_check</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-on-primary-fixed uppercase tracking-wider mb-0.5">Giảng viên hướng dẫn KLTN (cố định từ BCTT)</p>
+                  <p className="font-bold text-on-surface text-sm">{gv.name}</p>
+                  <p className="text-xs text-on-surface-variant truncate">{gv.email}</p>
+                </div>
+                <span className="material-symbols-outlined text-primary flex-shrink-0" title="Không thể thay đổi">lock</span>
+              </div>
+            ):(
+              <div className="flex items-center gap-3 p-4 bg-error-container rounded-2xl text-on-error-container text-sm font-medium">
+                <span className="material-symbols-outlined">error</span>
+                Không tìm thấy thông tin giảng viên hướng dẫn BCTT. Vui lòng liên hệ bộ môn.
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Đề tài */}
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-semibold text-on-surface-variant">Tên đề tài KLTN <span className="text-error">*</span></label>
+                <input value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))}
+                  className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60"
+                  placeholder="Nhập tên đề tài khóa luận tốt nghiệp..."/>
+              </div>
+              {/* Đợt / Học kỳ */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-on-surface-variant">Đợt - Học kỳ <span className="text-error">*</span></label>
+                <div className="relative">
+                  <select value={form.semester} onChange={e=>setSem(e.target.value)}
+                    className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 appearance-none text-on-surface">
+                    <option value="">Chọn đợt / học kỳ</option>
+                    <option value="D1-HK1-2526">Đợt 1 - HK1 NH25-26</option>
+                    <option value="D2-HK1-2526">Đợt 2 - HK1 NH25-26</option>
+                    <option value="D1-HK2-2526">Đợt 1 - HK2 NH25-26</option>
+                    <option value="D2-HK2-2526">Đợt 2 - HK2 NH25-26</option>
+                  </select>
+                  <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
+                </div>
+              </div>
+              {/* Thời gian bắt đầu (auto) */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-on-surface-variant">Thời gian bắt đầu</label>
+                <div className="flex items-center gap-3 bg-surface-container border border-outline-variant/20 rounded-xl px-4 py-4 text-on-surface-variant cursor-not-allowed">
+                  <span className="material-symbols-outlined text-sm">event</span>
+                  <span className="text-sm">{form.startDate||'Tự động sau khi chọn đợt'}</span>
+                </div>
+              </div>
+              {/* Ghi chú */}
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-semibold text-on-surface-variant">Ghi chú cho GV (tùy chọn)</label>
+                <textarea value={form.note} onChange={e=>setForm(f=>({...f,note:e.target.value}))} rows={3}
+                  className="w-full bg-surface-container-low rounded-xl px-4 py-4 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/60 resize-none"
+                  placeholder="Mô tả tóm tắt hướng nghiên cứu, lý do chọn đề tài..."/>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-outline-variant/10">
+              <button onClick={next1} disabled={!gv}
+                className="bg-gradient-to-br from-primary to-primary-container text-white px-10 py-4 rounded-xl font-bold text-sm shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                Tiếp theo <span className="material-symbols-outlined text-sm">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2 — Xác nhận */}
+        {step===2&&(
+          <div className="anim-fade space-y-5">
+            <div>
+              <h3 className="text-2xl font-headline font-extrabold text-on-surface mb-1">Rà soát thông tin đăng ký KLTN</h3>
+              <p className="text-on-surface-variant text-sm">Kiểm tra kỹ trước khi xác nhận gửi yêu cầu.</p>
+            </div>
+
+            {/* Phần 1: Thông tin đề tài */}
+            <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-outline-variant/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary-fixed rounded-xl text-primary"><span className="material-symbols-outlined fill-icon">school</span></div>
+                <h4 className="font-headline font-bold text-lg">Phần 1: Thông tin KLTN</h4>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
+                {[
+                  {l:'Tên đề tài KLTN', v:form.topic, wide:true},
+                  {l:'Đợt / Học kỳ',   v:termLabel},
+                  {l:'Thời gian bắt đầu', v:form.startDate||'--'},
+                  {l:'Ghi chú',         v:form.note||'(không có)', wide:true},
+                ].map((r,i)=>(
+                  <div key={i} className={r.wide?'md:col-span-2':''}>
+                    <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider mb-1 block">{r.l}</label>
+                    <p className="text-on-surface font-semibold text-sm">{r.v}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Phần 2: GV cố định */}
+            <div className="bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-outline-variant/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-2 bg-primary-fixed rounded-xl text-primary"><span className="material-symbols-outlined fill-icon">person_check</span></div>
+                <h4 className="font-headline font-bold text-lg">Phần 2: Giảng viên hướng dẫn KLTN</h4>
+                <span className="ml-auto flex items-center gap-1 text-[10px] font-bold text-on-surface-variant bg-surface-container px-2 py-1 rounded-full">
+                  <span className="material-symbols-outlined text-xs">lock</span>Cố định từ BCTT
+                </span>
+              </div>
+              {gv&&(
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                  <Av name={gv.name} cls="w-16 h-16 rounded-2xl text-xl flex-shrink-0"/>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
+                    {[
+                      {l:'Họ và tên', v:gv.name},
+                      {l:'Mã GV',     v:gv.id?`GV${gv.id}`:'--'},
+                      {l:'Email',     v:gv.email, primary:true},
+                    ].map((r,i)=>(
+                      <div key={i}>
+                        <label className="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider block mb-1">{r.l}</label>
+                        <p className={`font-bold text-sm ${r.primary?'text-primary break-all':'text-on-surface'}`}>{r.v}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Banner thông báo */}
+            <div className="bg-surface-container p-5 rounded-2xl border-l-4 border-primary flex gap-4 items-start">
+              <span className="material-symbols-outlined text-primary">campaign</span>
+              <p className="text-sm text-on-surface-variant italic leading-relaxed">
+                Sau khi xác nhận, hệ thống sẽ gửi email thông báo đến <strong>{gv?.email}</strong>. Giảng viên sẽ xem xét và duyệt đề tài KLTN của bạn.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <button onClick={()=>setStep(1)}
+                className="flex items-center gap-2 px-8 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all">
+                <span className="material-symbols-outlined">arrow_back</span>Quay lại
+              </button>
+              <button onClick={()=>setShowConfirm(true)}
+                className="px-12 py-3 rounded-xl bg-primary text-white font-bold shadow-lg hover:scale-[1.02] transition-all flex items-center gap-2">
+                Xác nhận đăng ký <span className="material-symbols-outlined">send</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -2951,8 +2872,6 @@ function App(){
           {tab==='kltn'&&(
             <KLTNRegistration
               onSuccess={handleKltnRegSuccess}
-              instructorList={kltnInstructorList}
-              loadingGV={loadingKltnGV}
               dashData={dashData}
             />
           )}
