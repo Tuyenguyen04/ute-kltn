@@ -414,7 +414,7 @@ async function fetchDangKyByGV(gvEmail) {
       grade           : r[14] !== '' ? parseFloat(r[14]) : null,
       position        : r[16] || '',
       internDuration  : r[17] || '',
-      reportSubmitted : r[18] === 'true' || r[18] === true,
+      reportSubmitted : r[18]?.toString().toLowerCase() === 'true',
       reportDriveUrl  : r[19] || '',
       xnttDriveUrl    : r[20] || '',
     };
