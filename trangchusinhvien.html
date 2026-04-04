@@ -776,7 +776,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                         <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{kltnStepLabel3}</span>
                       </div>
                     </div>
-                    {kltnGrade3!==null&&(
+                    {kltnGrade3!==null?(
                       <div className="mt-4 flex items-center gap-3 p-3 bg-primary-fixed/40 rounded-2xl">
                         <div className="text-center flex-shrink-0">
                           <span className={`text-2xl font-headline font-black ${kltnFailed3?'text-error':'text-on-primary-fixed'}`}>{kltnGrade3.toFixed(1)}</span>
@@ -788,6 +788,16 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                             {kltnPassed3?'Đạt ✓':kltnFailed3?'Không đạt ✗':''}
                             {kltnLocked3?' • Điểm đã xác nhận ✓':' • Chờ xác nhận'}
                           </p>
+                        </div>
+                      </div>
+                    ):(
+                      <div className="mt-4 flex items-center gap-3 p-3 bg-surface-container-low border border-outline-variant/20 rounded-2xl">
+                        <div className="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center flex-shrink-0">
+                          <span className="material-symbols-outlined text-on-surface-variant/40 text-2xl">hourglass_empty</span>
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-on-surface-variant">Chưa có điểm khóa luận</p>
+                          <p className="text-[10px] text-on-surface-variant/60 mt-0.5">GV sẽ chấm điểm sau buổi bảo vệ</p>
                         </div>
                       </div>
                     )}
@@ -876,6 +886,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                         {role:'Trưởng HĐ', data:hoiDong4?.truong, badge:'bg-primary text-white',          icon:'workspace_premium'},
                         {role:'Thành viên',data:hoiDong4?.tv1,     badge:'bg-surface-container-highest text-on-surface-variant', icon:'person'},
                         {role:'Thành viên',data:hoiDong4?.tv2,     badge:'bg-surface-container-highest text-on-surface-variant', icon:'person'},
+                        {role:'Thành viên',data:hoiDong4?.tv3,     badge:'bg-surface-container-highest text-on-surface-variant', icon:'person'},
                         {role:'Thư ký',    data:hoiDong4?.thuKy,   badge:'bg-tertiary-fixed text-on-tertiary-fixed', icon:'edit_note'},
                       ].map((m,i)=>(
                         <div key={i} className="flex items-center gap-3 p-2.5 bg-surface-container-low rounded-xl">
