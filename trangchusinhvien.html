@@ -711,15 +711,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             </div>
           </div>
 
-          {/* ── Row 2 (kltnUnlocked): KLTNActionPanel full-width — ÔNG 2 MỚI ── */}
-          <KLTNActionPanel
-            dashData={dashData}
-            onRegisterKLTN={onRegisterKLTN}
-            onSubmitKLTN={onSubmitKLTN}
-            toast={toast}
-          />
-
-          {/* ── Row 3 (kltnUnlocked): Grade cards + Hành trình KLTN — ÔNG 3 MỚI ── */}
+          {/* ── Row 2 (kltnUnlocked): KLTNActionPanel (trái) + Hành trình KLTN (phải) ── */}
           {(()=>{
             const kltnData3   = dashData?.kltn||null;
             const kltnStep3   = parseInt(kltnData3?.step)||0;
@@ -738,10 +730,56 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             const kltnPassed3 = kltnGrade3!==null && kltnGrade3>=5;
             const kltnFailed3 = kltnGrade3!==null && kltnGrade3<5;
             return(
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <>
+                {/* KLTNActionPanel + Hành trình KLTN cùng hàng */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  <KLTNActionPanel
+                    dashData={dashData}
+                    onRegisterKLTN={onRegisterKLTN}
+                    onSubmitKLTN={onSubmitKLTN}
+                    toast={toast}
+                  />
+                  <section className="p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-lg font-bold">Hành trình KLTN</h3>
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-black
+                        ${kltnStep3===0?'bg-surface-container text-on-surface-variant':
+                          kltnStep3>=4?'bg-tertiary-fixed text-on-tertiary-fixed':
+                          'bg-primary-fixed text-on-primary-fixed'}`}>
+                        {kltnStep3===0?'Chưa đăng ký':kltnStep3>=4?'Hoàn tất':`Bước ${kltnStep3}/4`}
+                      </span>
+                    </div>
+                    <div className="relative flex justify-between">
+                      <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
+                      <div className="absolute top-5 left-0 h-[2px] bg-primary-fixed-dim transition-all duration-700" style={{width:`${kltnPcts3[kltnStep3]}%`}}/>
+                      {kltnStepDefs3.map((s,i)=>(
+                        <div key={i} className="relative z-10 flex flex-col items-center gap-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
+                            ${i<kltnStep3?'bg-primary-fixed-dim text-on-primary-fixed':
+                              i===kltnStep3?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
+                              'bg-surface-dim text-on-surface-variant'}`}>
+                            <span className="material-symbols-outlined text-sm">{i<kltnStep3?'check_circle':s.icon}</span>
+                          </div>
+                          <span className={`text-[10px] font-bold text-center max-w-[52px] leading-tight
+                            ${i===kltnStep3?'text-primary':i<kltnStep3?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-8 flex items-center gap-4 w-full">
+                      <div className="flex-1 bg-surface-container-highest rounded-full h-3 overflow-hidden">
+                        <div className="bg-primary h-full rounded-full transition-all duration-700" style={{width:`${kltnPcts3[kltnStep3]}%`}}/>
+                      </div>
+                      <div className="flex items-center gap-2 whitespace-nowrap">
+                        <span className="text-xs font-bold text-primary">{kltnPcts3[kltnStep3]}%</span>
+                        <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{kltnStepLabel3}</span>
+                      </div>
+                    </div>
+                  </section>
+                </div>
 
-                {/* Grade cards TT + KLTN */}
-                <div className="md:col-span-4 grid grid-cols-2 gap-4">
+                {/* ── Row 3 (kltnUnlocked): Grade cards TT + KLTN ── */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                  <div className="md:col-span-4 grid grid-cols-2 gap-4">
                   {/* Grade BCTT */}
                   <div className={`p-5 rounded-3xl flex flex-col items-center justify-center text-center space-y-1.5 shadow-sm
                     ${failed&&locked?'bg-red-100':'bg-tertiary-fixed'}`}>
@@ -785,45 +823,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                     )}
                   </div>
                 </div>
-
-                {/* Hành trình KLTN */}
-                <section className="md:col-span-8 p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-lg font-bold">Hành trình KLTN</h3>
-                    <span className={`px-3 py-1 rounded-full text-[10px] font-black
-                      ${kltnStep3===0?'bg-surface-container text-on-surface-variant':
-                        kltnStep3>=4?'bg-tertiary-fixed text-on-tertiary-fixed':
-                        'bg-primary-fixed text-on-primary-fixed'}`}>
-                      {kltnStep3===0?'Chưa đăng ký':kltnStep3>=4?'Hoàn tất':`Bước ${kltnStep3}/4`}
-                    </span>
-                  </div>
-                  <div className="relative flex justify-between">
-                    <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
-                    <div className="absolute top-5 left-0 h-[2px] bg-primary-fixed-dim transition-all duration-700" style={{width:`${kltnPcts3[kltnStep3]}%`}}/>
-                    {kltnStepDefs3.map((s,i)=>(
-                      <div key={i} className="relative z-10 flex flex-col items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
-                          ${i<kltnStep3?'bg-primary-fixed-dim text-on-primary-fixed':
-                            i===kltnStep3?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
-                            'bg-surface-dim text-on-surface-variant'}`}>
-                          <span className="material-symbols-outlined text-sm">{i<kltnStep3?'check_circle':s.icon}</span>
-                        </div>
-                        <span className={`text-[10px] font-bold text-center max-w-[52px] leading-tight
-                          ${i===kltnStep3?'text-primary':i<kltnStep3?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-8 flex items-center gap-4 w-full">
-                    <div className="flex-1 bg-surface-container-highest rounded-full h-3 overflow-hidden">
-                      <div className="bg-primary h-full rounded-full transition-all duration-700" style={{width:`${kltnPcts3[kltnStep3]}%`}}/>
-                    </div>
-                    <div className="flex items-center gap-2 whitespace-nowrap">
-                      <span className="text-xs font-bold text-primary">{kltnPcts3[kltnStep3]}%</span>
-                      <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{kltnStepLabel3}</span>
-                    </div>
-                  </div>
-                </section>
-              </div>
+              </>
             );
           })()}
 
