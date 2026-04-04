@@ -732,14 +732,14 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             return(
               <>
                 {/* KLTNActionPanel + Hành trình KLTN cùng hàng */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
                   <KLTNActionPanel
                     dashData={dashData}
                     onRegisterKLTN={onRegisterKLTN}
                     onSubmitKLTN={onSubmitKLTN}
                     toast={toast}
                   />
-                  <section className="p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
+                  <section className="h-full p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
                     <div className="flex items-center justify-between mb-8">
                       <h3 className="text-lg font-bold">Hành trình KLTN</h3>
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black
@@ -2275,7 +2275,7 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
   ][kltnStep]||{l:'',bg:''};
 
   return(
-    <div className="p-6 bg-surface-container-lowest rounded-3xl shadow-sm border-l-4 border-primary anim-fade">
+    <div className="h-full p-6 bg-surface-container-lowest rounded-3xl shadow-sm border-l-4 border-primary anim-fade flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white flex-shrink-0">
@@ -2815,10 +2815,11 @@ function App(){
   const bcttDisabled = loadingDash || kltnUnlocked || bcttAlreadyReg;
 
   // ── Load dashboard data từ API GAS ─────────────────────────────
-  const loadDash=useCallback(async()=>{
+  // silent=true → không hiển thị spinner (dùng khi refresh thủ công)
+  const loadDash=useCallback(async(silent=false)=>{
     const sess=getSession();
     if(!sess.email) return;
-    setLoadingDash(true);
+    if(!silent) setLoadingDash(true);
     try{
       // Load song song: dashboard data + thông báo từ sheet
       const [data, sheetNotis] = await Promise.all([
@@ -2908,12 +2909,12 @@ function App(){
   // ── Làm mới dữ liệu thủ công (nút Refresh trên Header) ────────
   const handleRefresh = useCallback(async()=>{
     if(loadingDash) return;
-    setDashData(null);
+    // KHÔNG setDashData(null) — giữ UI hiện tại, chỉ cập nhật ngầm
     setNotifications([]);
-    // Reset danh sách GV để fetch lại nếu đang ở tab đó
+    // Reset danh sách GV để fetch lại khi cần
     setInstructorList([]);
     setKltnInstructorList([]);
-    await loadDash();
+    await loadDash(true); // silent=true: không hiện spinner
     toast.show('Đã cập nhật dữ liệu mới nhất!','success');
   },[loadingDash,loadDash]);
 
