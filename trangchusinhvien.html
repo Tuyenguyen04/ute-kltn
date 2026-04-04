@@ -725,7 +725,18 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
           {(()=>{
             const kltnData3   = dashData?.kltn||null;
             const kltnStep3   = parseInt(kltnData3?.step)||0;
+            const kltnStatus3 = kltnData3?.status||null;
             const kltnStepLabel3 = kltnData3?.stepLabel||'• Chưa đăng ký';
+            // Hành trình 5 bước hiển thị (giữ nguyên theo yêu cầu)
+            // Backend step 0→1→2+ map vào visual step 1→2→3 (index 0=Đăng ký đã done)
+            // visual: 0=Đăng ký, 1=Đề cương, 2=Thực hiện, 3=Bảo vệ, 4=Kết thúc
+            // Khi SV đăng ký (step=0, pending/approved/rejected) → visual step 1
+            // Khi SV nộp đề cương (step=1, pending/approved/rejected) → visual step 2
+            // Khi SV nộp KLTN (step=2+) → visual step 3
+            const kltnVisualStep3 = !kltnData3?.registered?0
+              :kltnStep3===0?1
+              :kltnStep3===1?2
+              :kltnStep3>=2?3:3;
             const kltnStepDefs3=[
               {l:'Đăng ký',   icon:'how_to_reg'},
               {l:'Đề cương',  icon:'description'},
@@ -755,34 +766,34 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                     <div className="flex items-center justify-between mb-8">
                       <h3 className="text-lg font-bold">Hành trình KLTN</h3>
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black
-                        ${kltnStep3===0?'bg-surface-container text-on-surface-variant':
-                          kltnStep3>=4?'bg-tertiary-fixed text-on-tertiary-fixed':
+                        ${kltnVisualStep3===0?'bg-surface-container text-on-surface-variant':
+                          kltnVisualStep3>=4?'bg-tertiary-fixed text-on-tertiary-fixed':
                           'bg-primary-fixed text-on-primary-fixed'}`}>
-                        {kltnStep3===0?'Chưa đăng ký':kltnStep3>=4?'Hoàn tất':`Bước ${kltnStep3}/4`}
+                        {kltnVisualStep3===0?'Chưa đăng ký':kltnVisualStep3>=4?'Hoàn tất':`Bước ${kltnVisualStep3}/4`}
                       </span>
                     </div>
                     <div className="relative flex justify-between">
                       <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
-                      <div className="absolute top-5 left-0 h-[2px] bg-primary-fixed-dim transition-all duration-700" style={{width:`${kltnPcts3[kltnStep3]}%`}}/>
+                      <div className="absolute top-5 left-0 h-[2px] bg-primary-fixed-dim transition-all duration-700" style={{width:`${kltnPcts3[kltnVisualStep3]}%`}}/>
                       {kltnStepDefs3.map((s,i)=>(
                         <div key={i} className="relative z-10 flex flex-col items-center gap-3">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
-                            ${i<kltnStep3?'bg-primary-fixed-dim text-on-primary-fixed':
-                              i===kltnStep3?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
+                            ${i<kltnVisualStep3?'bg-primary-fixed-dim text-on-primary-fixed':
+                              i===kltnVisualStep3?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
                               'bg-surface-dim text-on-surface-variant'}`}>
-                            <span className="material-symbols-outlined text-sm">{i<kltnStep3?'check_circle':s.icon}</span>
+                            <span className="material-symbols-outlined text-sm">{i<kltnVisualStep3?'check_circle':s.icon}</span>
                           </div>
                           <span className={`text-[10px] font-bold text-center max-w-[52px] leading-tight
-                            ${i===kltnStep3?'text-primary':i<kltnStep3?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
+                            ${i===kltnVisualStep3?'text-primary':i<kltnVisualStep3?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
                         </div>
                       ))}
                     </div>
                     <div className="mt-8 flex items-center gap-4 w-full">
                       <div className="flex-1 bg-surface-container-highest rounded-full h-3 overflow-hidden">
-                        <div className="bg-primary h-full rounded-full transition-all duration-700" style={{width:`${kltnPcts3[kltnStep3]}%`}}/>
+                        <div className="bg-primary h-full rounded-full transition-all duration-700" style={{width:`${kltnPcts3[kltnVisualStep3]}%`}}/>
                       </div>
                       <div className="flex items-center gap-2 whitespace-nowrap">
-                        <span className="text-xs font-bold text-primary">{kltnPcts3[kltnStep3]}%</span>
+                        <span className="text-xs font-bold text-primary">{kltnPcts3[kltnVisualStep3]}%</span>
                         <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{kltnStepLabel3}</span>
                       </div>
                     </div>
@@ -2440,7 +2451,7 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
         </div>
         {kltnReg&&(
           <span className={`flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-black leading-tight text-center ${stepBadge.bg}`}>
-            Bước {displayStep}/4<br/>{stepBadge.l}
+            Bước {displayStep}/3<br/>{stepBadge.l}
           </span>
         )}
       </div>
@@ -2486,10 +2497,12 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
                 :'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-40'}`}>
           {canNopDecu&&<span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/70 animate-pulse"/>}
           <span className="material-symbols-outlined text-2xl">
-            {kltnStep>=1?'task_alt':canNopDecu?'description':'lock'}
+            {kltnStep>=1&&kltnStatus==='approved'?'task_alt':kltnStep>=1?'hourglass_top':canNopDecu?'description':'lock'}
           </span>
           <span className="text-xs leading-tight">Nộp đề cương</span>
-          {kltnStep>=1&&<span className="text-[9px] opacity-70">Đã nộp</span>}
+          {kltnStep>=1&&kltnStatus==='approved'&&<span className="text-[9px] opacity-70">Đã duyệt</span>}
+          {kltnStep>=1&&kltnStatus==='pending'&&<span className="text-[9px] opacity-70">Chờ duyệt</span>}
+          {kltnStep>=1&&kltnStatus==='rejected'&&<span className="text-[9px] opacity-70">Bị từ chối</span>}
         </button>
 
         {/* 3. Chỉnh sửa đề cương — active khi step=1 + rejected */}
@@ -2510,7 +2523,6 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
           <span className="material-symbols-outlined text-2xl">edit_document</span>
           <span className="text-xs leading-tight">Chỉnh sửa đề cương</span>
           {canEditDecu&&<span className="text-[9px] opacity-90">GV từ chối</span>}
-          {kltnStep>=2&&<span className="text-[9px] opacity-60">Đã duyệt</span>}
         </button>
 
         {/* 4. Nộp KLTN — active khi step=1, approved (GV vừa duyệt đề cương) */}
