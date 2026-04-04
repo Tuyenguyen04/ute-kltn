@@ -712,17 +712,35 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
           )}
         </div>
 
-        {/* ── Cột phải: Grade cards (+ KLTNActionPanel nếu unlock) ── */}
+        {/* ── Cột phải: Grade cards (+ Stepper TT nếu kltnUnlocked) ── */}
         <div className={`${kltnUnlocked ? 'md:col-span-5' : 'md:col-span-4'} flex flex-col gap-6`}>
 
-          {/* KLTN Action Panel — hiện khi đủ điều kiện */}
+          {/* Stepper Hành trình TT — hiện ở cột phải khi kltnUnlocked (thay KLTNActionPanel) */}
           {kltnUnlocked&&(
-            <KLTNActionPanel
-              dashData={dashData}
-              onRegisterKLTN={onRegisterKLTN}
-              onSubmitKLTN={onSubmitKLTN}
-              toast={toast}
-            />
+            <section className="p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
+              <h3 className="text-base font-bold mb-5 text-center">Hành trình thực tập</h3>
+              <div className="relative flex justify-between">
+                <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
+                <div className="absolute top-5 left-0 h-[2px] bg-tertiary-fixed-dim transition-all duration-700" style={{width:`${pcts[curStep]}%`}}/>
+                {stepDefs.map((s,i)=>(
+                  <div key={i} className="relative z-10 flex flex-col items-center gap-2">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-500
+                      ${i<curStep?'bg-tertiary-fixed-dim text-on-tertiary-fixed':
+                        i===curStep?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
+                        'bg-surface-dim text-on-surface-variant'}`}>
+                      <span className="material-symbols-outlined text-xs">{i<curStep?'check_circle':s.icon}</span>
+                    </div>
+                    <span className={`text-[9px] font-bold text-center max-w-[44px] leading-tight ${i===curStep?'text-primary':i<curStep?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 flex items-center gap-3 w-full">
+                <div className="flex-1 bg-surface-container-highest rounded-full h-2.5 overflow-hidden">
+                  <div className="bg-tertiary-fixed-dim h-full rounded-full transition-all duration-700" style={{width:`${pcts[curStep]}%`}}/>
+                </div>
+                <span className="text-xs font-bold text-tertiary-container whitespace-nowrap">{pcts[curStep]}% {stepLabel}</span>
+              </div>
+            </section>
           )}
 
           {/* Grade cards hàng ngang */}
@@ -863,34 +881,84 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
           )}
         </div>
 
-        {/* Stepper */}
-        <section className="p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
-          <h3 className="text-lg font-bold mb-8 text-center">Hành trình thực tập</h3>
-          <div className="relative flex justify-between">
-            <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
-            <div className="absolute top-5 left-0 h-[2px] bg-tertiary-fixed-dim transition-all duration-700" style={{width:`${pcts[curStep]}%`}}/>
-            {stepDefs.map((s,i)=>(
-              <div key={i} className="relative z-10 flex flex-col items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
-                  ${i<curStep?'bg-tertiary-fixed-dim text-on-tertiary-fixed':
-                    i===curStep?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
-                    'bg-surface-dim text-on-surface-variant'}`}>
-                  <span className="material-symbols-outlined text-sm">{i<curStep?'check_circle':s.icon}</span>
+        {/* Stepper — TT khi chưa unlock KLTN, KLTN khi đã unlock */}
+        {kltnUnlocked?(
+          /* ── Hành trình KLTN lên đây khi đã unlock ── */
+          (()=>{
+            const kltnData2    = dashData?.kltn||null;
+            const kltnStep2    = kltnData2?.step||0;
+            const kltnStepLabel2 = kltnData2?.stepLabel||'• Chưa đăng ký';
+            const kltnStepDefs2=[
+              {l:'Đăng ký',    icon:'how_to_reg'},
+              {l:'Đề cương',   icon:'description'},
+              {l:'Thực hiện',  icon:'potted_plant'},
+              {l:'Bảo vệ',     icon:'record_voice_over'},
+              {l:'Kết thúc',   icon:'verified'},
+            ];
+            const kltnPcts2=[0,25,50,75,100];
+            return(
+              <section className="p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
+                <div className="flex items-center justify-center gap-2 mb-8">
+                  <h3 className="text-lg font-bold text-center">Hành trình KLTN</h3>
                 </div>
-                <span className={`text-[10px] font-bold ${i===curStep?'text-primary':i<curStep?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
+                <div className="relative flex justify-between">
+                  <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
+                  <div className="absolute top-5 left-0 h-[2px] bg-primary-fixed-dim transition-all duration-700" style={{width:`${kltnPcts2[kltnStep2]}%`}}/>
+                  {kltnStepDefs2.map((s,i)=>(
+                    <div key={i} className="relative z-10 flex flex-col items-center gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
+                        ${i<kltnStep2?'bg-primary-fixed-dim text-on-primary-fixed':
+                          i===kltnStep2?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
+                          'bg-surface-dim text-on-surface-variant'}`}>
+                        <span className="material-symbols-outlined text-sm">{i<kltnStep2?'check_circle':s.icon}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold text-center max-w-[52px] leading-tight
+                        ${i===kltnStep2?'text-primary':i<kltnStep2?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-8 flex flex-col md:flex-row items-center gap-4 w-full">
+                  <div className="flex-1 w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
+                    <div className="bg-primary h-full rounded-full transition-all duration-700" style={{width:`${kltnPcts2[kltnStep2]}%`}}/>
+                  </div>
+                  <div className="flex items-center gap-2 whitespace-nowrap">
+                    <span className="text-xs font-bold text-primary">{kltnPcts2[kltnStep2]}%</span>
+                    <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{kltnStepLabel2}</span>
+                  </div>
+                </div>
+              </section>
+            );
+          })()
+        ):(
+          /* ── Hành trình TT khi chưa unlock KLTN ── */
+          <section className="p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
+            <h3 className="text-lg font-bold mb-8 text-center">Hành trình thực tập</h3>
+            <div className="relative flex justify-between">
+              <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
+              <div className="absolute top-5 left-0 h-[2px] bg-tertiary-fixed-dim transition-all duration-700" style={{width:`${pcts[curStep]}%`}}/>
+              {stepDefs.map((s,i)=>(
+                <div key={i} className="relative z-10 flex flex-col items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
+                    ${i<curStep?'bg-tertiary-fixed-dim text-on-tertiary-fixed':
+                      i===curStep?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
+                      'bg-surface-dim text-on-surface-variant'}`}>
+                    <span className="material-symbols-outlined text-sm">{i<curStep?'check_circle':s.icon}</span>
+                  </div>
+                  <span className={`text-[10px] font-bold ${i===curStep?'text-primary':i<curStep?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex flex-col md:flex-row items-center gap-4 w-full">
+              <div className="flex-1 w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
+                <div className="bg-primary h-full rounded-full transition-all duration-700" style={{width:`${pcts[curStep]}%`}}/>
               </div>
-            ))}
-          </div>
-          <div className="mt-8 flex flex-col md:flex-row items-center gap-4 w-full">
-            <div className="flex-1 w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
-              <div className="bg-primary h-full rounded-full transition-all duration-700" style={{width:`${pcts[curStep]}%`}}/>
+              <div className="flex items-center gap-2 whitespace-nowrap">
+                <span className="text-xs font-bold text-primary">{pcts[curStep]}%</span>
+                <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{stepLabel}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-xs font-bold text-primary">{pcts[curStep]}%</span>
-              <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{stepLabel}</span>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
       </div>
 
       {/* ── Row 3: GV Phản biện & Hội đồng + Hành trình KLTN ─── */}
@@ -976,38 +1044,15 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
               )}
             </div>
 
-            {/* Stepper KLTN */}
-            <section className={`p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center transition-opacity duration-500 ${!kltnUnlocked?'opacity-40 pointer-events-none':''}`}>
-              <div className="flex items-center justify-center gap-2 mb-8">
-                <h3 className="text-lg font-bold text-center">Hành trình KLTN</h3>
-                {!kltnUnlocked&&<span className="material-symbols-outlined text-sm text-on-surface-variant">lock</span>}
-              </div>
-              <div className="relative flex justify-between">
-                <div className="absolute top-5 left-0 w-full h-[2px] bg-outline-variant/20"/>
-                <div className="absolute top-5 left-0 h-[2px] bg-primary-fixed-dim transition-all duration-700" style={{width:`${kltnPcts[kltnStep]}%`}}/>
-                {kltnStepDefs.map((s,i)=>(
-                  <div key={i} className="relative z-10 flex flex-col items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500
-                      ${i<kltnStep?'bg-primary-fixed-dim text-on-primary-fixed':
-                        i===kltnStep?'bg-primary border-4 border-primary-fixed-dim text-white ring-4 ring-white':
-                        'bg-surface-dim text-on-surface-variant'}`}>
-                      <span className="material-symbols-outlined text-sm">{i<kltnStep?'check_circle':s.icon}</span>
-                    </div>
-                    <span className={`text-[10px] font-bold text-center max-w-[52px] leading-tight
-                      ${i===kltnStep?'text-primary':i<kltnStep?'text-on-surface':'text-on-surface-variant font-medium'}`}>{s.l}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-8 flex flex-col md:flex-row items-center gap-4 w-full">
-                <div className="flex-1 w-full bg-surface-container-highest rounded-full h-3 overflow-hidden">
-                  <div className="bg-primary h-full rounded-full transition-all duration-700" style={{width:`${kltnPcts[kltnStep]}%`}}/>
-                </div>
-                <div className="flex items-center gap-2 whitespace-nowrap">
-                  <span className="text-xs font-bold text-primary">{kltnPcts[kltnStep]}%</span>
-                  <span className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{kltnStepLabel}</span>
-                </div>
-              </div>
-            </section>
+            {/* KLTNActionPanel — nộp KLTN / đăng ký KLTN (thay Stepper KLTN đã chuyển lên Row 2) */}
+            <div className="flex flex-col gap-6">
+              <KLTNActionPanel
+                dashData={dashData}
+                onRegisterKLTN={onRegisterKLTN}
+                onSubmitKLTN={onSubmitKLTN}
+                toast={toast}
+              />
+            </div>
 
           </div>
         );
