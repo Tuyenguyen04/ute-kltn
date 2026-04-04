@@ -273,6 +273,7 @@ async function apiPostFile(body, onProgress){
       const result = await _gasPost({ ...rest, folderName,
         fileBase64:b64, fileName:_file.name,
         mimeType:_file.type||'application/octet-stream',
+        nganh, gvName, gvEmail, subFolder,
       });
       if(onProgress) onProgress(100);
       return result;
