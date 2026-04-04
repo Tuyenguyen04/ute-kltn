@@ -1394,7 +1394,7 @@ async function handleRejectOutline(sv, reason) {
                     <th className="px-4 py-4">Học kỳ</th>
                     <th className="px-4 py-4 text-center">Bản KLTN</th>
                     <th className="px-4 py-4 text-center">Check Đạo văn</th>
-                    <th className="px-4 py-4 text-center">Điểm & Nhận xét</th>
+                    <th className="px-4 py-4 text-center">Điểm số</th>
                     <th className="px-2 py-4"></th>
                   </tr>
                 </thead>
@@ -1412,8 +1412,11 @@ async function handleRejectOutline(sv, reason) {
                           action: 'saveKLTNDetails', studentEmail: sv.studentEmail,
                           grade: gr, daoVanPct: pct, nhanXet: nx
                         });
-                        if (res.success) toast.show('Đã lưu thông tin KLTN!', 'success');
-                        else toast.show(res.message, 'error');
+                        if (res.success) {
+                          toast.show('Đã lưu thông tin KLTN!', 'success');
+                          // Tắt popup nhận xét sau khi lưu thành công
+                          setKltnInput(prev => ({...prev, [id]: {...prev[id], showComment: false}}));
+                        } else toast.show(res.message, 'error');
                       } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
                       setKltnProcessing(null);
                     };
@@ -1436,7 +1439,7 @@ async function handleRejectOutline(sv, reason) {
                     };
 
                     return (
-                      <tr key={i} className="hover:bg-surface-container-low transition-colors">
+                      <tr key={i} className="hover:bg-surface-container-low transition-colors align-middle">
                         
                         {/* 1. Sinh viên */}
                         <td className="px-6 py-4">
@@ -1458,7 +1461,7 @@ async function handleRejectOutline(sv, reason) {
                         {/* 3. Học kỳ */}
                         <td className="px-4 py-4 text-xs text-on-surface-variant">{sv.term || '--'}</td>
 
-                        {/* 4. Bản KLTN (Giao diện icon y hệt BCTT) */}
+                        {/* 4. Bản KLTN */}
                         <td className="px-4 py-4 text-center">
                           {sv.kltnUrl ? (
                              <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })}
@@ -1478,63 +1481,110 @@ async function handleRejectOutline(sv, reason) {
                           )}
                         </td>
 
-                        {/* 5. Check Đạo văn (% và Icon Upload/Xem) */}
+                        {/* 5. Check Đạo văn (Nằm ngang + Highlight màu) */}
                         <td className="px-4 py-4 text-center">
-                          <div className="flex flex-col items-center gap-1.5 w-[80px] mx-auto">
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Icon Upload / View */}
                             {sv.daoVanUrl ? (
                               <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })}
-                                className="inline-flex flex-col items-center gap-0.5 group">
-                                <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors">
-                                  <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span>
-                                </span>
-                                <span className="text-[9px] font-bold text-tertiary">Xem File</span>
+                                title="Xem file Check đạo văn"
+                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0">
+                                <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span>
                               </button>
                             ) : (
-                              <label className="inline-flex flex-col items-center gap-0.5 group cursor-pointer">
-                                <span className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors">
-                                  {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
-                                </span>
-                                <span className="text-[9px] font-bold text-primary">{uploadingDaoVan[id] ? 'Đang tải' : 'Up file ĐV'}</span>
+                              <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
+                                {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
                                 <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
                               </label>
                             )}
                             
-                            {/* Ô nhập phần trăm % đạo văn (gọn gàng bên dưới icon) */}
-                            <div className="flex items-center bg-surface-container-low border border-outline-variant/40 rounded overflow-hidden">
-                              <input type="number" min="0" max="100" placeholder="%"
-                                value={pct} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))}
-                                className="w-full text-[10px] font-bold text-center py-1 pl-2 border-none outline-none bg-transparent" />
-                              <span className="text-[10px] font-bold text-on-surface-variant pr-2">%</span>
+                            {/* Ô nhập % Highlight */}
+                            {(() => {
+                               let pctColor = 'bg-surface-container-low border-outline-variant/40 text-on-surface';
+                               const numPct = parseFloat(pct);
+                               if (!isNaN(numPct)) {
+                                  if (numPct <= 20) pctColor = 'bg-emerald-50 border-emerald-500/50 text-emerald-700';
+                                  else if (numPct <= 30) pctColor = 'bg-orange-50 border-orange-500/50 text-orange-700';
+                                  else pctColor = 'bg-red-50 border-red-500/50 text-red-700';
+                               }
+                               return (
+                                 <div className={`flex items-center border rounded-lg overflow-hidden w-[65px] h-[40px] transition-colors ${pctColor}`}>
+                                    <input type="number" min="0" max="100" placeholder="%"
+                                       value={pct} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))}
+                                       className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
+                                    <span className="text-[10px] font-bold opacity-60 pr-2">%</span>
+                                 </div>
+                               );
+                            })()}
+                          </div>
+                        </td>
+
+                        {/* 6. Điểm số (Y hệt BCTT) */}
+                        <td className="px-4 py-4 text-center">
+                          {sv.grade != null ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-2xl font-black text-primary">{Number(sv.grade).toFixed(1)}</span>
+                              <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="flex flex-col gap-1.5 w-[110px] mx-auto">
+                              <input type="number" min="0" max="10" step="0.1" placeholder="Điểm (0-10)"
+                                value={gr} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], grade: e.target.value}}))}
+                                className="w-full text-sm font-bold text-center bg-surface-container-low border border-outline-variant/40 rounded-xl px-2 py-2 outline-none focus:ring-2 focus:ring-primary/30" />
+                              <button onClick={handleSaveKLTN} disabled={kltnProcessing === sv.studentEmail}
+                                className="w-full py-1.5 bg-primary text-white text-[10px] font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-1">
+                                {kltnProcessing === sv.studentEmail 
+                                  ? <span className="material-symbols-outlined anim-spin text-xs">refresh</span> 
+                                  : <><span className="material-symbols-outlined text-xs">save</span>Lưu điểm</>}
+                              </button>
+                            </div>
+                          )}
                         </td>
 
-                        {/* 6. Điểm số & Nhận xét */}
-                        <td className="px-4 py-4">
-                          <div className="flex flex-col gap-1.5 w-[130px] mx-auto">
-                            <input type="number" min="0" max="10" step="0.1" placeholder="Điểm (0-10)"
-                              value={gr} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], grade: e.target.value}}))}
-                              className="w-full text-sm font-bold text-center bg-surface-container-low border border-outline-variant/40 rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/30" />
+                        {/* 7. Thao tác (Nhận xét + Chat) */}
+                        <td className="px-2 py-4 text-center relative">
+                          <div className="flex items-center justify-center gap-1">
                             
-                            <textarea placeholder="Nhận xét ngắn..." rows="1"
-                              value={nx} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], nhanXet: e.target.value}}))}
-                              className="w-full text-[10px] bg-surface-container-low border border-outline-variant/40 rounded-xl px-2 py-1.5 outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
-
-                            <button onClick={handleSaveKLTN} disabled={kltnProcessing === sv.studentEmail}
-                              className="w-full py-1.5 bg-primary text-white text-[10px] font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-1">
-                              {kltnProcessing === sv.studentEmail 
-                                ? <span className="material-symbols-outlined anim-spin text-xs">refresh</span> 
-                                : <><span className="material-symbols-outlined text-xs">save</span>Lưu KLTN</>}
+                            {/* Nút bật/tắt Nhận xét */}
+                            <button 
+                               onClick={() => setKltnInput(prev => ({...prev, [id]: {...prev[id], showComment: !prev[id]?.showComment}}))}
+                               title={nx ? "Đã có nhận xét - Bấm để sửa" : "Thêm nhận xét"}
+                               className={`p-2 rounded-lg transition-all relative ${kltnInput[id]?.showComment || nx ? 'text-primary bg-primary-fixed' : 'text-outline hover:text-primary hover:bg-primary/10'}`}>
+                               <span className="material-symbols-outlined text-[20px]">{nx ? 'rate_review' : 'edit_note'}</span>
+                               {nx && !kltnInput[id]?.showComment && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full border-2 border-white"></span>}
                             </button>
-                          </div>
-                        </td>
 
-                        {/* 7. Icon Chat (Giống BCTT) */}
-                        <td className="px-2 py-4 text-center">
-                          <button onClick={() => toast.show('Hệ thống tin nhắn đang bảo trì!', 'warn')}
-                            className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
-                            <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
-                          </button>
+                            {/* Nút Chat */}
+                            <button onClick={() => toast.show('Hệ thống tin nhắn đang bảo trì!', 'warn')}
+                               title="Nhắn tin cho sinh viên"
+                               className="p-2 text-outline hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
+                               <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                            </button>
+
+                            {/* Popover Nhập Nhận Xét (Hiện ra khi bấm vào icon Nhận xét) */}
+                            {kltnInput[id]?.showComment && (
+                               <div className="absolute right-12 top-1/2 -translate-y-1/2 w-72 p-4 bg-white rounded-2xl shadow-2xl border border-outline-variant/20 z-50 text-left anim-pop origin-right">
+                                  <div className="flex items-center justify-between mb-3">
+                                     <p className="text-xs font-bold text-primary flex items-center gap-1.5">
+                                        <span className="material-symbols-outlined text-[16px]">rate_review</span>
+                                        Nhận xét KLTN
+                                     </p>
+                                     <button onClick={() => setKltnInput(prev => ({...prev, [id]: {...prev[id], showComment: false}}))} className="text-outline hover:text-error transition-colors"><span className="material-symbols-outlined text-[18px]">close</span></button>
+                                  </div>
+                                  <textarea rows="4" 
+                                     value={nx} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], nhanXet: e.target.value}}))}
+                                     className="w-full text-xs p-3 bg-surface-container-low border border-outline-variant/20 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-primary/30 resize-none text-on-surface" 
+                                     placeholder="Nhập đánh giá, nhận xét chi tiết của bạn về Khóa luận..."></textarea>
+                                  <div className="mt-3 flex justify-end">
+                                     <button onClick={handleSaveKLTN} disabled={kltnProcessing === sv.studentEmail}
+                                        className="px-4 py-2 bg-primary text-white text-[11px] font-bold rounded-xl flex items-center gap-1.5 hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50">
+                                        {kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span> : <span className="material-symbols-outlined text-[14px]">save</span>}
+                                        Lưu nhận xét
+                                     </button>
+                                  </div>
+                               </div>
+                            )}
+                          </div>
                         </td>
 
                       </tr>
