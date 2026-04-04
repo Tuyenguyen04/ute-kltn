@@ -317,12 +317,24 @@ function Sidebar({tab, setTab, logout, role}){
   );
 }
 // ── HEADER ────────────────────────────────────────────────────────────────────
+// ── HEADER ────────────────────────────────────────────────────────────────────
 function Header({notifications=[]}){
   const [showNoti,setShowNoti]=useState(false);
   return(
     <header className="fixed top-0 z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 shadow-sm" style={{left:'18rem',right:0}}>
       <h1 className="font-headline text-base font-extrabold uppercase tracking-wide text-blue-900">ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</h1>
+      
       <div className="flex items-center gap-4">
+        {/* NÚT LÀM MỚI THÊM VÀO ĐÂY */}
+        <button 
+          onClick={() => window.location.reload()} 
+          className="flex items-center gap-2 px-4 py-2 bg-surface-container-low hover:bg-surface-container text-on-surface rounded-full transition-colors font-bold text-sm"
+          title="Tải lại trang để cập nhật dữ liệu mới nhất"
+        >
+          <span className="material-symbols-outlined text-[18px]">refresh</span>
+          Làm mới
+        </button>
+
         <div className="relative">
           <button onClick={()=>setShowNoti(v=>!v)} className="relative p-2 hover:bg-surface-container rounded-full transition-colors">
             <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
@@ -365,7 +377,6 @@ function Header({notifications=[]}){
     </header>
   );
 }
-
 // ================================================================
 // SHEET CONFIG
 // ================================================================
