@@ -611,10 +611,10 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
   return(
     <div className="space-y-6 anim-fade">
 
-      {/* ── Row 1: Actions + Grade BCTT + Grade KLTN ──────────── */}
+      {/* ── Row 1: Actions + Grade Cards ──────────── */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
         {/* Action buttons */}
-        <div className="md:col-span-8 p-6 bg-surface-container-lowest rounded-3xl shadow-sm">
+        <div className={`${kltnUnlocked ? 'md:col-span-7' : 'md:col-span-8'} p-6 bg-surface-container-lowest rounded-3xl shadow-sm`}>
           <div className="grid grid-cols-3 gap-4">
 
             {/* 1. Đăng ký BCTT — chỉ mở khi chưa từng đăng ký */}
@@ -712,18 +712,24 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
           )}
         </div>
 
-        {/* ── KLTN Action Panel — hiện khi đủ điều kiện ─────────── */}
-        {kltnUnlocked&&(
-          <KLTNActionPanel
-            dashData={dashData}
-            onRegisterKLTN={onRegisterKLTN}
-            onSubmitKLTN={onSubmitKLTN}
-            toast={toast}
-          />
-        )}
+        {/* ── Cột phải: Grade cards (+ KLTNActionPanel nếu unlock) ── */}
+        <div className={`${kltnUnlocked ? 'md:col-span-5' : 'md:col-span-4'} flex flex-col gap-6`}>
+
+          {/* KLTN Action Panel — hiện khi đủ điều kiện */}
+          {kltnUnlocked&&(
+            <KLTNActionPanel
+              dashData={dashData}
+              onRegisterKLTN={onRegisterKLTN}
+              onSubmitKLTN={onSubmitKLTN}
+              toast={toast}
+            />
+          )}
+
+          {/* Grade cards hàng ngang */}
+          <div className="grid grid-cols-2 gap-4">
 
         {/* Grade BCTT card */}
-        <div className={`md:col-span-2 p-6 rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm transition-all duration-500
+        <div className={`p-6 rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm transition-all duration-500
           ${failed&&locked?'bg-red-100':passed?'bg-tertiary-fixed':'bg-tertiary-fixed'}`}>
           <span className="text-[10px] font-bold uppercase tracking-widest opacity-70">Kết quả thực tập</span>
 
@@ -767,7 +773,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
           const kltnPassed = kltnGrade!==null && kltnGrade>=5;
           const kltnFailed = kltnGrade!==null && kltnGrade<5;
           return(
-            <div className={`md:col-span-2 p-6 rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm transition-all duration-500
+            <div className={`p-6 rounded-3xl flex flex-col items-center justify-center text-center space-y-2 shadow-sm transition-all duration-500
               ${kltnFailed&&kltnLocked?'bg-red-100':kltnPassed?'bg-primary-fixed':'bg-primary-fixed'}`}>
               <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 text-on-primary-fixed">Kết quả KLTN</span>
 
@@ -807,6 +813,9 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             </div>
           );
         })()}
+
+          </div>{/* end grid grid-cols-2 grade cards */}
+        </div>{/* end right column */}
       </div>
 
       {/* ── Row 2: GV Info + Stepper ───────────────────────────── */}
