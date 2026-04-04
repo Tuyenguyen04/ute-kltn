@@ -1133,7 +1133,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             detail:`GV: ${instr?.name||'--'} • ${instr?.term||'--'}`,
             sub:`${co||'--'} ${dashData?.position?'· '+dashData.position:''}`,
             time: submittedAt || instr?.term || '--',
-            status:status||'pending',
+            status: grade!==null ? 'approved' : (status||'pending'),
           });
 
           // Sự kiện 2: GV duyệt / từ chối (chỉ hiện khi có kết quả)
@@ -1168,17 +1168,18 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
 
           // Sự kiện 3: Nộp báo cáo
           if(dashData?.reportSubmitted){
+            const reportGraded = grade!==null;
             allHistory.push({
               loai:'BCTT',
               icon:'upload_file',
-              iconBg:'bg-secondary-container/20',
-              iconTx:'text-secondary',
+              iconBg: reportGraded?'bg-tertiary-fixed/30':'bg-secondary-container/20',
+              iconTx: reportGraded?'text-on-tertiary-fixed':'text-secondary',
               action:'Nộp hồ sơ thực tập (BC + Giấy XNTT)',
               topic,
-              detail:`GV ${instr?.name||'--'} đang chấm điểm`,
-              sub:'Thời gian chấm: tối đa 2 tuần',
+              detail: reportGraded?`GV ${instr?.name||'--'} đã chấm điểm xong`:`GV ${instr?.name||'--'} đang chấm điểm`,
+              sub: reportGraded?'':'Thời gian chấm: tối đa 2 tuần',
               time:'--',
-              status:'pending',
+              status: reportGraded?'approved':'pending',
             });
           }
 
