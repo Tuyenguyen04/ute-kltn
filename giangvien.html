@@ -433,13 +433,16 @@ async function fetchDangKyByGV(gvEmail) {
   }
   return { pendingList, approvedList };
 }
-
 async function fetchKLTNByGV(gvEmail) {
   const rows = await fetchSheetCSV(SHEET_KLTN_TAB);
-  const pendingOutline = [], activeList = [];
+  const pendingTopic = [];   // Đăng ký đề tài (chưa có đề cương)
+  const pendingOutline = []; // Đã nộp đề cương chờ duyệt
+  const activeList = [];     // Đang thực hiện
+
   for (const r of rows) {
     if (!r[7] || r[7].toLowerCase().trim() !== gvEmail.toLowerCase().trim()) continue;
-    const step = parseInt(r[14]) || 0;
+    const step = parseInt(r[14]) || 1;
+    const decuUrl = r[15] || '';
     const obj = {
       studentEmail : r[1]  || '',
       studentName  : r[2]  || '',
@@ -450,14 +453,24 @@ async function fetchKLTNByGV(gvEmail) {
       note         : r[10] || '',
       status       : r[11] || 'pending',
       grade        : r[12] !== '' ? parseFloat(r[12]) : null,
-      step,
+      step, decuUrl,
+      type         : 'kltn' // Đánh dấu là KLTN
     };
-    if (step === 1 && obj.status === 'pending') pendingOutline.push(obj);
-    else if (step >= 2) activeList.push(obj);
-  }
-  return { pendingOutline, activeList };
-}
 
+    if (obj.status === 'pending') {
+      // Nếu ở step 1 và chưa có link đề cương -> Là Đăng ký đề tài
+      if (step === 1 && !decuUrl) {
+        pendingTopic.push(obj);
+      } else {
+        // Đã có đề cương -> Đợi duyệt đề cương
+        pendingOutline.push(obj);
+      }
+    } else if (obj.status === 'approved' || step >= 2) {
+      activeList.push(obj);
+    }
+  }
+  return { pendingTopic, pendingOutline, activeList };
+}
 async function fetchHoiDongByGV(gvEmail) {
   const rows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
   const email = gvEmail.toLowerCase().trim();
@@ -671,17 +684,25 @@ function TabThongTinChung({toast, addGVNotification}) {
   const [loading,      setLoading]      = React.useState(true);
   const [processingId, setProcessingId] = React.useState(null);
   const [rejectTarget, setRejectTarget] = React.useState(null);
+  const [editTopicTarget, setEditTopicTarget] = React.useState(null); // Thêm state cho Chỉnh sửa
 
   React.useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
     try {
-      const { pendingList: p, approvedList: a } = await fetchDangKyByGV(SESSION.email);
-      setPendingList(p);
-      setApprovedList(a);
+      // Tải đồng thời dữ liệu BCTT và KLTN
+      const [bcttData, kltnData] = await Promise.all([
+        fetchDangKyByGV(SESSION.email),
+        fetchKLTNByGV(SESSION.email)
+      ]);
+      
+      const bcttPending = bcttData.pendingList.map(r => ({...r, type: 'bctt'}));
+      // Gộp Đăng ký BCTT và Đăng ký Đề tài KLTN vào chung 1 mảng
+      setPendingList([...bcttPending, ...kltnData.pendingTopic]);
+      setApprovedList(bcttData.approvedList);
     } catch(e) {
-      toast.show('Không tải được dữ liệu từ Sheet. Kiểm tra quyền chia sẻ.', 'error');
+      toast.show('Không tải được dữ liệu từ Sheet.', 'error');
     }
     setLoading(false);
   }
@@ -689,57 +710,76 @@ function TabThongTinChung({toast, addGVNotification}) {
   async function handleApprove(req) {
     setProcessingId(req.studentEmail);
     try {
-      const res = await apiPost({ action:'updateStatus', studentEmail: req.studentEmail, status:'approved' });
+      let res;
+      // Phân nhánh API tùy theo KLTN hay BCTT
+      if (req.type === 'kltn') {
+        res = await apiPost({ action: 'updateKLTNStatus', studentEmail: req.studentEmail, status: 'approved', step: 1 });
+      } else {
+        res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'approved' });
+      }
+
       if (res.success) {
         toast.show(`✅ Đã duyệt đề tài của ${req.studentName}!`, 'success');
-        await apiPost({
-          action: 'saveNotification',
-          forEmail: req.studentEmail,
-          message: `✅ GV ${SESSION.name} đã duyệt đề tài "${req.topic}" của bạn!`,
-        });
-        addGVNotification({ message: `Đã duyệt đề tài cho ${req.studentName}`, time: 'Vừa xong' });
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
-        setApprovedList(prev => [{ ...req, status:'approved' }, ...prev]);
+        if (req.type === 'bctt') setApprovedList(prev => [{ ...req, status:'approved' }, ...prev]);
       } else {
-        console.error('Server trả về lỗi:', res);
-        toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error');
+        toast.show(res.message || 'Duyệt thất bại.', 'error');
       }
-    } catch(e) { console.error('Approve error:', e); toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setProcessingId(null);
   }
 
   async function handleReject(req, reason) {
     setProcessingId(req.studentEmail);
     try {
-      const res = await apiPost({ action:'updateStatus', studentEmail: req.studentEmail, status:'rejected', reason: reason || '' });
+      let res;
+      if (req.type === 'kltn') {
+        res = await apiPost({ action: 'updateKLTNStatus', studentEmail: req.studentEmail, status: 'rejected', note: reason });
+      } else {
+        res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'rejected', reason: reason });
+      }
+
       if (res.success) {
         toast.show(`Đã từ chối đề tài của ${req.studentName}.`, 'warn');
-        await apiPost({
-          action: 'saveNotification',
-          forEmail: req.studentEmail,
-          message: `❌ GV ${SESSION.name} đã từ chối đề tài "${req.topic}". Lý do: ${reason}`,
-        });
-        addGVNotification({ message: `Đã từ chối đề tài của ${req.studentName}`, time: 'Vừa xong' });
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
       } else {
-        toast.show(res.message || 'Từ chối thất bại. Thử lại.', 'error');
+        toast.show(res.message || 'Từ chối thất bại.', 'error');
       }
-    } catch(e) { console.error('Reject error:', e); toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
     setProcessingId(null);
     setRejectTarget(null);
   }
 
+  async function handleEditTopic(req, newTopic) {
+    setProcessingId(req.studentEmail);
+    try {
+      const res = await apiPost({
+        action: 'updateTopic',
+        type: req.type, // Tự động nhận diện 'bctt' hay 'kltn'
+        studentEmail: req.studentEmail,
+        newTopic: newTopic
+      });
+      if (res.success) {
+        toast.show('Đã cập nhật tên đề tài thành công!', 'success');
+        setPendingList(prev => prev.map(r => r.studentEmail === req.studentEmail ? { ...r, topic: newTopic } : r));
+      } else {
+        toast.show(res.message || 'Cập nhật thất bại.', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setProcessingId(null);
+    setEditTopicTarget(null);
+  }
+
   const stats = [
-    { label:'Sinh viên hướng dẫn', value: approvedList.length.toString(), icon:'school',          color:'bg-primary text-on-primary',               sub:'Đang hướng dẫn' },
-    { label:'Chờ duyệt',           value: pendingList.length.toString(),   icon:'pending_actions', color:'bg-secondary-fixed text-on-secondary-fixed', sub:'Cần xử lý'      },
-    { label:'Buổi Hội đồng',       value: '--',                            icon:'groups',          color:'bg-tertiary-fixed text-on-tertiary-fixed',   sub:'Xem tab Hội đồng' },
+    { label:'Sinh viên hướng dẫn', value: approvedList.length.toString(), icon:'school', color:'bg-primary text-on-primary', sub:'Đang hướng dẫn' },
+    { label:'Chờ duyệt', value: pendingList.length.toString(), icon:'pending_actions', color:'bg-secondary-fixed text-on-secondary-fixed', sub:'Cần xử lý' },
+    { label:'Buổi Hội đồng', value: '--', icon:'groups', color:'bg-tertiary-fixed text-on-tertiary-fixed', sub:'Xem tab Hội đồng' },
   ];
 
   return (
     <div className="space-y-6 anim-fade">
-      {rejectTarget && (
-        <RejectModal request={rejectTarget} onConfirm={handleReject} onClose={() => setRejectTarget(null)}/>
-      )}
+      {rejectTarget && <RejectModal request={rejectTarget} onConfirm={handleReject} onClose={() => setRejectTarget(null)}/>}
+      {editTopicTarget && <EditOutlineModal request={editTopicTarget} onConfirm={handleEditTopic} onClose={() => setEditTopicTarget(null)}/>}
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col md:flex-row gap-6 items-center">
@@ -806,60 +846,69 @@ function TabThongTinChung({toast, addGVNotification}) {
               <div className="flex flex-col items-center justify-center py-16 gap-3 bg-surface-container-lowest rounded-2xl border border-outline-variant/15">
                 <span className="material-symbols-outlined text-5xl opacity-15">inbox</span>
                 <p className="text-sm font-medium text-on-surface-variant">Không có yêu cầu nào đang chờ duyệt</p>
-                <p className="text-xs text-on-surface-variant/60">Sinh viên đăng ký đề tài sẽ xuất hiện ở đây</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {pendingList.map((r, i) => (
-                  <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 border-secondary hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex-1 min-w-0 pr-3">
-                        <h4 className="font-bold text-on-surface text-sm mb-0.5 line-clamp-1">📄 {r.topic}</h4>
-                        <p className="text-xs text-on-surface-variant">
-                          <span className="font-semibold">{r.studentName}</span> • MSSV: {r.maSo}
-                        </p>
+                {pendingList.map((r, i) => {
+                  // Đổi màu sắc nút & thẻ dựa vào BCTT hay KLTN
+                  const isKltn = r.type === 'kltn';
+                  const badgeClass = isKltn ? 'bg-tertiary-fixed text-on-tertiary-fixed' : 'bg-secondary-container/20 text-on-secondary-container';
+                  const btnColorClass = isKltn ? 'bg-[#00593c] text-white' : 'bg-primary text-white';
+
+                  return (
+                    <div key={i} className={`bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 hover:shadow-md transition-shadow ${isKltn ? 'border-[#00593c]' : 'border-secondary'}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1 min-w-0 pr-3">
+                          <h4 className="font-bold text-on-surface text-sm mb-0.5 line-clamp-1">📄 {r.topic}</h4>
+                          <p className="text-xs text-on-surface-variant">
+                            <span className="font-semibold">{r.studentName}</span> • MSSV: {r.maSo}
+                          </p>
+                        </div>
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${badgeClass}`}>
+                          {isKltn ? 'KLTN' : 'BCTT'}
+                        </span>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-secondary-container/20 text-on-secondary-container flex-shrink-0">BCTT</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded-xl mb-4">
-                      {[
-                        { label:'Đơn vị TT',     val: r.company       },
-                        { label:'Vị trí TT',     val: r.position      },
-                        { label:'Thời gian TT',  val: r.internDuration },
-                        { label:'Học kỳ',        val: r.term          },
-                      ].map((item, j) => (
-                        <div key={j}>
-                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{item.label}</p>
-                          <p className="text-xs font-semibold text-on-surface mt-0.5">{item.val || '--'}</p>
+                      
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded-xl mb-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Học kỳ</p>
+                          <p className="text-xs font-semibold text-on-surface mt-0.5">{r.term || '--'}</p>
                         </div>
-                      ))}
-                      {r.note && (
-                        <div className="col-span-2">
-                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ghi chú SV</p>
-                          <p className="text-xs text-on-surface-variant mt-0.5 italic">"{r.note}"</p>
+                        <div>
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{isKltn ? 'Ngành' : 'Đơn vị TT'}</p>
+                          <p className="text-xs font-semibold text-on-surface mt-0.5">{isKltn ? r.nganh : r.company || '--'}</p>
                         </div>
-                      )}
+                        {r.note && (
+                          <div className="col-span-2">
+                            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ghi chú SV</p>
+                            <p className="text-xs text-on-surface-variant mt-0.5 italic">"{r.note}"</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* BỘ 3 NÚT CHỨC NĂNG */}
+                      <div className="flex gap-2">
+                        <button onClick={() => handleApprove(r)} disabled={processingId === r.studentEmail}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-50 flex justify-center items-center gap-1.5 shadow-sm ${btnColorClass}`}>
+                          {processingId === r.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">check_circle</span>}
+                          Duyệt đề tài
+                        </button>
+
+                        <button onClick={() => setEditTopicTarget(r)} disabled={processingId === r.studentEmail}
+                          className="flex-1 py-2.5 rounded-xl bg-primary-fixed text-on-primary-fixed-variant text-xs font-bold hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
+                          <span className="material-symbols-outlined text-sm">edit_document</span>
+                          Chỉnh sửa
+                        </button>
+
+                        <button onClick={() => setRejectTarget(r)} disabled={processingId === r.studentEmail}
+                          className="flex-1 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex justify-center items-center gap-1.5 shadow-sm">
+                          <span className="material-symbols-outlined text-sm">cancel</span>
+                          Từ chối
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleApprove(r)}
-                        disabled={processingId === r.studentEmail}
-                        className="flex-1 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5">
-                        {processingId === r.studentEmail
-                          ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span>
-                          : <span className="material-symbols-outlined text-sm">check_circle</span>}
-                        Phê duyệt
-                      </button>
-                      <button
-                        onClick={() => setRejectTarget(r)}
-                        disabled={processingId === r.studentEmail}
-                        className="flex-1 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm">cancel</span>
-                        Từ chối
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -867,8 +916,9 @@ function TabThongTinChung({toast, addGVNotification}) {
           <section>
             <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-primary">group</span>
-              Sinh viên đang hướng dẫn
+              Sinh viên BCTT đang hướng dẫn
             </h3>
+            {/* Giữ nguyên phần danh sách approvedList */}
             {!loading && approvedList.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-14 gap-3 bg-surface-container-lowest rounded-2xl border border-outline-variant/15">
                 <span className="material-symbols-outlined text-5xl opacity-15">school</span>
@@ -894,15 +944,11 @@ function TabThongTinChung({toast, addGVNotification}) {
                             <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
                             <p className="text-[10px] text-on-surface-variant">{sv.maSo}</p>
                           </td>
-                          <td className="px-5 py-3 max-w-[200px]">
-                            <p className="text-sm text-on-surface line-clamp-2">{sv.topic}</p>
-                          </td>
+                          <td className="px-5 py-3 max-w-[200px]"><p className="text-sm text-on-surface line-clamp-2">{sv.topic}</p></td>
                           <td className="px-5 py-3 text-sm text-on-surface-variant">{sv.company || '--'}</td>
                           <td className="px-5 py-3 text-xs text-on-surface-variant">{sv.term || '--'}</td>
                           <td className="px-5 py-3">
-                            {sv.grade != null
-                              ? <span className="font-black text-primary">{sv.grade.toFixed(1)}</span>
-                              : <span className="text-xs text-on-surface-variant/50 italic">Chưa có</span>}
+                            {sv.grade != null ? <span className="font-black text-primary">{sv.grade.toFixed(1)}</span> : <span className="text-xs text-on-surface-variant/50 italic">Chưa có</span>}
                           </td>
                         </tr>
                       ))}
@@ -917,8 +963,7 @@ function TabThongTinChung({toast, addGVNotification}) {
         <div>
           <section className="bg-surface-container p-6 rounded-2xl">
             <h3 className="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">history</span>
-              Hoạt động gần đây
+              <span className="material-symbols-outlined text-primary">history</span> Hoạt động gần đây
             </h3>
             <div className="flex flex-col items-center justify-center py-10 gap-3 text-on-surface-variant">
               <span className="material-symbols-outlined text-4xl opacity-15">inbox</span>
@@ -930,7 +975,6 @@ function TabThongTinChung({toast, addGVNotification}) {
     </div>
   );
 }
-
 // ── FILE VIEWER MODAL ─────────────────────────────────────────────────────────
 function FileViewerModal({ url, studentName, fileName, isPlagiarism, isXNTT, onClose }) {
   function getDriveId(u) {
@@ -1066,7 +1110,7 @@ function TabSinhVienHuongDan({toast}) {
     setKltnProcessing(null);
     setEditOutlineTarget(null);
   }
-  React.useEffect(() => {
+React.useEffect(() => {
     (async () => {
       setLoading(true);
       setKltnLoading(true);
@@ -1079,7 +1123,9 @@ function TabSinhVienHuongDan({toast}) {
         const init = {};
         approvedList.forEach(sv => { init[sv.maSo] = sv.grade != null ? String(sv.grade) : ''; });
         setGrades(init);
-        setKltnPending(pendingOutline);
+        
+        // CẬP NHẬT Ở ĐÂY: Bây giờ pendingOutline chỉ chứa đề cương
+        setKltnPending(pendingOutline); 
         setKltnActive(activeList);
       } catch(e) { toast.show('Không tải được danh sách sinh viên.', 'error'); }
       setLoading(false);
