@@ -1216,21 +1216,44 @@ function KLTNGradingModal({ student, onSave, onClose, processing }) {
     </div>
   );
 }
-// ── MODAL NHẬN XÉT (CHAT) KLTN ───────────────────────────────────────────────
+// ── MODAL NHẬN XÉT & CÂU HỎI KLTN (CẬP NHẬT THEO FORM ẢNH 1) ─────────────────
 function FeedbackModal({ student, onSave, onClose, processing }) {
-  const [text, setText] = React.useState(student.nhanXet || '');
+  // Logic tách dữ liệu cũ (nếu có) để điền lại vào form khi mở lên
+  let initYeuCau = '';
+  let initCauHoi = '';
+  
+  if (student.nhanXet) {
+    if (student.nhanXet.includes('[CÂU HỎI]')) {
+      const parts = student.nhanXet.split('[CÂU HỎI]');
+      initYeuCau = parts[0].replace('[YÊU CẦU CHỈNH SỬA]\n', '').trim();
+      initCauHoi = parts[1] ? parts[1].trim() : '';
+    } else {
+      initYeuCau = student.nhanXet; // Fallback nếu là nhận xét kiểu cũ
+    }
+  }
+
+  const [yeuCau, setYeuCau] = React.useState(initYeuCau);
+  const [cauHoi, setCauHoi] = React.useState(initCauHoi);
+
+  const handleSave = () => {
+    // Gộp 2 trường lại thành 1 chuỗi để lưu vào 1 ô trên Google Sheet
+    const combinedText = `[YÊU CẦU CHỈNH SỬA]\n${yeuCau.trim()}\n\n[CÂU HỎI]\n${cauHoi.trim()}`;
+    onSave(combinedText);
+  };
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl anim-slide flex flex-col">
-        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem]">
+      <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[95vh]">
+        
+        {/* Header */}
+        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem] flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined">chat</span>
+              <span className="material-symbols-outlined">assignment_add</span>
             </div>
             <div>
-              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Nhận xét & Góp ý</h2>
-              <p className="text-xs text-on-surface-variant">{student.studentName} • KLTN</p>
+              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Yêu cầu chỉnh sửa & Đặt câu hỏi</h2>
+              <p className="text-xs text-on-surface-variant">{student.studentName} • {student.maSo}</p>
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
@@ -1238,28 +1261,63 @@ function FeedbackModal({ student, onSave, onClose, processing }) {
           </button>
         </div>
         
-        <div className="p-6">
-          <label className="text-sm font-semibold text-on-surface-variant block mb-2">
-            Ghi chú / Yêu cầu chỉnh sửa cho sinh viên:
-          </label>
-          <textarea
-            value={text} onChange={e => setText(e.target.value)}
-            rows={6} autoFocus
-            placeholder="Nhập nội dung yêu cầu sinh viên hoàn thiện, sửa đổi..."
-            className="w-full bg-surface-container-lowest border-2 border-outline-variant/30 rounded-xl p-4 focus:border-primary focus:ring-0 outline-none text-sm resize-none"
-          />
-          <p className="text-xs text-on-surface-variant mt-2 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">info</span> Sinh viên sẽ thấy nhận xét này trên màn hình của họ.
-          </p>
+        {/* Body */}
+        <div className="p-6 overflow-y-auto space-y-6 bg-surface-container-lowest">
+          
+          {/* Phần 1: Yêu cầu chỉnh sửa */}
+          <div>
+            <label className="text-base font-bold text-on-surface block mb-2 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">edit_note</span>
+              Yêu cầu SV chỉnh sửa:
+            </label>
+            <textarea
+              value={yeuCau} onChange={e => setYeuCau(e.target.value)}
+              rows={5} autoFocus
+              placeholder="Nhập các nội dung sinh viên cần chỉnh sửa..."
+              className="w-full bg-white border border-outline-variant/50 rounded-xl p-4 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm resize-none shadow-inner"
+              style={{
+                lineHeight: '28px',
+                backgroundImage: 'linear-gradient(transparent, transparent 27px, #e2e2eb 28px)',
+                backgroundSize: '100% 28px',
+                backgroundAttachment: 'local'
+              }}
+            />
+          </div>
+
+          {/* Phần 2: Câu hỏi */}
+          <div>
+            <label className="text-base font-bold text-on-surface block mb-2 flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-[20px]">help</span>
+              Câu hỏi: <span className="text-sm font-medium text-on-surface-variant italic">(tối thiểu 2 câu)</span>
+            </label>
+            <textarea
+              value={cauHoi} onChange={e => setCauHoi(e.target.value)}
+              rows={5}
+              placeholder="Nhập các câu hỏi vấn đáp cho sinh viên..."
+              className="w-full bg-white border border-outline-variant/50 rounded-xl p-4 focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none text-sm resize-none shadow-inner"
+              style={{
+                lineHeight: '28px',
+                backgroundImage: 'linear-gradient(transparent, transparent 27px, #e2e2eb 28px)',
+                backgroundSize: '100% 28px',
+                backgroundAttachment: 'local'
+              }}
+            />
+          </div>
+
+          <div className="bg-primary-fixed/30 p-3 rounded-lg flex items-start gap-2">
+            <span className="material-symbols-outlined text-[16px] text-primary mt-0.5">info</span>
+            <p className="text-xs text-on-surface-variant">Sinh viên sẽ thấy nội dung này trên giao diện hệ thống của họ để chuẩn bị trả lời và chỉnh sửa báo cáo.</p>
+          </div>
         </div>
 
-        <div className="p-5 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-lowest rounded-b-[2rem]">
+        {/* Footer */}
+        <div className="p-5 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-low rounded-b-[2rem] flex-shrink-0">
           <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
-            Đóng
+            Hủy
           </button>
-          <button onClick={() => onSave(text)} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
-            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">send</span>}
-            Lưu nhận xét
+          <button onClick={handleSave} disabled={processing || (!yeuCau.trim() && !cauHoi.trim())} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
+            Lưu yêu cầu
           </button>
         </div>
       </div>
