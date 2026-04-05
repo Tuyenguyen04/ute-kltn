@@ -1099,6 +1099,15 @@ function TabReset({toast}){
       danger:false,
       action:'adminResetGVSlots',
     },
+    {
+      id:'hoidong',
+      icon:'gavel',
+      title:'Reset Hội đồng',
+      desc:'Xoá toàn bộ phân công hội đồng KLTN (GV phản biện, Trưởng HĐ, Thành viên, Thư ký). Sheet HoiDongKLTN giữ lại header. GV và SV sẽ không còn thấy thông tin hội đồng.',
+      color:'from-violet-500 to-purple-700',
+      danger:true,
+      action:'adminResetHoiDong',
+    },
   ];
 
   async function doReset(opt){
