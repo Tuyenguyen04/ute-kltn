@@ -1181,9 +1181,9 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
         const svName  = SESSION.name||'';
         const svMSSV  = SESSION.maSo||'';
         const kltnTopic = kltnSV?.topic||'--';
-        const plagiarismUrl = kltnSV?.plagiarismUrl||kltnSV?.plagUrl||kltnSV?.checkDaoVanUrl||null;
-        const plagiarismPct = kltnSV?.plagiarismPct||kltnSV?.daoVanPct||null;
-        const gvComment  = kltnSV?.gvComment||kltnSV?.nhanXet||kltnSV?.comment||null;
+        const plagiarismUrl = kltnSV?.checkDaoVanUrl||kltnSV?.daoVanUrl||kltnSV?.plagiarismUrl||kltnSV?.plagUrl||null;
+        const plagiarismPct = kltnSV?.daoVanPct||kltnSV?.plagiarismPct||null;
+        const gvComment  = kltnSV?.nhanXet||kltnSV?.gvComment||kltnSV?.comment||null;
         const kltnUrl    = kltnSV?.kltnUrl||null;
         const bienBanUrl = kltnSV?.bienBanUrl||kltnSV?.bienBanHoiDongUrl||kltnSV?.minutesUrl||null;
         const kltnPassed = kltnGradeSV>=5;
