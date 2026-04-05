@@ -2266,68 +2266,256 @@ diemPB       : (r[10] !== '' && r[10] !== undefined && !isNaN(parseFloat(String(
   );
 }
 
+// ── MODAL CHẤM ĐIỂM HỘI ĐỒNG ──────────────────────────────────────────────────
+function HDGradingModal({ student, onSave, onClose, processing }) {
+  const [scores, setScores] = React.useState({ tb: '', nd: '', sp: '', tl: '' });
+  
+  // Tính tổng điểm realtime
+  const totalScore = (parseFloat(scores.tb)||0) + (parseFloat(scores.nd)||0) + (parseFloat(scores.sp)||0) + (parseFloat(scores.tl)||0);
+
+  const handleComplete = () => {
+    if (scores.tb === '' || scores.nd === '' || scores.sp === '' || scores.tl === '') {
+      alert("Vui lòng nhập đầy đủ điểm cho cả 4 tiêu chí!"); return;
+    }
+    if (totalScore > 10 || totalScore < 0) {
+      alert("Tổng điểm bị sai lệch, vui lòng kiểm tra lại!"); return;
+    }
+    onSave(totalScore, ''); // Gửi điểm về (nhận xét đã có modal Chat riêng)
+  };
+
+  const handleInput = (key, val, max) => {
+    let num = parseFloat(val);
+    if (val !== '' && (num < 0 || num > max)) return;
+    setScores(prev => ({ ...prev, [key]: val }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[90vh]">
+        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">gavel</span>
+            </div>
+            <div>
+              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Chấm điểm Hội đồng</h2>
+              <p className="text-xs text-on-surface-variant">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto">
+          <table className="w-full text-left border-collapse border border-outline-variant/30 rounded-xl overflow-hidden">
+            <thead>
+              <tr className="bg-surface-container-low text-on-surface text-sm">
+                <th className="p-3 border border-outline-variant/30 font-bold">Tiêu chí đánh giá</th>
+                <th className="p-3 border border-outline-variant/30 font-bold text-center w-24">Tối đa</th>
+                <th className="p-3 border border-outline-variant/30 font-bold text-center w-32">Điểm chấm</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td className="p-3 border border-outline-variant/30">
+                  <p className="font-bold text-sm text-on-surface">1. Hình thức và Trình bày báo cáo</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Slide rõ ràng, tác phong báo cáo tự tin, đúng thời gian...</p>
+                </td>
+                <td className="p-3 border border-outline-variant/30 text-center font-bold text-primary">2.0</td>
+                <td className="p-3 border border-outline-variant/30"><input type="number" step="0.1" min="0" max="2" value={scores.tb} onChange={e => handleInput('tb', e.target.value, 2)} className="w-full text-center bg-surface-container-lowest border-2 border-outline-variant/30 rounded-lg py-1.5 focus:border-primary focus:ring-0 outline-none font-bold" placeholder="0 - 2.0"/></td>
+              </tr>
+              <tr>
+                <td className="p-3 border border-outline-variant/30">
+                  <p className="font-bold text-sm text-on-surface">2. Nội dung KLTN</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Đáp ứng mục tiêu, cơ sở lý thuyết, phương pháp nghiên cứu đúng đắn...</p>
+                </td>
+                <td className="p-3 border border-outline-variant/30 text-center font-bold text-primary">4.0</td>
+                <td className="p-3 border border-outline-variant/30"><input type="number" step="0.1" min="0" max="4" value={scores.nd} onChange={e => handleInput('nd', e.target.value, 4)} className="w-full text-center bg-surface-container-lowest border-2 border-outline-variant/30 rounded-lg py-1.5 focus:border-primary focus:ring-0 outline-none font-bold" placeholder="0 - 4.0"/></td>
+              </tr>
+              <tr>
+                <td className="p-3 border border-outline-variant/30">
+                  <p className="font-bold text-sm text-on-surface">3. Chất lượng Sản phẩm / Kết quả Demo</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Sản phẩm thực tế, chạy ổn định, đáp ứng được yêu cầu đề tài...</p>
+                </td>
+                <td className="p-3 border border-outline-variant/30 text-center font-bold text-primary">2.0</td>
+                <td className="p-3 border border-outline-variant/30"><input type="number" step="0.1" min="0" max="2" value={scores.sp} onChange={e => handleInput('sp', e.target.value, 2)} className="w-full text-center bg-surface-container-lowest border-2 border-outline-variant/30 rounded-lg py-1.5 focus:border-primary focus:ring-0 outline-none font-bold" placeholder="0 - 2.0"/></td>
+              </tr>
+              <tr>
+                <td className="p-3 border border-outline-variant/30">
+                  <p className="font-bold text-sm text-on-surface">4. Trả lời câu hỏi</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Nắm vững kiến thức, bảo vệ được quan điểm, trả lời trọng tâm...</p>
+                </td>
+                <td className="p-3 border border-outline-variant/30 text-center font-bold text-primary">2.0</td>
+                <td className="p-3 border border-outline-variant/30"><input type="number" step="0.1" min="0" max="2" value={scores.tl} onChange={e => handleInput('tl', e.target.value, 2)} className="w-full text-center bg-surface-container-lowest border-2 border-outline-variant/30 rounded-lg py-1.5 focus:border-primary focus:ring-0 outline-none font-bold" placeholder="0 - 2.0"/></td>
+              </tr>
+              <tr className="bg-surface-container-low">
+                <td colSpan="2" className="p-3 border border-outline-variant/30 text-right font-black text-on-surface">TỔNG ĐIỂM:</td>
+                <td className="p-3 border border-outline-variant/30 text-center font-black text-2xl text-primary">{totalScore.toFixed(1)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="p-6 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-lowest rounded-b-[2rem]">
+          <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">Hủy bỏ</button>
+          <button onClick={handleComplete} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
+            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">check_circle</span>}
+            Lưu Điểm HĐ
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 // ── TAB 4: HỘI ĐỒNG ──────────────────────────────────────────────────────────
 function TabHoiDong({toast}) {
-  const [hdList,   setHdList]   = React.useState([]);
+  const [students, setStudents] = React.useState([]);
   const [loading,  setLoading]  = React.useState(true);
   const [search,   setSearch]   = React.useState('');
-  const [hdGrades, setHdGrades] = React.useState({});
-  const [saving,   setSaving]   = React.useState({});
+
+  const [viewerFile, setViewerFile] = React.useState(null);
+  const [uploadingDaoVan, setUploadingDaoVan] = React.useState({});
+  const [hdInput, setHdInput] = React.useState({}); 
+  const [feedbackTarget, setFeedbackTarget] = React.useState(null);
+  const [hdProcessing, setHdProcessing] = React.useState(null);
+  const [gradingHDTarget, setGradingHDTarget] = React.useState(null);
+
+  // Lưu điểm HD từ modal
+  async function handleSaveHdFromModal(totalGrade, nhanXetStr) {
+    const sv = gradingHDTarget;
+    setHdProcessing(sv.studentEmail); 
+    try {
+      const res = await apiPost({ action:'saveGrade', type:'hd', studentEmail: sv.studentEmail, grade: totalGrade });
+      if (res.success) {
+        toast.show('Đã cập nhật điểm Hội đồng thành công!', 'success');
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemHD: totalGrade} : s));
+        setGradingHDTarget(null);
+      } else {
+        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối tới Google Sheet.', 'error'); }
+    setHdProcessing(null);
+  }
+
+  // Lưu nhận xét
+  async function handleSaveFeedback(text) {
+    const sv = feedbackTarget;
+    setHdProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: text });
+      if (res.success) {
+        toast.show('Đã lưu nhận xét Hội đồng thành công!', 'success');
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXet: text} : s));
+        setFeedbackTarget(null);
+      } else { toast.show(res.message || 'Lỗi lưu nhận xét.', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối mạng.', 'error'); }
+    setHdProcessing(null);
+  }
 
   React.useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const list = await fetchHoiDongByGV(SESSION.email);
-        setHdList(list);
-        const init = {};
-        list.forEach(sv => { init[sv.maSo] = ''; });
-        setHdGrades(init);
-      } catch(e) { toast.show('Không tải được dữ liệu hội đồng.', 'error'); }
+        const [hdRows, kltnRows] = await Promise.all([
+          fetchSheetCSV(SHEET_HOIDONG_TAB),
+          fetchSheetCSV(SHEET_KLTN_TAB)
+        ]);
+        
+        // Lấy data KLTN
+        const kltnMap = {};
+        kltnRows.forEach(r => {
+           kltnMap[r[3]] = { // r[3] MSSV
+             topic: r[5] || '',
+             kltnUrl: r[16] || '',
+             daoVanUrl: r[17] || '',
+             daoVanPct: r[18] || '',
+             nhanXet: r[19] || ''
+           };
+        });
+
+        const email = SESSION.email.toLowerCase().trim();
+        const hdList = hdRows
+          .filter(r => (
+            (r[4]||'').toLowerCase().trim() === email || // Phản biện
+            (r[5]||'').toLowerCase().includes(email)  || // Chủ tịch
+            (r[6]||'').toLowerCase().includes(email)  || // TV1
+            (r[7]||'').toLowerCase().includes(email)  || // TV2
+            (r[8]||'').toLowerCase().includes(email)     // Thư ký
+          ))
+          .map(r => {
+            const maSo = r[1] || '';
+            const kData = kltnMap[maSo] || {};
+            return {
+              studentEmail : r[0] || '',
+              maSo         : maSo,
+              studentName  : r[2] || '',
+              gvPhanBienName: r[3] || '',
+              gvPhanBienEmail: r[4] || '',
+              truongHD     : r[5] || '',
+              thanhVien1   : r[6] || '',
+              thanhVien2   : r[7] || '',
+              thuKy        : r[8] || '',
+              ngayBaoVe    : r[12] || '', // Giả sử cột 12-13-14 chứa Lịch
+              gioBaoVe     : r[13] || '',
+              phongBaoVe   : r[14] || '',
+              diemHD       : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',', '.')))) ? parseFloat(String(r[11]).replace(',', '.')) : null,
+              ...kData
+            };
+          });
+        setStudents(hdList);
+      } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
       setLoading(false);
     })();
   }, []);
 
-  const filtered = hdList.filter(s =>
+  const filtered = students.filter(s =>
     s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
   );
 
-  function getRoleLabel(sv) {
+  // Xác định quyền của giảng viên trên SV này
+  function getRoleInfo(sv) {
     const email = SESSION.email.toLowerCase().trim();
-    if ((sv.gvPhanBienEmail||'').toLowerCase().trim() === email) return { label:'Phản biện', color:'bg-secondary-container text-on-secondary-container' };
-    if ((sv.truongHD||'').toLowerCase().includes(email))         return { label:'Trưởng HĐ', color:'bg-primary text-white' };
-    if ((sv.thuKy||'').toLowerCase().includes(email))            return { label:'Thư ký',    color:'bg-tertiary-fixed text-on-tertiary-fixed' };
-    return { label:'Thành viên', color:'bg-surface-container-highest text-on-surface-variant' };
-  }
-
-  async function handleSaveHdGrade(maSo) {
-    const g = hdGrades[maSo];
-    if (!g) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
-    const num = parseFloat(g);
-    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
-    const sv = hdList.find(s => s.maSo === maSo);
-    if (!sv) return;
-    setSaving(prev => ({ ...prev, [maSo]: true }));
-    try {
-      const res = await apiPost({ action:'saveGrade', type:'hd', studentEmail: sv.studentEmail, grade: num });
-      if (res.success) {
-        toast.show(`Đã lưu điểm hội đồng ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
-      } else {
-        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
-      }
-    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
-    setSaving(prev => ({ ...prev, [maSo]: false }));
+    let badges = [];
+    let isCouncilMember = false;
+    
+    if ((sv.gvPhanBienEmail||'').toLowerCase().trim() === email) {
+        badges.push({ label:'Phản biện', color:'bg-secondary-container text-on-secondary-container' });
+    }
+    if ((sv.truongHD||'').toLowerCase().includes(email)) {
+        badges.push({ label:'Chủ tịch', color:'bg-primary text-white' });
+        isCouncilMember = true;
+    }
+    if ((sv.thuKy||'').toLowerCase().includes(email)) {
+        badges.push({ label:'Thư ký', color:'bg-tertiary-fixed text-on-tertiary-fixed' });
+        isCouncilMember = true;
+    }
+    if ((sv.thanhVien1||'').toLowerCase().includes(email) || (sv.thanhVien2||'').toLowerCase().includes(email)) {
+        badges.push({ label:'Ủy viên', color:'bg-surface-container-highest text-on-surface-variant' });
+        isCouncilMember = true;
+    }
+    return { badges, isCouncilMember };
   }
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
       <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
-      <p className="text-sm font-medium">Đang tải từ sheet HoiDongKLTN...</p>
+      <p className="text-sm font-medium">Đang tải danh sách Hội đồng...</p>
     </div>
   );
 
   return (
     <div className="space-y-6 anim-fade">
+      {viewerFile && <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} isPlagiarism={viewerFile.isPlagiarism} isXNTT={viewerFile.isXNTT} onClose={() => setViewerFile(null)} />}
+      
+      {feedbackTarget && (
+        <FeedbackModal student={feedbackTarget} processing={hdProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)} />
+      )}
+      
+      {gradingHDTarget && (
+        <HDGradingModal student={gradingHDTarget} processing={hdProcessing === gradingHDTarget.studentEmail} onSave={handleSaveHdFromModal} onClose={() => setGradingHDTarget(null)} />
+      )}
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-3xl font-black text-on-surface tracking-tight">Hội đồng KLTN</h2>
@@ -2341,76 +2529,171 @@ function TabHoiDong({toast}) {
         </div>
       </div>
 
-      {hdList.length === 0 ? (
+      {students.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
           <span className="material-symbols-outlined text-7xl opacity-10">gavel</span>
-          <p className="text-base font-bold text-on-surface-variant">Chưa có dữ liệu hội đồng</p>
-          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">
-            Admin điền thông tin vào sheet HoiDongKLTN (cột Trưởng HĐ / TV / Thư ký) là sẽ hiện ở đây.
-          </p>
+          <p className="text-base font-bold text-on-surface-variant">Chưa có sinh viên bảo vệ</p>
+          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">Khi admin xếp lịch hội đồng, danh sách sẽ hiện ở đây.</p>
         </div>
       ) : (
-        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
+        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden border border-outline-variant/10">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse" style={{minWidth:'900px'}}>
+            <table className="w-full text-left border-collapse" style={{minWidth:'1000px'}}>
               <thead>
-                <tr className="bg-surface-container-low">
-                  {['Sinh viên','Vai trò của bạn','Thành phần hội đồng','Điểm HĐ'].map((h, i) => (
-                    <th key={i} className={`px-8 py-4 text-left text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider ${i===3?'text-center':''}`}>{h}</th>
-                  ))}
+                <tr className="bg-surface-container-low text-on-surface-variant text-[11px] font-black uppercase tracking-widest">
+                  <th className="px-6 py-4">Sinh viên & Đề tài</th>
+                  <th className="px-4 py-4">Hội đồng & Lịch bảo vệ</th>
+                  <th className="px-4 py-4 text-center">Bản KLTN</th>
+                  <th className="px-4 py-4 text-center">Check Đạo văn</th>
+                  <th className="px-4 py-4 text-center">Điểm HĐ</th>
+                  <th className="px-2 py-4"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/15">
+              <tbody className="divide-y divide-outline-variant/10">
                 {filtered.map(sv => {
-                  const role = getRoleLabel(sv);
+                  const id = sv.maSo;
+                  const pct = hdInput[id]?.daoVanPct !== undefined ? hdInput[id].daoVanPct : sv.daoVanPct;
+                  const { badges, isCouncilMember } = getRoleInfo(sv);
+
+                  const handleUploadDaoVan = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    setUploadingDaoVan(prev => ({...prev, [id]: true}));
+                    try {
+                      const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KetQuaDaoVan_KLTN' });
+                      if (res.success) {
+                        toast.show('Tải lên thành công!', 'success');
+                        setStudents(prev => prev.map(s => s.maSo === id ? {...s, daoVanUrl: res.driveUrl} : s));
+                      } else toast.show(res.message, 'error');
+                    } catch(err) { toast.show('Lỗi upload!', 'error'); }
+                    setUploadingDaoVan(prev => ({...prev, [id]: false}));
+                  };
+
+                  const handleSavePct = async () => {
+                    if (!hdInput[id] || hdInput[id].daoVanPct === undefined) return;
+                    setHdProcessing(sv.studentEmail);
+                    try {
+                      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, daoVanPct: hdInput[id].daoVanPct });
+                      if (res.success) {
+                        toast.show('Đã lưu % đạo văn!', 'success');
+                        setStudents(prev => prev.map(s => s.maSo === id ? {...s, daoVanPct: hdInput[id].daoVanPct} : s));
+                      } else toast.show(res.message, 'error');
+                    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+                    setHdProcessing(null);
+                  };
+
                   return (
-                    <tr key={sv.maSo} className="hover:bg-surface-container-low/50 transition-colors">
-                      <td className="px-8 py-5">
-                        <div className="flex items-center gap-3">
-                          <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                    <tr key={sv.maSo} className={`hover:bg-surface-container-low/30 transition-colors align-top ${!isCouncilMember ? 'bg-surface-container-lowest opacity-90' : ''}`}>
+                      
+                      {/* 1. Sinh viên & Đề tài */}
+                      <td className="px-6 py-5">
+                        <div className="flex gap-3 mb-2">
+                          <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0 mt-0.5"/>
                           <div>
-                            <p className="font-bold text-on-surface">{sv.studentName}</p>
+                            <p className="font-bold text-sm text-on-surface">{sv.studentName}</p>
                             <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.studentEmail}</p>
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                               {badges.map((b,i) => <span key={i} className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${b.color}`}>{b.label}</span>)}
+                            </div>
                           </div>
                         </div>
+                        <p className="text-sm font-medium line-clamp-2 mt-2" title={sv.topic}>{sv.topic || '--'}</p>
                       </td>
-                      <td className="px-8 py-5">
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${role.color}`}>{role.label}</span>
-                      </td>
-                      <td className="px-6 py-5">
+
+                      {/* 2. Hội đồng & Lịch bảo vệ */}
+                      <td className="px-4 py-5">
                         <div className="space-y-1 text-xs">
-                          {sv.truongHD   && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
-                          {sv.thanhVien1 && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
-                          {sv.thanhVien2 && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
-                          {sv.thuKy      && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
+                          {/* Khối hiển thị Lịch */}
+                          {(sv.ngayBaoVe || sv.gioBaoVe || sv.phongBaoVe) && (
+                            <div className="mb-2 p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 inline-block">
+                              <p className="font-bold text-primary flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">event</span> {sv.ngayBaoVe || 'Chưa xếp lịch'}</p>
+                              <p className="text-on-surface-variant flex items-center gap-1.5 mt-0.5"><span className="material-symbols-outlined text-[14px]">schedule</span> {sv.gioBaoVe || '--'} <span className="mx-1">•</span> <span className="material-symbols-outlined text-[14px]">meeting_room</span> Phòng: {sv.phongBaoVe || '--'}</p>
+                            </div>
+                          )}
+                          
+                          {/* Danh sách thành viên HĐ */}
+                          {sv.truongHD    && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
+                          {sv.thanhVien1  && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
+                          {sv.thanhVien2  && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
+                          {sv.thuKy       && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
                           {sv.gvPhanBienName && <p><span className="text-secondary font-bold">PB:</span> {sv.gvPhanBienName}</p>}
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="flex items-center gap-2">
-                            <input type="number" min="0" max="10" step="0.1" placeholder="0.0"
-                              value={hdGrades[sv.maSo] || ''}
-                              onChange={e => setHdGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
-                              className="w-16 h-10 rounded-xl bg-primary-container/10 text-center font-black text-primary focus:ring-2 focus:ring-primary/20 outline-none"/>
-                            <button onClick={() => handleSaveHdGrade(sv.maSo)}
-                              disabled={!!saving[sv.maSo]}
-                              className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
-                              {saving[sv.maSo]
-                                ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
-                                : <span className="material-symbols-outlined text-[16px]">save</span>}
+
+                      {/* CÁC CỘT SAU CHỈ MỞ CHO THÀNH VIÊN HỘI ĐỒNG (KHÔNG PHẢI CHỈ CÓ PB) */}
+                      {!isCouncilMember ? (
+                        <td colSpan="4" className="px-4 py-5 text-center align-middle bg-surface-container-low/30 relative">
+                           <div className="flex flex-col items-center justify-center text-outline-variant gap-2 opacity-60 absolute inset-0">
+                             <span className="material-symbols-outlined text-3xl">lock</span>
+                             <p className="text-[11px] font-bold">GV Phản biện không thực hiện tính năng này</p>
+                           </div>
+                        </td>
+                      ) : (
+                        <>
+                          {/* 3. Bản KLTN */}
+                          <td className="px-4 py-5 text-center align-middle">
+                            {sv.kltnUrl ? (
+                               <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })} className="inline-flex flex-col items-center gap-0.5 group">
+                                 <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">menu_book</span></span>
+                                 <span className="text-[9px] font-bold text-primary">Xem</span>
+                               </button>
+                            ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
+                          </td>
+
+                          {/* 4. Đạo văn */}
+                          <td className="px-4 py-5 text-center align-middle">
+                            <div className="flex items-center justify-center gap-2">
+                              {sv.daoVanUrl ? (
+                                <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></button>
+                              ) : (
+                                <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
+                                  {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
+                                  <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
+                                </label>
+                              )}
+                              <div className="flex flex-col gap-1 items-center">
+                                <div className={`flex items-center border rounded-lg overflow-hidden w-[65px] h-[40px] transition-colors bg-surface-container-low border-outline-variant/40 text-on-surface`}>
+                                   <input type="number" min="0" max="100" placeholder="%" value={pct} onChange={e => setHdInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))} className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
+                                   <span className="text-[10px] font-bold opacity-60 pr-2">%</span>
+                                </div>
+                                {hdInput[id]?.daoVanPct !== undefined && hdInput[id].daoVanPct !== sv.daoVanPct && (
+                                  <button onClick={handleSavePct} className="text-[9px] bg-primary text-white px-2 py-0.5 rounded shadow-sm">Lưu %</button>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* 5. Điểm Hội đồng */}
+                          <td className="px-4 py-5 text-center align-middle">
+                            {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
+                              <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
+                                <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
+                                <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
+                              </div>
+                            ) : (
+                              <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm mx-auto">
+                                {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> : <span className="material-symbols-outlined text-[16px]">edit_square</span>} Chấm
+                              </button>
+                            )}
+                          </td>
+
+                          {/* 6. Nhận xét */}
+                          <td className="px-2 py-5 text-center align-middle">
+                            <button onClick={() => setFeedbackTarget(sv)} title="Nhận xét Hội đồng" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
+                              <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                              {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
                             </button>
-                          </div>
-                        </div>
-                      </td>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   );
                 })}
               </tbody>
             </table>
           </div>
-          <div className="px-8 py-4 bg-surface-container-low border-t border-outline-variant/10">
-            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {hdList.length} sinh viên trong hội đồng</p>
+          <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10">
+            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {students.length} sinh viên</p>
           </div>
         </div>
       )}
