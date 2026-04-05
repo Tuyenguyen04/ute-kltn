@@ -421,7 +421,7 @@ async function fetchDangKyByGV(gvEmail) {
       term            : r[11] || '',
       note            : r[12] || '',
       status          : r[13] || 'pending',
-      grade           : r[14] !== '' ? parseFloat(r[14]) : null,
+      grade           : r[14] !== '' ? parseFloat(String(r[14]).replace(',', '.')) : null,
       position        : r[16] || '',
       internDuration  : r[17] || '',
       reportSubmitted : r[18]?.toString().toLowerCase() === 'true',
@@ -454,7 +454,7 @@ async function fetchKLTNByGV(gvEmail) {
       term         : r[9]  || '',
       note         : r[10] || '',
       status       : r[11] || 'pending',
-      grade        : r[12] !== '' ? parseFloat(r[12]) : null,
+      grade        : r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null,
       step, decuUrl,
       type         : 'kltn',
       
@@ -1261,7 +1261,7 @@ React.useEffect(() => {
       setLoading(true);
       setKltnLoading(true);
       try {
-        const [{ approvedList }, { pendingOutline, activeList }] = await Promise.all([
+        const [{ approvedList }, { pendingTopic, activeList }] = await Promise.all([
           fetchDangKyByGV(SESSION.email),
           fetchKLTNByGV(SESSION.email),
         ]);
@@ -1270,8 +1270,8 @@ React.useEffect(() => {
         approvedList.forEach(sv => { init[sv.maSo] = sv.grade != null ? String(sv.grade) : ''; });
         setGrades(init);
         
-        // CẬP NHẬT Ở ĐÂY: Bây giờ pendingOutline chỉ chứa đề cương
-        setKltnPending(pendingOutline); 
+        // FIX: dùng pendingTopic (SV chờ duyệt đề tài) thay vì pendingOutline (luôn rỗng)
+        setKltnPending(pendingTopic); 
         setKltnActive(activeList);
       } catch(e) { toast.show('Không tải được danh sách sinh viên.', 'error'); }
       setLoading(false);
@@ -2170,7 +2170,9 @@ function TabPhanCongPhanBien({toast}) {
     try {
       // Tải DS Sinh viên KLTN đã duyệt
       const kltnRows = await fetchSheetCSV(SHEET_KLTN_TAB);
-      const kltnList = kltnRows.filter(r => r[11] === 'approved').map(r => ({
+      const kltnList = kltnRows
+        .filter(r => r[11] === 'approved' || parseInt(r[14]) >= 1)
+        .map(r => ({
         studentEmail: r[1], studentName: r[2], maSo: r[3], topic: r[5], gvhd: r[6], term: r[9] || 'Kỳ 2 - 24/25'
       }));
 
