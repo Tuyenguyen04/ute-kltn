@@ -1890,20 +1890,29 @@ const [gradingPBTarget, setGradingPBTarget] = React.useState(null);
   // Hàm xử lý lưu điểm từ Modal
   async function handleSavePbFromModal(totalGrade, nhanXetStr) {
     const sv = gradingPBTarget;
-    setPbProcessing(sv.studentEmail);
+    setPbProcessing(sv.studentEmail); // Hiện loading xoay xoay
     try {
-      // Lưu điểm tổng vào sheet Hội đồng
+      // 1. Lệnh này sẽ GHI ĐIỂM lên sheet HoiDongKLTN (Cột Điểm PB)
       const res = await apiPost({ action:'saveGrade', type:'pb', studentEmail: sv.studentEmail, grade: totalGrade });
+      
+      // 2. Lệnh này sẽ GHI KẾT LUẬN vào sheet DangKyKLTN (Cột Nhận xét)
+      if (nhanXetStr) {
+        await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: nhanXetStr });
+      }
+
       if (res.success) {
-        toast.show('Đã lưu điểm phản biện thành công!', 'success');
-        // Cập nhật lại UI bảng
-        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemPB: totalGrade} : s));
-        setGradingPBTarget(null);
+        toast.show('Đã cập nhật điểm lên Google Sheet thành công!', 'success');
+        
+        // Cập nhật giao diện: Ô điểm lập tức biến thành số điểm và hiện badge "Đã chấm"
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemPB: totalGrade, nhanXet: nhanXetStr} : s));
+        setGradingPBTarget(null); // Đóng Modal
       } else {
         toast.show(res.message || 'Lưu điểm thất bại!', 'error');
       }
-    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
-    setPbProcessing(null);
+    } catch(e) { 
+      toast.show('Lỗi kết nối tới Google Sheet.', 'error'); 
+    }
+    setPbProcessing(null); // Tắt loading
   }
   // Hàm lưu nhận xét
   async function handleSaveFeedback(text) {
@@ -1962,8 +1971,7 @@ const pbList = hdRows
               daoVanPct    : kData.daoVanPct,
               nhanXet      : kData.nhanXet,
               
-              // ĐÂY LÀ DÒNG CODE ĐƯỢC THÊM VÀO (Lấy cột Điểm PB - Index 10)
-              diemPB       : r[10] !== '' ? parseFloat(r[10]) : null
+diemPB       : (r[10] !== '' && r[10] !== undefined && !isNaN(parseFloat(String(r[10]).replace(',', '.')))) ? parseFloat(String(r[10]).replace(',', '.')) : null
             };
           });
         setStudents(pbList);
@@ -2167,12 +2175,10 @@ const pbList = hdRows
                       </td>
 {/* 6. Điểm phản biện */}
                       <td className="px-4 py-5 text-center">
-                        {sv.diemPB != null ? (
-                          <div className="flex flex-col items-center gap-1">
+                        {sv.diemPB !== null && !isNaN(sv.diemPB) ? (
+                          <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingPBTarget(sv)} title="Nhấn vào để chấm lại">
                             <span className="text-2xl font-black text-primary">{Number(sv.diemPB).toFixed(1)}</span>
-                            <button onClick={() => setGradingPBTarget(sv)} disabled={pbProcessing === sv.studentEmail} className="text-[10px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full hover:bg-tertiary-fixed-dim transition-colors">
-                              Sửa điểm
-                            </button>
+                            <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
                           </div>
                         ) : (
                           <button onClick={() => setGradingPBTarget(sv)} disabled={pbProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm mx-auto">
