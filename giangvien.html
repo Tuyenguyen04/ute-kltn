@@ -169,7 +169,7 @@ async function apiPostFile(body, onProgress){
       return result;
     } else {
       const driveUrl = await uploadFileInChunks(_file, folderName||'Upload_UTE', onProgress);
-      return await _gasPost({ ...rest, driveUrl,
+      return await _gasPost({ ...rest, folderName, driveUrl,
         fileName:_file.name, mimeType:_file.type||'application/octet-stream',
       });
     }
@@ -1440,7 +1440,7 @@ function TabSinhVienHuongDan({toast}) {
       }
       if (res.success) {
         toast.show('Đã lưu điểm KLTN thành công!', 'success');
-        setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, grade: parseFloat(totalGrade), nhanXet: nhanXetStr, status: 'graded'} : s ));
+        setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, grade: parseFloat(totalGrade), nhanXet: nhanXetStr, status: 'graded', daoVanPct: pct} : s ));
         setGradingKLTNTarget(null);
       } else { toast.show(res.message || 'Lưu điểm thất bại!', 'error'); }
     } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
