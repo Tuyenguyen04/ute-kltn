@@ -1,1 +1,2717 @@
+<!DOCTYPE html>
+<html class="light" lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>UTE Hub — Trưởng Bộ Môn</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script id="tailwind-config">
+tailwind.config={darkMode:"class",theme:{extend:{colors:{
+  "primary":"#00317e","primary-container":"#0046ad","on-primary":"#ffffff",
+  "primary-fixed":"#dae2ff","primary-fixed-dim":"#b2c5ff","on-primary-fixed":"#001847","on-primary-fixed-variant":"#0040a0",
+  "secondary":"#855300","secondary-container":"#fea619","on-secondary":"#ffffff",
+  "secondary-fixed":"#ffddb8","on-secondary-fixed":"#2a1700","on-secondary-fixed-variant":"#653e00","on-secondary-container":"#684000",
+  "tertiary":"#003f29","tertiary-container":"#00593c","on-tertiary":"#ffffff","on-tertiary-container":"#44d69b",
+  "tertiary-fixed":"#6ffbbe","tertiary-fixed-dim":"#4edea3","on-tertiary-fixed":"#002113","on-tertiary-fixed-variant":"#005236",
+  "error":"#ba1a1a","error-container":"#ffdad6","on-error":"#ffffff","on-error-container":"#93000a",
+  "background":"#faf8ff","on-background":"#191b22",
+  "surface":"#faf8ff","surface-bright":"#faf8ff","surface-dim":"#d9d9e2",
+  "surface-container-lowest":"#ffffff","surface-container-low":"#f3f3fc",
+  "surface-container":"#ededf6","surface-container-high":"#e7e7f1","surface-container-highest":"#e2e2eb",
+  "surface-variant":"#e2e2eb","on-surface":"#191b22","on-surface-variant":"#434653",
+  "outline":"#737784","outline-variant":"#c3c6d5",
+  "inverse-surface":"#2e3037","inverse-on-surface":"#f0f0f9","inverse-primary":"#b2c5ff","surface-tint":"#2559bf",
+},fontFamily:{"headline":["Manrope"],"body":["Inter"],"label":["Inter"]},
+borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"}}}}
+</script>
+<style>
+  *{box-sizing:border-box}
+  body{font-family:'Inter',sans-serif;background:#faf8ff;color:#191b22;margin:0;min-height:100vh}
+  h1,h2,h3,h4,.font-headline{font-family:'Manrope',sans-serif}
+  .material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;vertical-align:middle}
+  .fill-icon{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes slideUp{from{opacity:0;transform:translateY(32px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes popIn{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .anim-fade{animation:fadeIn .35s ease both}
+  .anim-slide{animation:slideUp .4s cubic-bezier(.22,1,.36,1) both}
+  .anim-pop{animation:popIn .5s cubic-bezier(.34,1.56,.64,1) both}
+  .anim-spin{animation:spin .8s linear infinite}
+  ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#c3c6d5;border-radius:99px}
+  input,select,textarea{font-family:'Inter',sans-serif}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef} = React;
 
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const API_URL = 'https://script.google.com/macros/s/AKfycbwi7YsrvUDl6wUIgyHMG1CHpazxgy2YOKr9uogyPfbhGWl9BaorEzevKNz8jJPETqs/exec';
+
+// Đọc session giảng viên từ localStorage (được set bởi login.html)
+const SESSION = {
+  email: localStorage.getItem('ute_email') || '',
+  role:  localStorage.getItem('ute_role')  || '',
+  name:  localStorage.getItem('ute_name')  || 'Nguyễn Văn A',
+  maGV:  localStorage.getItem('ute_maSo')  || 'GV001',
+  nganh: localStorage.getItem('ute_nganh') || '',
+};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+async function apiGet(params){
+  const qs=new URLSearchParams(params).toString();
+  const r=await fetch(`${API_URL}?${qs}`,{method:'GET',redirect:'follow'});
+  return r.json();
+}
+async function apiPost(body){
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(body).map(([k,v])=>[k,String(v??'')]))
+  ).toString();
+  console.log('📤 apiPost params:', body);
+  const r = await fetch(`${API_URL}?${qs}`, { method:'GET', redirect:'follow' });
+  const text = await r.text();
+  console.log('📥 apiPost response:', text);
+  try{ return JSON.parse(text); }
+  catch(e){ console.error('JSON parse error:', e); throw new Error('Response không phải JSON: '+text.slice(0,300)); }
+}
+async function _gasPost(body){
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+    body: JSON.stringify(body),
+    redirect: 'follow',
+  });
+  const text = await r.text();
+  try{ return JSON.parse(text); }
+  catch(e){ console.error('GAS parse error:', e, text.slice(0,200)); throw new Error('Response không phải JSON'); }
+}
+
+// ── Chunked file upload ───────────────────────────────────────
+const CHUNK_SIZE_BYTES = 3 * 1024 * 1024;
+
+async function uploadFileInChunks(file, folderName, onProgress){
+  const buffer = await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result);
+    r.onerror=rej;
+    r.readAsArrayBuffer(file);
+  });
+
+  const bytes = new Uint8Array(buffer);
+  const totalChunks = Math.ceil(bytes.length / CHUNK_SIZE_BYTES);
+  const uploadId = Date.now() + '_' + Math.random().toString(36).slice(2,8);
+
+  for(let i=0; i<totalChunks; i++){
+    const start = i * CHUNK_SIZE_BYTES;
+    const end   = Math.min(start + CHUNK_SIZE_BYTES, bytes.length);
+    const chunk = bytes.slice(start, end);
+    let binary = '';
+    chunk.forEach(b => binary += String.fromCharCode(b));
+    const chunkBase64 = btoa(binary);
+
+    let attempt = 0, ok = false;
+    while(attempt < 3 && !ok){
+      try{
+        const res = await _gasPost({
+          action:'uploadChunk',
+          uploadId, chunkIndex:i, totalChunks,
+          chunkData:chunkBase64,
+          fileName:file.name, mimeType:file.type||'application/octet-stream',
+          folderName,
+        });
+        if(!res.success) throw new Error(res.message||'Chunk failed');
+        ok = true;
+      }catch(err){
+        attempt++;
+        if(attempt>=3) throw new Error(`Upload thất bại chunk ${i}: ${err.message}`);
+        await new Promise(r=>setTimeout(r, 1000*attempt));
+      }
+    }
+    if(onProgress) onProgress(Math.round(((i+1)/totalChunks)*100));
+  }
+
+  const finalRes = await _gasPost({
+    action:'finalizeUpload',
+    uploadId, totalChunks,
+    fileName:file.name, mimeType:file.type||'application/octet-stream',
+    folderName,
+  });
+  if(!finalRes.success) throw new Error(finalRes.message||'Finalize thất bại');
+  return finalRes.driveUrl;
+}
+
+const DIRECT_UPLOAD_LIMIT = 15 * 1024 * 1024;
+
+async function apiPostFile(body, onProgress){
+  const { _file, folderName, ...rest } = body;
+
+  if(_file && _file instanceof File){
+    if(_file.size <= DIRECT_UPLOAD_LIMIT){
+      const b64 = await new Promise((res,rej)=>{
+        const r=new FileReader();
+        r.onload=()=>res(r.result.split(',')[1]);
+        r.onerror=rej;
+        r.readAsDataURL(_file);
+      });
+      if(onProgress) onProgress(50);
+      const result = await _gasPost({ ...rest, folderName,
+        fileBase64:b64, fileName:_file.name,
+        mimeType:_file.type||'application/octet-stream',
+      });
+      if(onProgress) onProgress(100);
+      return result;
+    } else {
+      const driveUrl = await uploadFileInChunks(_file, folderName||'Upload_UTE', onProgress);
+      return await _gasPost({ ...rest, driveUrl,
+        fileName:_file.name, mimeType:_file.type||'application/octet-stream',
+      });
+    }
+  }
+
+  return await _gasPost(body);
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function Toast({message,type,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,4500);return()=>clearTimeout(t)},[]);
+  return(
+    <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[500] flex items-center gap-2 px-6 py-3 rounded-full shadow-2xl text-white font-bold text-sm anim-fade"
+      style={{background:type==='error'?'#ba1a1a':type==='warn'?'#855300':'#005236',minWidth:'240px',justifyContent:'center'}}>
+      <span className="material-symbols-outlined text-lg">{type==='error'?'error':type==='warn'?'warning':'check_circle'}</span>
+      {message}
+    </div>
+  );
+}
+function useToast(){
+  const [t,setT]=useState(null);
+  const show=useCallback((msg,tp='success')=>setT({message:msg,type:tp,k:Date.now()}),[]);
+  return{toast:t,show,hide:()=>setT(null)};
+}
+
+// ── AVATAR ────────────────────────────────────────────────────────────────────
+function Av({name='',cls=''}){
+  const parts=name.trim().split(' ').filter(Boolean);
+  const ini=parts.length>=2
+    ?( parts[parts.length-2][0]+parts[parts.length-1][0] ).toUpperCase()
+    :( parts[0]?.[0]||'?' ).toUpperCase();
+  const cols=['from-blue-500 to-blue-700','from-emerald-500 to-teal-600','from-violet-500 to-purple-700','from-orange-400 to-red-500'];
+  const idx=name.charCodeAt(0)%4||0;
+  return <div className={`rounded-full bg-gradient-to-br ${cols[idx]} flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${cls}`}>{ini}</div>;
+}
+
+// ── SPINNER ───────────────────────────────────────────────────────────────────
+function Spinner({text='Đang tải...'}){
+  return(
+    <div className="flex flex-col items-center justify-center py-20 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">{text}</p>
+    </div>
+  );
+}
+
+// ── AVATAR MENU ───────────────────────────────────────────────────────────────
+function AvatarMenu(){
+  const [open,setOpen]=useState(false);
+  useEffect(()=>{
+    if(!open) return;
+    const h=(e)=>{if(!e.target.closest('#gv-avatar-wrap')) setOpen(false);};
+    document.addEventListener('mousedown',h);
+    return()=>document.removeEventListener('mousedown',h);
+  },[open]);
+  return(
+    <div id="gv-avatar-wrap" className="relative">
+      <button onClick={()=>setOpen(o=>!o)}
+        className={`focus:outline-none rounded-full transition-all ${open?'ring-2 ring-primary/50':''} hover:ring-2 hover:ring-primary/30`}>
+        <Av name={SESSION.name} cls="w-9 h-9 cursor-pointer"/>
+      </button>
+      {open&&(
+        <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-2xl shadow-2xl border border-outline-variant/20 z-50 overflow-hidden anim-slide">
+          <div className="px-4 py-3 bg-surface-container-low border-b border-outline-variant/10">
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-2">Tài khoản</p>
+            <div className="flex items-center gap-3">
+              <Av name={SESSION.name} cls="w-9 h-9 text-sm flex-shrink-0"/>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-on-surface truncate">{SESSION.name}</p>
+                <p className="text-xs text-on-surface-variant truncate">{SESSION.maGV}</p>
+              </div>
+            </div>
+          </div>
+          <button onClick={()=>{localStorage.clear();window.location.href='login.html';}}
+            className="w-full flex items-center gap-3 px-4 py-3 text-error font-semibold hover:bg-error-container/20 transition-colors text-sm">
+            <span className="material-symbols-outlined text-base">logout</span>
+            Đăng xuất
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function Sidebar({tab, setTab, logout, role}){
+  const baseNav = [
+    {id:'dashboard',  icon:'dashboard',        label:'Thông tin chung'},
+    {id:'sinhvien',   icon:'group',             label:'Sinh viên hướng dẫn'},
+    {id:'phanbien',   icon:'rate_review',       label:'Sinh viên phản biện'},
+    {id:'hoidong',    icon:'gavel',             label:'Hội đồng'},
+  ];
+  
+  // 3 Menu dành riêng cho Trưởng bộ môn
+  const tbmNav = [
+    {id:'phancong_pb', icon:'assignment_ind',   label:'Phân công phản biện'},
+    {id:'phancong_hd', icon:'manage_accounts',  label:'Phân công hội đồng'},
+    {id:'thongke',     icon:'bar_chart',        label:'Thống kê'},
+  ];
+
+  const navItems = role === 'truongbomon' ? [...baseNav, ...tbmNav] : baseNav;
+
+  return(
+    <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-72 bg-slate-50 rounded-r-3xl z-50 p-4 overflow-y-auto">
+      <div className="mb-6 px-4 flex items-center gap-3">
+        <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-primary/20">U</div>
+        <span className="text-2xl font-black text-blue-900 tracking-tight">UTE Hub</span>
+      </div>
+
+      <div className="mb-6 p-4 bg-surface-container rounded-2xl">
+        <div className="flex flex-col items-start gap-2">
+          <Av name={SESSION.name} cls="w-12 h-12"/>
+          <div className="w-full min-w-0">
+            <h4 className="font-bold text-on-surface text-sm truncate">{SESSION.name||'Giảng viên'}</h4>
+            <p className="text-xs text-on-surface-variant font-medium">Mã GV: {SESSION.maGV}</p>
+            <p className="text-xs text-on-surface-variant truncate">{SESSION.email}</p>
+            {/* Đã sửa lại dùng chung màu xanh bình thường */}
+            <span className="inline-block mt-1.5 px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-black rounded-full tracking-wider">
+              {role === 'truongbomon' ? 'TRƯỞNG BỘ MÔN' : 'GIẢNG VIÊN'}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1 space-y-1">
+        {navItems.map(item=>(
+          <button key={item.id} onClick={()=>setTab(item.id)}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all text-left
+              ${tab===item.id?'bg-blue-100 text-blue-800':'text-slate-600 hover:bg-slate-200/50'}`}>
+            <span className={`material-symbols-outlined ${tab===item.id?'fill-icon':''}`}>{item.icon}</span>
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      <div className="mt-4 pt-4 border-t border-outline-variant/20">
+        <button onClick={logout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-error font-semibold hover:bg-error-container/20 transition-colors text-sm">
+          <span className="material-symbols-outlined text-base">logout</span>
+          Đăng xuất
+        </button>
+      </div>
+    </aside>
+  );
+}
+// ── HEADER ────────────────────────────────────────────────────────────────────
+function Header({notifications=[]}){
+  const [showNoti,setShowNoti]=useState(false);
+  return(
+    <header className="fixed top-0 z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-6 py-4 shadow-sm" style={{left:'18rem',right:0}}>
+      <h1 className="font-headline text-base font-extrabold uppercase tracking-wide text-blue-900">ĐẠI HỌC CÔNG NGHỆ KỸ THUẬT TP.HCM</h1>
+      
+      <div className="flex items-center gap-4">
+        {/* NÚT LÀM MỚI THÊM VÀO ĐÂY */}
+        <button 
+          onClick={() => window.location.reload()} 
+          className="flex items-center gap-2 px-4 py-2 bg-surface-container-low hover:bg-surface-container text-on-surface rounded-full transition-colors font-bold text-sm"
+          title="Tải lại trang để cập nhật dữ liệu mới nhất"
+        >
+          <span className="material-symbols-outlined text-[18px]">refresh</span>
+          Làm mới
+        </button>
+
+        <div className="relative">
+          <button onClick={()=>setShowNoti(v=>!v)} className="relative p-2 hover:bg-surface-container rounded-full transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">notifications</span>
+            {notifications.length>0&&(
+              <span className="absolute top-1 right-1 bg-error text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full border-2 border-white">
+                {notifications.length>9?'9+':notifications.length}
+              </span>
+            )}
+          </button>
+          {showNoti&&(
+            <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-outline-variant/20 z-50 overflow-hidden anim-slide">
+              <div className="p-4 border-b border-outline-variant/10 flex items-center justify-between">
+                <h4 className="font-bold text-sm">Thông báo</h4>
+                <button onClick={()=>setShowNoti(false)} className="text-on-surface-variant hover:text-on-surface"><span className="material-symbols-outlined text-sm">close</span></button>
+              </div>
+              {notifications.length===0?(
+                <div className="p-6 text-center text-sm text-on-surface-variant">Không có thông báo mới</div>
+              ):(
+                <div className="max-h-72 overflow-y-auto divide-y divide-outline-variant/10">
+                  {notifications.map((n,i)=>(
+                    <div key={i} className="p4 p-4 hover:bg-surface-container-low transition-colors">
+                      <p className="text-sm font-medium text-on-surface">{n.message}</p>
+                      <p className="text-[11px] text-on-surface-variant mt-1">{n.time}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-low rounded-full">
+          <svg width="20" height="14" viewBox="0 0 20 14" style={{borderRadius:'2px',flexShrink:0}}>
+            <rect width="20" height="14" fill="#DA251D"/>
+            <polygon points="10,2.5 11.18,6.36 15.24,6.36 12.03,8.64 13.21,12.5 10,10.22 6.79,12.5 7.97,8.64 4.76,6.36 8.82,6.36" fill="#FFFF00"/>
+          </svg>
+          <span className="text-xs font-bold text-on-surface">VN</span>
+        </div>
+        <AvatarMenu/>
+      </div>
+    </header>
+  );
+}
+// ================================================================
+// SHEET CONFIG
+// ================================================================
+const SS_ID_CSV   = '1m5lMTtKUNAkCOK1fe5FitHMi3RBlGyd-Ko1n7F7RSFE';
+const SHEET_DANGKY_TAB  = 'DangKy';
+const SHEET_KLTN_TAB    = 'DangKyKLTN';
+const SHEET_HOIDONG_TAB = 'HoiDongKLTN';
+const SHEET_NOTIF_TAB   = 'Notifications';
+const SHEET_USERS_TAB   = 'Users';
+function parseCsvLine(line) {
+  const cols = []; let cur = '', inQ = false;
+  for (let j = 0; j < line.length; j++) {
+    const c = line[j];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { cols.push(cur.replace(/^"|"$/g,'').trim()); cur = ''; }
+    else { cur += c; }
+  }
+  cols.push(cur.replace(/^"|"$/g,'').trim());
+  return cols;
+}
+
+async function fetchSheetCSV(sheetTab) {
+  const url = `https://docs.google.com/spreadsheets/d/${SS_ID_CSV}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetTab)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Không tải được sheet: ' + sheetTab);
+  const text = await res.text();
+  const lines = text.trim().split('\n');
+  return lines.slice(1).map(parseCsvLine);
+}
+
+async function fetchDangKyByGV(gvEmail) {
+  const rows = await fetchSheetCSV(SHEET_DANGKY_TAB);
+  const pendingList = [], approvedList = [];
+  for (const r of rows) {
+    if (!r[9] || r[9].toLowerCase().trim() !== gvEmail.toLowerCase().trim()) continue;
+    const obj = {
+      studentEmail    : r[1]  || '',
+      studentName     : r[2]  || '',
+      maSo            : r[3]  || '',
+      nganh           : r[4]  || '',
+      topic           : r[6]  || '',
+      company         : r[7]  || '',
+      term            : r[11] || '',
+      note            : r[12] || '',
+      status          : r[13] || 'pending',
+      grade           : r[14] !== '' ? parseFloat(String(r[14]).replace(',', '.')) : null,
+      position        : r[16] || '',
+      internDuration  : r[17] || '',
+      reportSubmitted : r[18]?.toString().toLowerCase() === 'true',
+      reportDriveUrl  : r[19] || '',
+      xnttDriveUrl    : r[20] || '',
+    };
+    if (obj.status === 'pending') pendingList.push(obj);
+    else if (obj.status === 'approved' || obj.status === 'graded') approvedList.push(obj);
+  }
+  return { pendingList, approvedList };
+}
+async function fetchKLTNByGV(gvEmail) {
+  const rows = await fetchSheetCSV(SHEET_KLTN_TAB);
+  const pendingTopic = [];   // Đăng ký đề tài (chưa có đề cương)
+  const pendingOutline = []; // Đã nộp đề cương chờ duyệt
+  const activeList = [];     // Đang thực hiện
+
+  for (const r of rows) {
+    if (!r[7] || r[7].toLowerCase().trim() !== gvEmail.toLowerCase().trim()) continue;
+    
+    const step = (r[14] === '' || r[14] === null || r[14] === undefined) ? 0 : (parseInt(r[14]) || 0);
+    const decuUrl = r[15] || '';
+    
+    const obj = {
+      studentEmail : r[1]  || '',
+      studentName  : r[2]  || '',
+      maSo         : r[3]  || '',
+      nganh        : r[4]  || '',
+      topic        : r[5]  || '',
+      term         : r[9]  || '',
+      note         : r[10] || '',
+      status       : r[11] || 'pending',
+      grade        : r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null,
+      step, decuUrl,
+      type         : 'kltn',
+      
+      // -- ĐÂY LÀ 4 DÒNG MỚI ĐỂ ĐỌC DỮ LIỆU BƯỚC 2 --
+      kltnUrl      : r[16] || '', // Cột Q: Link KLTN SV nộp
+      daoVanPct    : r[17] || '', // Cột R: % Đạo văn
+      daoVanUrl    : r[18] || '', // Cột S: File check đạo văn
+      nhanXet      : r[19] || ''  // Cột T: Nhận xét
+    };
+
+    // FIX: Ưu tiên step >= 1 TRƯỚC — SV đã nộp KLTN phải vào activeList
+    // dù status trong sheet là gì (tránh bị hiện lại ở "chờ duyệt đề tài")
+    if (step >= 1) {
+      activeList.push(obj);
+    } else if (obj.status === 'pending') {
+      // Chưa nộp KLTN, đề tài chờ GV duyệt
+      pendingTopic.push(obj);
+    } else if (obj.status === 'approved') {
+      // GV đã duyệt đề tài, SV chưa nộp KLTN → hiện trong bảng KLTN đang làm
+      activeList.push(obj);
+    }
+  }
+  
+  return { pendingTopic, pendingOutline, activeList };
+}
+async function fetchHoiDongByGV(gvEmail) {
+  const rows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
+  const email = gvEmail.toLowerCase().trim();
+  return rows.filter(r =>
+    (r[4]||'').toLowerCase().trim() === email ||
+    (r[5]||'').toLowerCase().includes(email)  ||
+    (r[6]||'').toLowerCase().includes(email)  ||
+    (r[7]||'').toLowerCase().includes(email)  ||
+    (r[8]||'').toLowerCase().includes(email)
+  ).map(r => ({
+    studentEmail   : r[0] || '',
+    maSo           : r[1] || '',
+    studentName    : r[2] || '',
+    gvPhanBienName : r[3] || '',
+    gvPhanBienEmail: r[4] || '',
+    truongHD       : r[5] || '',
+    thanhVien1     : r[6] || '',
+    thanhVien2     : r[7] || '',
+    thuKy          : r[8] || '',
+  }));
+}
+
+async function fetchGVNotifications(gvEmail) {
+  try {
+    const rows = await fetchSheetCSV(SHEET_NOTIF_TAB);
+    const email = gvEmail.toLowerCase().trim();
+    return rows
+      .filter(r => (r[1]||'').toLowerCase().trim() === email)
+      .slice(-10).reverse()
+      .map(r => ({ time: r[0]||'', message: r[2]||'' }));
+  } catch { return []; }
+}
+
+// ── MODAL TỪ CHỐI ────────────────────────────────────────────────────────────
+function RejectModal({request, onConfirm, onClose}) {
+  const [reason, setReason] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleConfirm() {
+    if (!reason.trim()) return;
+    setSubmitting(true);
+    await onConfirm(request, reason.trim());
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-on-surface/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl anim-slide">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-full bg-error-container flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-error">cancel</span>
+          </div>
+          <div>
+            <h2 className="font-headline font-extrabold text-lg text-on-surface">Từ chối đề tài</h2>
+            <p className="text-xs text-on-surface-variant">Sinh viên sẽ nhận được lý do qua thông báo</p>
+          </div>
+        </div>
+        <div className="bg-surface-container-low rounded-2xl p-4 mb-5">
+          <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Đề tài</p>
+          <p className="font-bold text-on-surface text-sm">{request.topic}</p>
+          <p className="text-xs text-on-surface-variant mt-1">{request.studentName} • {request.maSo}</p>
+        </div>
+        <div className="mb-5">
+          <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+            Lý do từ chối <span className="text-error">*</span>
+          </label>
+          <textarea
+            value={reason} onChange={e => setReason(e.target.value)}
+            rows={4} autoFocus
+            className="w-full bg-surface-container-low rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-error/20 text-on-surface placeholder:text-outline/50 resize-none text-sm"
+            placeholder="VD: Đề tài chưa đủ tính ứng dụng, cần bổ sung thêm phần phân tích..."/>
+          {!reason.trim() && <p className="text-xs text-error mt-1">Bắt buộc nhập lý do từ chối</p>}
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={submitting}
+            className="flex-1 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all text-sm disabled:opacity-50">
+            Hủy bỏ
+          </button>
+          <button onClick={handleConfirm} disabled={!reason.trim() || submitting}
+            className="flex-1 py-3 rounded-xl bg-error text-white font-bold shadow-lg hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2">
+            {submitting
+              ? <><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>
+              : <><span className="material-symbols-outlined text-sm">send</span>Xác nhận từ chối</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL TỪ CHỐI ĐỀ CƯƠNG KLTN ─────────────────────────────────────────────
+function RejectOutlineModal({request, onConfirm, onClose}) {
+  const [reason, setReason] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleConfirm() {
+    if (!reason.trim()) return;
+    setSubmitting(true);
+    await onConfirm(request, reason.trim());
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-on-surface/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl anim-slide">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-full bg-error-container flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-error">description_off</span>
+          </div>
+          <div>
+            <h2 className="font-headline font-extrabold text-lg text-on-surface">Từ chối đề cương KLTN</h2>
+            <p className="text-xs text-on-surface-variant">Sinh viên sẽ nhận thông báo kèm lý do cụ thể</p>
+          </div>
+        </div>
+
+        <div className="bg-surface-container-low rounded-2xl p-4 mb-5 space-y-1">
+          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Đề tài KLTN</p>
+          <p className="font-bold text-on-surface text-sm leading-snug">{request.topic}</p>
+          <p className="text-xs text-on-surface-variant">{request.studentName} • {request.maSo}</p>
+        </div>
+
+        <div className="mb-6">
+          <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+            Lý do từ chối đề cương <span className="text-error">*</span>
+          </label>
+          <textarea
+            value={reason} onChange={e => setReason(e.target.value)}
+            rows={4} autoFocus
+            className="w-full bg-surface-container-low rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-error/20 text-on-surface placeholder:text-outline/50 resize-none text-sm"
+            placeholder="VD: Đề cương chưa đủ cơ sở lý thuyết, cần bổ sung phần phân tích tình huống, mục tiêu nghiên cứu chưa rõ ràng..."/>
+          {!reason.trim() && (
+            <p className="text-xs text-error mt-1.5 flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">error</span>
+              Bắt buộc nhập lý do để sinh viên biết cần chỉnh sửa gì
+            </p>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={submitting}
+            className="flex-1 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all text-sm disabled:opacity-50">
+            Hủy
+          </button>
+          <button onClick={handleConfirm} disabled={!reason.trim() || submitting}
+            className="flex-1 py-3 rounded-xl bg-error text-white font-bold shadow-lg hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2">
+            {submitting
+              ? <><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>
+              : <><span className="material-symbols-outlined text-sm">send</span>Xác nhận từ chối</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ── MODAL CHỈNH SỬA ĐỀ CƯƠNG ─────────────────────────────────────────────
+function EditOutlineModal({request, onConfirm, onClose}) {
+  const [newTopic, setNewTopic] = React.useState(request.topic);
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleConfirm() {
+    if (!newTopic.trim()) return;
+    setSubmitting(true);
+    await onConfirm(request, newTopic.trim());
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-on-surface/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl anim-slide">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-primary">edit_document</span>
+          </div>
+          <div>
+            <h2 className="font-headline font-extrabold text-lg text-on-surface">Chỉnh sửa đề tài</h2>
+            <p className="text-xs text-on-surface-variant">Sửa lại tên đề tài cho chuẩn xác trước khi duyệt</p>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+            Tên đề tài KLTN <span className="text-error">*</span>
+          </label>
+          <textarea
+            value={newTopic} onChange={e => setNewTopic(e.target.value)}
+            rows={4} autoFocus
+            className="w-full bg-surface-container-low rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/40 text-on-surface placeholder:text-outline/50 resize-none text-sm font-medium"
+            placeholder="Nhập tên đề tài mới..."/>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={submitting}
+            className="flex-1 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all text-sm disabled:opacity-50">
+            Hủy
+          </button>
+          <button onClick={handleConfirm} disabled={!newTopic.trim() || submitting || newTopic.trim() === request.topic}
+            className="flex-1 py-3 rounded-xl bg-primary text-white font-bold shadow-lg hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2">
+            {submitting
+              ? <><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang lưu...</>
+              : <><span className="material-symbols-outlined text-sm">save</span>Lưu thay đổi</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ── TAB 1: THÔNG TIN CHUNG ────────────────────────────────────────────────────
+function TabThongTinChung({toast, addGVNotification}) {
+  const [pendingList,  setPendingList]  = React.useState([]);
+  const [approvedList, setApprovedList] = React.useState([]);
+  const [loading,      setLoading]      = React.useState(true);
+  const [processingId, setProcessingId] = React.useState(null);
+  const [rejectTarget, setRejectTarget] = React.useState(null);
+  const [editTopicTarget, setEditTopicTarget] = React.useState(null); // Thêm state cho Chỉnh sửa
+
+  React.useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      // Tải đồng thời dữ liệu BCTT và KLTN
+      const [bcttData, kltnData] = await Promise.all([
+        fetchDangKyByGV(SESSION.email),
+        fetchKLTNByGV(SESSION.email)
+      ]);
+      
+      const bcttPending = bcttData.pendingList.map(r => ({...r, type: 'bctt'}));
+      // Gộp Đăng ký BCTT và Đăng ký Đề tài KLTN vào chung 1 mảng
+      setPendingList([...bcttPending, ...kltnData.pendingTopic]);
+      setApprovedList(bcttData.approvedList);
+    } catch(e) {
+      toast.show('Không tải được dữ liệu từ Sheet.', 'error');
+    }
+    setLoading(false);
+  }
+
+  async function handleApprove(req) {
+    setProcessingId(req.studentEmail);
+    try {
+      let res;
+      // Phân nhánh API tùy theo KLTN hay BCTT
+      if (req.type === 'kltn') {
+        res = await apiPost({ action: 'approveKLTNTopic', studentEmail: req.studentEmail });
+      } else {
+        res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'approved' });
+      }
+
+      if (res.success) {
+        toast.show(`✅ Đã duyệt đề tài của ${req.studentName}!`, 'success');
+        setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
+        if (req.type === 'bctt') {
+          setApprovedList(prev => [{ ...req, status: 'approved' }, ...prev]);
+        }
+      } else {
+        toast.show(res.message || 'Duyệt thất bại.', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    setProcessingId(null);
+  }
+
+  async function handleReject(req, reason) {
+    setProcessingId(req.studentEmail);
+    try {
+      let res;
+      if (req.type === 'kltn') {
+        res = await apiPost({ action: 'rejectKLTNTopic', studentEmail: req.studentEmail, reason: reason });
+      } else {
+        res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'rejected', reason: reason });
+      }
+
+      if (res.success) {
+        toast.show(`Đã từ chối đề tài của ${req.studentName}.`, 'warn');
+        setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
+      } else {
+        toast.show(res.message || 'Từ chối thất bại.', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setProcessingId(null);
+    setRejectTarget(null);
+  }
+
+  async function handleEditTopic(req, newTopic) {
+    setProcessingId(req.studentEmail);
+    try {
+      const res = await apiPost({
+        action: 'updateTopic',
+        type: req.type, // Tự động nhận diện 'bctt' hay 'kltn'
+        studentEmail: req.studentEmail,
+        newTopic: newTopic
+      });
+      if (res.success) {
+        toast.show('Đã cập nhật tên đề tài thành công!', 'success');
+        setPendingList(prev => prev.map(r => r.studentEmail === req.studentEmail ? { ...r, topic: newTopic } : r));
+      } else {
+        toast.show(res.message || 'Cập nhật thất bại.', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setProcessingId(null);
+    setEditTopicTarget(null);
+  }
+
+  const stats = [
+    { label:'Sinh viên hướng dẫn', value: approvedList.length.toString(), icon:'school', color:'bg-primary text-on-primary', sub:'Đang hướng dẫn' },
+    { label:'Chờ duyệt', value: pendingList.length.toString(), icon:'pending_actions', color:'bg-secondary-fixed text-on-secondary-fixed', sub:'Cần xử lý' },
+    { label:'Buổi Hội đồng', value: '--', icon:'groups', color:'bg-tertiary-fixed text-on-tertiary-fixed', sub:'Xem tab Hội đồng' },
+  ];
+
+  return (
+    <div className="space-y-6 anim-fade">
+      {rejectTarget && <RejectModal request={rejectTarget} onConfirm={handleReject} onClose={() => setRejectTarget(null)}/>}
+      {editTopicTarget && <EditOutlineModal request={editTopicTarget} onConfirm={handleEditTopic} onClose={() => setEditTopicTarget(null)}/>}
+
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 p-6 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col md:flex-row gap-6 items-center">
+          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-4xl shadow-lg flex-shrink-0">
+            {SESSION.name.trim().split(' ').filter(Boolean).slice(-1)[0]?.[0]?.toUpperCase() || 'G'}
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <div className="flex flex-col md:flex-row md:items-end gap-2 mb-1">
+              <h2 className="text-2xl font-black text-primary tracking-tight">{SESSION.name}</h2>
+              <span className="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-xs font-bold rounded-full mb-1 inline-block w-fit mx-auto md:mx-0">Giảng viên</span>
+            </div>
+            <p className="text-on-surface-variant font-medium mb-4 flex items-center justify-center md:justify-start gap-2 text-sm">
+              <span className="material-symbols-outlined text-sm">school</span>
+              {SESSION.nganh || 'Khoa học máy tính'} • {SESSION.maGV}
+            </p>
+            <div className="flex flex-wrap justify-center md:justify-start gap-3">
+              <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl">
+                <span className="material-symbols-outlined text-primary text-base">calendar_today</span>
+                <span className="font-bold text-sm">HK2 - 2024-2025</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded-xl">
+                <span className="material-symbols-outlined text-primary text-base">mail</span>
+                <span className="font-medium text-sm truncate max-w-[180px]">{SESSION.email}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3">
+          {stats.map((s, i) => (
+            <div key={i} className={`p-5 rounded-2xl flex justify-between items-center relative overflow-hidden group shadow-sm ${s.color}`}>
+              <div className="relative z-10">
+                <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">{s.label}</p>
+                <h3 className="text-3xl font-black">{loading ? '...' : s.value}</h3>
+                <p className="text-[10px] opacity-60 mt-0.5">{s.sub}</p>
+              </div>
+              <span className="material-symbols-outlined text-5xl opacity-20 absolute -right-2 -bottom-2 group-hover:scale-110 transition-transform">{s.icon}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 space-y-6">
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary">pending_actions</span>
+                Yêu cầu chờ duyệt
+                {!loading && pendingList.length > 0 && (
+                  <span className="bg-error text-white text-[10px] font-black px-2 py-0.5 rounded-full">{pendingList.length}</span>
+                )}
+              </h3>
+              <button onClick={loadData} className="p-2 hover:bg-surface-container rounded-full transition-colors" title="Làm mới">
+                <span className={`material-symbols-outlined text-on-surface-variant text-base ${loading?'anim-spin':''}`}>refresh</span>
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-16 gap-3 text-on-surface-variant">
+                <span className="material-symbols-outlined anim-spin text-2xl text-primary">refresh</span>
+                <span className="text-sm font-medium">Đang tải từ Google Sheet...</span>
+              </div>
+            ) : pendingList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-3 bg-surface-container-lowest rounded-2xl border border-outline-variant/15">
+                <span className="material-symbols-outlined text-5xl opacity-15">inbox</span>
+                <p className="text-sm font-medium text-on-surface-variant">Không có yêu cầu nào đang chờ duyệt</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {pendingList.map((r, i) => {
+                  // Đổi màu sắc nút & thẻ dựa vào BCTT hay KLTN
+                  const isKltn = r.type === 'kltn';
+                  const badgeClass = isKltn ? 'bg-tertiary-fixed text-on-tertiary-fixed' : 'bg-secondary-container/20 text-on-secondary-container';
+                  const btnColorClass = isKltn ? 'bg-[#00593c] text-white' : 'bg-primary text-white';
+
+                  return (
+                    <div key={i} className={`bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 hover:shadow-md transition-shadow ${isKltn ? 'border-[#00593c]' : 'border-secondary'}`}>
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex-1 min-w-0 pr-3">
+                          <h4 className="font-bold text-on-surface text-sm mb-0.5 line-clamp-1">📄 {r.topic}</h4>
+                          <p className="text-xs text-on-surface-variant">
+                            <span className="font-semibold">{r.studentName}</span> • MSSV: {r.maSo}
+                          </p>
+                        </div>
+                        <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold flex-shrink-0 ${badgeClass}`}>
+                          {isKltn ? 'KLTN' : 'BCTT'}
+                        </span>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded-xl mb-4">
+                        <div>
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Học kỳ</p>
+                          <p className="text-xs font-semibold text-on-surface mt-0.5">{r.term || '--'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{isKltn ? 'Ngành' : 'Đơn vị TT'}</p>
+                          <p className="text-xs font-semibold text-on-surface mt-0.5">{isKltn ? r.nganh : r.company || '--'}</p>
+                        </div>
+                        {r.note && (
+                          <div className="col-span-2">
+                            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ghi chú SV</p>
+                            <p className="text-xs text-on-surface-variant mt-0.5 italic">"{r.note}"</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* BỘ 3 NÚT CHỨC NĂNG */}
+                      <div className="flex gap-2">
+                        <button onClick={() => handleApprove(r)} disabled={processingId === r.studentEmail}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold hover:opacity-90 disabled:opacity-50 flex justify-center items-center gap-1.5 shadow-sm ${btnColorClass}`}>
+                          {processingId === r.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">check_circle</span>}
+                          Duyệt đề tài
+                        </button>
+
+                        <button onClick={() => setEditTopicTarget(r)} disabled={processingId === r.studentEmail}
+                          className="flex-1 py-2.5 rounded-xl bg-primary-fixed text-on-primary-fixed-variant text-xs font-bold hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
+                          <span className="material-symbols-outlined text-sm">edit_document</span>
+                          Chỉnh sửa
+                        </button>
+
+                        <button onClick={() => setRejectTarget(r)} disabled={processingId === r.studentEmail}
+                          className="flex-1 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex justify-center items-center gap-1.5 shadow-sm">
+                          <span className="material-symbols-outlined text-sm">cancel</span>
+                          Từ chối
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
+          <section>
+            <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
+              <span className="material-symbols-outlined text-primary">group</span>
+              Sinh viên BCTT đang hướng dẫn
+            </h3>
+            {/* Giữ nguyên phần danh sách approvedList */}
+            {!loading && approvedList.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-14 gap-3 bg-surface-container-lowest rounded-2xl border border-outline-variant/15">
+                <span className="material-symbols-outlined text-5xl opacity-15">school</span>
+                <p className="text-sm font-medium text-on-surface-variant">Chưa có sinh viên nào được duyệt</p>
+              </div>
+            ) : (
+              <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-surface-container-low">
+                      <tr>
+                        {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','Điểm'].map(h => (
+                          <th key={h} className="px-5 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/10">
+                      {loading ? (
+                        <tr><td colSpan="5" className="px-5 py-8 text-center text-sm text-on-surface-variant">Đang tải...</td></tr>
+                      ) : approvedList.map((sv, i) => (
+                        <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
+                          <td className="px-5 py-3">
+                            <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
+                            <p className="text-[10px] text-on-surface-variant">{sv.maSo}</p>
+                          </td>
+                          <td className="px-5 py-3 max-w-[200px]"><p className="text-sm text-on-surface line-clamp-2">{sv.topic}</p></td>
+                          <td className="px-5 py-3 text-sm text-on-surface-variant">{sv.company || '--'}</td>
+                          <td className="px-5 py-3 text-xs text-on-surface-variant">{sv.term || '--'}</td>
+                          <td className="px-5 py-3">
+                            {sv.grade != null ? <span className="font-black text-primary">{sv.grade.toFixed(1)}</span> : <span className="text-xs text-on-surface-variant/50 italic">Chưa có</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div>
+          <section className="bg-surface-container p-6 rounded-2xl">
+            <h3 className="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">history</span> Hoạt động gần đây
+            </h3>
+            <div className="flex flex-col items-center justify-center py-10 gap-3 text-on-surface-variant">
+              <span className="material-symbols-outlined text-4xl opacity-15">inbox</span>
+              <p className="text-xs font-medium text-center opacity-60">Hoạt động sẽ được ghi lại<br/>sau khi duyệt / từ chối đề tài</p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ── FILE VIEWER MODAL ─────────────────────────────────────────────────────────
+function FileViewerModal({ url, studentName, fileName, isPlagiarism, isXNTT, onClose }) {
+  function getDriveId(u) {
+    const m = u.match(/\/d\/([a-zA-Z0-9_-]{10,})/);
+    return m ? m[1] : null;
+  }
+  const fileId      = getDriveId(url);
+  const embedUrl    = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null;
+  const downloadUrl = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : null;
+  const [iframeLoaded, setIframeLoaded] = React.useState(false);
+
+  function onBackdrop(e){ if(e.target===e.currentTarget) onClose(); }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4"
+      style={{background:'rgba(25,27,34,0.75)',backdropFilter:'blur(8px)'}}
+      onClick={onBackdrop}>
+      <div className="bg-white rounded-3xl shadow-2xl flex flex-col anim-slide overflow-hidden"
+        style={{width:'min(960px,96vw)',height:'min(90vh,800px)'}}>
+
+        <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant/20 flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isPlagiarism ? 'bg-tertiary-fixed' : isXNTT ? 'bg-tertiary-fixed' : 'bg-primary-fixed'}`}>
+              <span className={`material-symbols-outlined fill-icon text-xl`}
+                style={isPlagiarism || isXNTT ? {color:'#003f29'} : {color:'#0046ad'}}>
+                {isPlagiarism ? 'policy' : isXNTT ? 'verified' : 'description'}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-on-surface-variant uppercase tracking-widest leading-none mb-0.5">
+                {isPlagiarism ? 'Kết quả kiểm tra đạo văn' : fileName ? fileName : 'Báo cáo thực tập'}
+              </p>
+              <h3 className="font-black text-on-surface text-sm truncate leading-snug">{studentName}</h3>
+              {fileName && (
+                <p className="text-[11px] text-outline truncate mt-0.5">{fileName}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+            {downloadUrl && (
+              <a href={downloadUrl}
+                download
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary text-white text-xs font-bold rounded-xl hover:bg-primary-container transition-colors shadow-sm shadow-primary/20">
+                <span className="material-symbols-outlined text-[17px]">download</span>
+                Tải về
+              </a>
+            )}
+            <button onClick={onClose}
+              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-surface-container transition-colors">
+              <span className="material-symbols-outlined text-on-surface-variant">close</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="relative flex-1 bg-surface-container-low overflow-hidden">
+          {!iframeLoaded && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-on-surface-variant z-10 bg-surface-container-low">
+              <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+              <p className="text-sm font-medium">Đang tải file...</p>
+              <p className="text-xs text-on-surface-variant/60">Vui lòng chờ trong giây lát</p>
+            </div>
+          )}
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              className="w-full h-full border-0"
+              title={`Báo cáo - ${studentName}`}
+              allow="autoplay"
+              onLoad={() => setIframeLoaded(true)}
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-on-surface-variant">
+              <span className="material-symbols-outlined text-5xl opacity-20">broken_image</span>
+              <p className="text-sm font-medium">Không đọc được URL file</p>
+              <p className="text-xs opacity-60">URL: {url}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10 flex-shrink-0 flex items-center justify-between">
+          <p className="text-[11px] text-on-surface-variant">
+            <span className="material-symbols-outlined text-[14px] align-middle mr-1">info</span>
+            Nhấn <strong>Tải về</strong> để lưu file về máy
+          </p>
+          {downloadUrl && (
+            <a href={url} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] text-primary font-medium hover:underline flex items-center gap-1">
+              <span className="material-symbols-outlined text-[13px]">open_in_new</span>
+              Mở trong Drive
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+// ── MODAL CHẤM ĐIỂM KLTN THEO BIỂU MẪU ───────────────────────────────────────
+function KLTNGradingModal({ student, onSave, onClose, processing }) {
+  const [scores, setScores] = React.useState({ nd: '', td: '', cv: '', th: '' });
+  const [baoVe, setBaoVe] = React.useState(true);
+
+  // Tính tổng điểm realtime
+  const totalScore = (parseFloat(scores.nd)||0) + (parseFloat(scores.td)||0) + (parseFloat(scores.cv)||0) + (parseFloat(scores.th)||0);
+
+  const handleComplete = () => {
+    if (scores.nd === '' || scores.td === '' || scores.cv === '' || scores.th === '') {
+      alert("Vui lòng nhập đầy đủ điểm cho cả 4 tiêu chí!");
+      return;
+    }
+    if (totalScore > 10 || totalScore < 0) {
+      alert("Tổng điểm bị sai lệch, vui lòng kiểm tra lại!");
+      return;
+    }
+    const nhanXet = baoVe ? "Kết luận: Cho phép SV bảo vệ trước hội đồng" : "Kết luận: KHÔNG cho SV bảo vệ trước hội đồng";
+    onSave(totalScore, nhanXet);
+  };
+
+  const handleInput = (key, val, max) => {
+    let num = parseFloat(val);
+    if (val !== '' && (num < 0 || num > max)) return; // Chặn nhập lố max
+    setScores(prev => ({ ...prev, [key]: val }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[90vh]">
+        {/* Header Modal */}
+        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">edit_square</span>
+            </div>
+            <div>
+              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Chấm điểm KLTN</h2>
+              <p className="text-xs text-on-surface-variant">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+          </button>
+        </div>
+
+        {/* Body Modal (Cuộn được nếu màn hình nhỏ) */}
+        <div className="p-6 overflow-y-auto">
+          <table className="w-full text-left border-collapse border border-outline-variant/30 rounded-xl overflow-hidden">
+            <thead>
+              <tr className="bg-surface-container-low text-on-surface text-sm">
+                <th className="p-3 border border-outline-variant/30 font-bold">Tiêu chí đánh giá</th>
+                <th className="p-3 border border-outline-variant/30 font-bold text-center w-24">Tối đa</th>
+                <th className="p-3 border border-outline-variant/30 font-bold text-center w-32">Điểm chấm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Tiêu chí 1 */}
+              <tr>
+                <td className="p-3 border border-outline-variant/30">
+                  <p className="font-bold text-sm text-on-surface">1. Nội dung</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Sự liên kết các chương, mục tiêu, phân tích nhận định có cơ sở mạch lạc...</p>
+                </td>
+                <td className="p-3 border border-outline-variant/30 text-center font-bold text-primary">5.0</td>
+                <td className="p-3 border border-outline-variant/30">
+                  <input type="number" step="0.1" min="0" max="5" value={scores.nd} onChange={e => handleInput('nd', e.target.value, 5)}
+                    className="w-full text-center bg-surface-container-lowest border-2 border-outline-variant/30 rounded-lg py-1.5 focus:border-primary focus:ring-0 outline-none font-bold" placeholder="0 - 5"/>
+                </td>
+              </tr>
+              {/* Tiêu chí 2 */}
+              <tr>
+                <td className="p-3 border border-outline-variant/30">
+                  <p className="font-bold text-sm text-on-surface">2. Trích dẫn và tài liệu</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Tài liệu phong phú, bảng biểu được đặt tên, đánh số, ghi nguồn đầy đủ...</p>
+                </td>
+                <td className="p-3 border border-outline-variant/30 text-center font-bold text-primary">1.5</td>
+                <td className="p-3 border border-outline-variant/30">
+                  <input type="number" step="0.1" min="0" max="1.5" value={scores.td} onChange={e => handleInput('td', e.target.value, 1.5)}
+                    className="w-full text-center bg-surface-container-lowest border-2 border-outline-variant/30 rounded-lg py-1.5 focus:border-primary focus:ring-0 outline-none font-bold" placeholder="0 - 1.5"/>
+                </td>
+              </tr>
+              {/* Tiêu chí 3 */}
+              <tr>
+                <td className="p-3 border border-outline-variant/30">
+                  <p className="font-bold text-sm text-on-surface">3. Câu văn và từ ngữ</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Sử dụng từ ngữ phù hợp, câu văn mạch lạc, không có lỗi chính tả...</p>
+                </td>
+                <td className="p-3 border border-outline-variant/30 text-center font-bold text-primary">2.0</td>
+                <td className="p-3 border border-outline-variant/30">
+                  <input type="number" step="0.1" min="0" max="2" value={scores.cv} onChange={e => handleInput('cv', e.target.value, 2)}
+                    className="w-full text-center bg-surface-container-lowest border-2 border-outline-variant/30 rounded-lg py-1.5 focus:border-primary focus:ring-0 outline-none font-bold" placeholder="0 - 2.0"/>
+                </td>
+              </tr>
+              {/* Tiêu chí 4 */}
+              <tr>
+                <td className="p-3 border border-outline-variant/30">
+                  <p className="font-bold text-sm text-on-surface">4. Thái độ</p>
+                  <p className="text-xs text-on-surface-variant mt-1">Tần suất liên lạc với GV để duyệt bài (>6 lần được tối đa)...</p>
+                </td>
+                <td className="p-3 border border-outline-variant/30 text-center font-bold text-primary">1.5</td>
+                <td className="p-3 border border-outline-variant/30">
+                  <input type="number" step="0.1" min="0" max="1.5" value={scores.th} onChange={e => handleInput('th', e.target.value, 1.5)}
+                    className="w-full text-center bg-surface-container-lowest border-2 border-outline-variant/30 rounded-lg py-1.5 focus:border-primary focus:ring-0 outline-none font-bold" placeholder="0 - 1.5"/>
+                </td>
+              </tr>
+              {/* Tổng điểm */}
+              <tr className="bg-surface-container-low">
+                <td colSpan="2" className="p-3 border border-outline-variant/30 text-right font-black text-on-surface">TỔNG ĐIỂM:</td>
+                <td className="p-3 border border-outline-variant/30 text-center font-black text-2xl text-primary">{totalScore.toFixed(1)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="mt-5 p-4 bg-surface-container-low rounded-xl border border-outline-variant/20 flex items-center gap-3 cursor-pointer" onClick={() => setBaoVe(!baoVe)}>
+            <input type="checkbox" checked={baoVe} readOnly className="w-5 h-5 rounded text-primary focus:ring-primary/50 cursor-pointer"/>
+            <span className="text-sm font-bold text-on-surface select-none">Kết luận: Cho phép SV bảo vệ trước hội đồng</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-6 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-lowest rounded-b-[2rem]">
+          <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
+            Hủy bỏ
+          </button>
+          <button onClick={handleComplete} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
+            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">check_circle</span>}
+            Lưu & Hoàn tất
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ── MODAL NHẬN XÉT (CHAT) KLTN ───────────────────────────────────────────────
+function FeedbackModal({ student, onSave, onClose, processing }) {
+  const [text, setText] = React.useState(student.nhanXet || '');
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl anim-slide flex flex-col">
+        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">chat</span>
+            </div>
+            <div>
+              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Nhận xét & Góp ý</h2>
+              <p className="text-xs text-on-surface-variant">{student.studentName} • KLTN</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+          </button>
+        </div>
+        
+        <div className="p-6">
+          <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+            Ghi chú / Yêu cầu chỉnh sửa cho sinh viên:
+          </label>
+          <textarea
+            value={text} onChange={e => setText(e.target.value)}
+            rows={6} autoFocus
+            placeholder="Nhập nội dung yêu cầu sinh viên hoàn thiện, sửa đổi..."
+            className="w-full bg-surface-container-lowest border-2 border-outline-variant/30 rounded-xl p-4 focus:border-primary focus:ring-0 outline-none text-sm resize-none"
+          />
+          <p className="text-xs text-on-surface-variant mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]">info</span> Sinh viên sẽ thấy nhận xét này trên màn hình của họ.
+          </p>
+        </div>
+
+        <div className="p-5 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-lowest rounded-b-[2rem]">
+          <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
+            Đóng
+          </button>
+          <button onClick={() => onSave(text)} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
+            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">send</span>}
+            Lưu nhận xét
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+// ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
+function TabSinhVienHuongDan({toast}) {
+  const [search,   setSearch]   = React.useState('');
+  const [students, setStudents] = React.useState([]);
+  const [loading,  setLoading]  = React.useState(true);
+  const [grades,   setGrades]   = React.useState({});
+  const [saving,   setSaving]   = React.useState({});
+
+  const [viewerFile, setViewerFile] = React.useState(null);
+
+  const [kltnPending,  setKltnPending]  = React.useState([]);
+  const [kltnInput, setKltnInput] = React.useState({});
+  const [uploadingDaoVan, setUploadingDaoVan] = React.useState({});
+  const [uploadingKLTN, setUploadingKLTN] = React.useState({}); // MỚI: State cho upload KLTN
+  const [kltnActive,   setKltnActive]   = React.useState([]);
+  const [kltnLoading,  setKltnLoading]  = React.useState(true);
+  const [kltnProcessing, setKltnProcessing] = React.useState(null);
+  const [rejectOutlineTarget, setRejectOutlineTarget] = React.useState(null);
+  const [editOutlineTarget, setEditOutlineTarget] = React.useState(null);
+  const [gradingKLTNTarget, setGradingKLTNTarget] = React.useState(null); 
+  const [feedbackTarget, setFeedbackTarget] = React.useState(null); // MỚI: State cho Modal Chat
+
+  async function handleEditOutlineTopic(sv, newTopic) {
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'updateTopic', type: 'kltn', studentEmail: sv.studentEmail, newTopic: newTopic });
+      if (res.success) {
+        toast.show(`Đã cập nhật tên đề tài thành công!`, 'success');
+        setKltnPending(prev => prev.map(r => r.studentEmail === sv.studentEmail ? { ...r, topic: newTopic } : r));
+      } else {
+        toast.show(res.message || 'Cập nhật thất bại. Thử lại.', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    setKltnProcessing(null);
+    setEditOutlineTarget(null);
+  }
+
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      setKltnLoading(true);
+      try {
+        const [{ approvedList }, { pendingTopic, activeList }] = await Promise.all([
+          fetchDangKyByGV(SESSION.email),
+          fetchKLTNByGV(SESSION.email),
+        ]);
+        setStudents(approvedList);
+        const init = {};
+        approvedList.forEach(sv => { init[sv.maSo] = sv.grade != null ? String(sv.grade) : ''; });
+        setGrades(init);
+        setKltnPending(pendingTopic); 
+        setKltnActive(activeList);
+      } catch(e) { toast.show('Không tải được danh sách sinh viên.', 'error'); }
+      setLoading(false);
+      setKltnLoading(false);
+    })();
+  }, []);
+
+  async function handleSaveKLTNFromModal(totalGrade, nhanXetStr) {
+    const sv = gradingKLTNTarget;
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const pct = kltnInput[sv.maSo]?.daoVanPct !== undefined ? kltnInput[sv.maSo].daoVanPct : sv.daoVanPct;
+      let res = await apiPost({ action: 'saveKLTNGrade', studentEmail: sv.studentEmail, grade: totalGrade, nhanXet: nhanXetStr, daoVanPct: pct });
+      if (!res.success && (res.message || '').toLowerCase().includes('unknown')) {
+        res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'graded', note: nhanXetStr, grade: totalGrade });
+      }
+      if (res.success) {
+        toast.show('Đã lưu điểm KLTN thành công!', 'success');
+        setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, grade: parseFloat(totalGrade), nhanXet: nhanXetStr, status: 'graded'} : s ));
+        setGradingKLTNTarget(null);
+      } else { toast.show(res.message || 'Lưu điểm thất bại!', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setKltnProcessing(null);
+  }
+
+  // MỚI: Hàm lưu nhận xét Chat
+  async function handleSaveFeedback(text) {
+    const sv = feedbackTarget;
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: text });
+      if (res.success) {
+        toast.show('Đã lưu nhận xét thành công!', 'success');
+        setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXet: text} : s));
+        setFeedbackTarget(null);
+      } else { toast.show(res.message || 'Lỗi lưu nhận xét.', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối mạng.', 'error'); }
+    setKltnProcessing(null);
+  }
+
+  async function handleApproveOutline(sv) {
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'approved', step: 2 });
+      if (res.success) {
+        toast.show(`✅ Đã duyệt đề cương của ${sv.studentName}!`, 'success');
+        setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail));
+        setKltnActive(prev => [{ ...sv, step: 2, status: 'approved' }, ...prev]);
+      } else { toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    setKltnProcessing(null);
+  }
+
+  async function handleRejectOutline(sv, reason) {
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'rejected', note: reason || '' });
+      if (res.success) {
+        toast.show(`Đã từ chối đề cương của ${sv.studentName}.`, 'warn');
+        setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail));
+      } else { toast.show(res.message || 'Từ chối thất bại. Thử lại.', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    setKltnProcessing(null);
+    setRejectOutlineTarget(null);
+  }
+
+  const filtered = students.filter(s => s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search));
+
+  async function handleSaveGrade(maSo, studentEmail) {
+    const g = grades[maSo];
+    if (g === '' || g === undefined) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
+    const num = parseFloat(g);
+    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
+    setSaving(prev => ({ ...prev, [maSo]: true }));
+    try {
+      const res = await apiPost({ action:'updateStatus', studentEmail, status:'graded', grade: num });
+      if (res.success) {
+        toast.show(`Đã lưu điểm ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+        setStudents(prev => prev.map(sv => sv.maSo === maSo ? { ...sv, grade: num, status: 'graded' } : sv));
+      } else { toast.show(res.message || 'Lưu điểm thất bại!', 'error'); }
+    } catch(e) { toast.show('Lưu điểm thất bại!', 'error'); }
+    setSaving(prev => ({ ...prev, [maSo]: false }));
+  }
+
+  const stats = [
+    { label:'Tổng SV', value: students.length, icon:'groups' },
+    { label:'Đã có điểm', value: students.filter(s => s.grade != null).length, icon:'check_circle' },
+    { label:'Chưa có điểm', value: students.filter(s => s.grade == null).length, icon:'pending_actions' },
+  ];
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">Đang tải danh sách sinh viên...</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 anim-fade">
+
+      {rejectOutlineTarget && <RejectOutlineModal request={rejectOutlineTarget} onConfirm={handleRejectOutline} onClose={() => setRejectOutlineTarget(null)} />}
+      {editOutlineTarget && <EditOutlineModal request={editOutlineTarget} onConfirm={handleEditOutlineTopic} onClose={() => setEditOutlineTarget(null)} />}
+      {viewerFile && <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} isPlagiarism={viewerFile.isPlagiarism} isXNTT={viewerFile.isXNTT} onClose={() => setViewerFile(null)} />}
+      
+      {gradingKLTNTarget && <KLTNGradingModal student={gradingKLTNTarget} processing={kltnProcessing === gradingKLTNTarget.studentEmail} onSave={handleSaveKLTNFromModal} onClose={() => setGradingKLTNTarget(null)} />}
+      
+      {/* MỚI: Gọi Feedback Modal */}
+      {feedbackTarget && (
+        <FeedbackModal
+          student={feedbackTarget}
+          processing={kltnProcessing === feedbackTarget.studentEmail}
+          onSave={handleSaveFeedback}
+          onClose={() => setFeedbackTarget(null)}
+        />
+      )}
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-on-surface tracking-tight">Sinh viên hướng dẫn</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Quản lý BCTT và KLTN của sinh viên bạn đang hướng dẫn</p>
+        </div>
+        <div className="relative w-full md:w-80">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-surface-tint focus:bg-surface-container-lowest transition-all text-sm outline-none"
+            placeholder="Tìm tên hoặc MSSV..."/>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        {stats.map((s, i) => (
+          <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm flex items-center justify-between">
+            <div>
+              <p className="text-on-surface-variant text-sm font-medium">{s.label}</p>
+              <h3 className="text-2xl font-bold mt-1">{s.value}</h3>
+            </div>
+            <div className="bg-primary-fixed p-3 rounded-xl">
+              <span className="material-symbols-outlined text-primary">{s.icon}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {kltnPending.length > 0 && (
+        <section>
+          <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-secondary">pending_actions</span>
+            KLTN chờ duyệt đề tài
+            <span className="bg-error text-white text-[10px] font-black px-2 py-0.5 rounded-full">{kltnPending.length}</span>
+          </h3>
+          <div className="space-y-4">
+            {kltnPending.map((sv, i) => (
+              <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 hover:shadow-md transition-shadow" style={{borderColor:'#00593c'}}>
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
+                    <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-on-surface text-sm leading-snug line-clamp-1">{sv.topic}</h4>
+                      <p className="text-xs text-on-surface-variant mt-0.5">
+                        <span className="font-semibold">{sv.studentName}</span> • MSSV: {sv.maSo}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-tertiary-fixed text-on-tertiary-fixed flex-shrink-0">KLTN</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded-xl mb-4 text-xs">
+                  <div>
+                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ngành</p>
+                    <p className="font-semibold text-on-surface mt-0.5">{sv.nganh || '--'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Học kỳ</p>
+                    <p className="font-semibold text-on-surface mt-0.5">{sv.term || '--'}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      setKltnProcessing(sv.studentEmail);
+                      try {
+                        const res = await apiPost({ action: 'approveKLTNTopic', studentEmail: sv.studentEmail });
+                        if (res.success) {
+                          toast.show('Đã duyệt đề tài của ' + sv.studentName + '!', 'success');
+                          setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail));
+                          setKltnActive(prev => [{ ...sv, status: 'approved', step: 0 }, ...prev]);
+                        } else { toast.show(res.message || 'Duyệt thất bại.', 'error'); }
+                      } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+                      setKltnProcessing(null);
+                    }}
+                    disabled={kltnProcessing === sv.studentEmail}
+                    className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
+                    style={{background:'#00593c'}}>
+                    {kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">check_circle</span>}
+                    Duyệt đề tài
+                  </button>
+                  <button onClick={() => setRejectOutlineTarget(sv)} disabled={kltnProcessing === sv.studentEmail} className="flex-1 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
+                    <span className="material-symbols-outlined text-sm">cancel</span> Từ chối
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {kltnActive.length > 0 && (
+        <section>
+          <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined" style={{color:'#00593c'}}>school</span>
+            Khóa luận tốt nghiệp (KLTN)
+          </h3>
+          <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden border border-outline-variant/15">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
+                    <th className="px-6 py-4">Sinh viên</th>
+                    <th className="px-4 py-4">Đề tài</th>
+                    <th className="px-4 py-4 text-center">Bản KLTN</th>
+                    <th className="px-4 py-4 text-center">Check Đạo văn</th>
+                    <th className="px-4 py-4 text-center">Điểm số</th>
+                    <th className="px-2 py-4"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-container">
+                  {kltnActive.map((sv, i) => {
+                    const id = sv.maSo;
+                    const pct = kltnInput[id]?.daoVanPct !== undefined ? kltnInput[id].daoVanPct : sv.daoVanPct;
+
+                    const handleUploadDaoVan = async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setUploadingDaoVan(prev => ({...prev, [id]: true}));
+                      try {
+                        const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KetQuaDaoVan_KLTN' });
+                        if (res.success) {
+                          toast.show('Tải lên file đạo văn thành công!', 'success');
+                          setKltnActive(prev => prev.map(s => s.maSo === id ? {...s, daoVanUrl: res.driveUrl} : s));
+                        } else toast.show(res.message, 'error');
+                      } catch(err) { toast.show('Lỗi upload!', 'error'); }
+                      setUploadingDaoVan(prev => ({...prev, [id]: false}));
+                    };
+
+                    // MỚI: Upload KLTN
+                    const handleUploadKLTN = async (e) => {
+                      const file = e.target.files[0];
+                      if (!file) return;
+                      setUploadingKLTN(prev => ({...prev, [id]: true}));
+                      try {
+                        const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KhoaLuanKLTN_UTE' });
+                        if (res.success) {
+                          toast.show('Tải lên Bản KLTN thành công!', 'success');
+                          setKltnActive(prev => prev.map(s => s.maSo === id ? {...s, kltnUrl: res.driveUrl, step: Math.max(s.step, 1)} : s));
+                        } else toast.show(res.message, 'error');
+                      } catch(err) { toast.show('Lỗi upload!', 'error'); }
+                      setUploadingKLTN(prev => ({...prev, [id]: false}));
+                    };
+
+                    return (
+                      <tr key={i} className="hover:bg-surface-container-low transition-colors align-middle">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                            <div>
+                              <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
+                              <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 max-w-[200px]">
+                          <p className="text-sm font-medium line-clamp-2">{sv.topic}</p>
+                        </td>
+
+                        <td className="px-4 py-4 text-center">
+                          {sv.kltnUrl ? (
+                             <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })} className="inline-flex flex-col items-center gap-0.5 group">
+                               <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">menu_book</span></span>
+                               <span className="text-[9px] font-bold text-primary">Xem Bản KLTN</span>
+                             </button>
+                          ) : (
+                             <div className="inline-flex flex-col items-center gap-0.5">
+                                <label title="GV Upload hộ Bản KLTN" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
+                                  {uploadingKLTN[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
+                                  <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadKLTN} disabled={uploadingKLTN[id]}/>
+                                </label>
+                                <span className="text-[9px] text-on-surface-variant/50">Tải lên</span>
+                             </div>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-4 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            {sv.daoVanUrl ? (
+                              <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></button>
+                            ) : (
+                              <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
+                                {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
+                                <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
+                              </label>
+                            )}
+                            {(() => {
+                               let pctColor = 'bg-surface-container-low border-outline-variant/40 text-on-surface';
+                               const numPct = parseFloat(pct);
+                               if (!isNaN(numPct)) {
+                                  if (numPct <= 20) pctColor = 'bg-emerald-50 border-emerald-500/50 text-emerald-700';
+                                  else if (numPct <= 30) pctColor = 'bg-orange-50 border-orange-500/50 text-orange-700';
+                                  else pctColor = 'bg-red-50 border-red-500/50 text-red-700';
+                               }
+                               return (
+                                 <div className={`flex items-center border rounded-lg overflow-hidden w-[65px] h-[40px] transition-colors ${pctColor}`}>
+                                    <input type="number" min="0" max="100" placeholder="%" value={pct} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))} className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
+                                    <span className="text-[10px] font-bold opacity-60 pr-2">%</span>
+                                 </div>
+                               );
+                            })()}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 text-center">
+                          {sv.grade != null ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-2xl font-black text-primary">{Number(sv.grade).toFixed(1)}</span>
+                              <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
+                            </div>
+                          ) : (
+                            <button onClick={() => setGradingKLTNTarget(sv)} disabled={kltnProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm">
+                              {kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> : <span className="material-symbols-outlined text-[16px]">edit_square</span>} Chấm
+                            </button>
+                          )}
+                        </td>
+
+                        {/* MỚI: Bật tính năng Chat (Nhận xét) */}
+                        <td className="px-2 py-4 text-center">
+                          <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
+                            <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                            {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
+                          </button>
+                        </td>
+
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* BCTT */}
+      <div>
+        <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
+          <span className="material-symbols-outlined text-primary">assignment</span> Báo cáo thực tập (BCTT)
+        </h3>
+      </div>
+
+      {students.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-4 bg-surface-container-lowest rounded-3xl shadow-sm">
+          <span className="material-symbols-outlined text-6xl opacity-15">school</span>
+          <p className="text-sm font-medium text-on-surface-variant">Chưa có sinh viên nào được duyệt đề tài</p>
+        </div>
+      ) : (
+        <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden border border-outline-variant/15">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
+                  {['Sinh viên','Đề tài','Đơn vị TT','File BC','Giấy XNTT','Điểm số'].map((h, i) => (
+                    <th key={i} className={`px-4 py-4 ${i>=3 ? 'text-center' : ''}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-surface-container">
+                {filtered.map(sv => (
+                  <tr key={sv.maSo} className="hover:bg-surface-container-low transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                        <div>
+                          <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
+                          <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 max-w-[200px]"><p className="text-sm font-medium line-clamp-2">{sv.topic}</p></td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{sv.company || '--'}</td>
+
+                    <td className="px-4 py-4 text-center">
+                      {sv.reportSubmitted && sv.reportDriveUrl ? (
+                        <button onClick={() => setViewerFile({ url: sv.reportDriveUrl, studentName: sv.studentName })} className="inline-flex flex-col items-center gap-0.5 group">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">description</span></span>
+                          <span className="text-[9px] font-bold text-primary">Xem</span>
+                        </button>
+                      ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
+                    </td>
+
+                    <td className="px-4 py-4 text-center">
+                      {sv.xnttDriveUrl ? (
+                        <button onClick={() => setViewerFile({ url: sv.xnttDriveUrl, studentName: sv.studentName, fileName: 'Giấy Xác Nhận Thực Tập', isXNTT: true })} className="inline-flex flex-col items-center gap-0.5 group">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">verified</span></span>
+                          <span className="text-[9px] font-bold text-tertiary">Xem</span>
+                        </button>
+                      ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
+                    </td>
+                    
+                    <td className="px-4 py-4">
+                      {sv.grade != null && sv.status === 'graded' ? (
+                        <div className="flex flex-col items-center gap-1">
+                          <span className="text-2xl font-black text-primary">{sv.grade.toFixed(1)}</span>
+                        </div>
+                      ) : sv.reportSubmitted ? (
+                        <div className="flex flex-col gap-1.5 w-[110px]">
+                          <input type="number" min="0" max="10" step="0.1" value={grades[sv.maSo] ?? ''} onChange={e => setGrades(prev => ({...prev, [sv.maSo]: e.target.value}))} className="w-full text-sm font-bold text-center bg-surface-container-low border border-outline-variant/40 rounded-xl px-2 py-2 outline-none" />
+                          <button onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)} disabled={saving[sv.maSo]} className="w-full py-1.5 bg-primary text-white text-[10px] font-bold rounded-xl">{saving[sv.maSo] ? 'Đang lưu...' : 'Lưu điểm'}</button>
+                        </div>
+                      ) : (<span className="text-[10px] text-on-surface-variant/40 italic">Chờ nộp BC</span>)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+// ── TAB 3: SINH VIÊN PHẢN BIỆN ───────────────────────────────────────────────
+function TabPhanBien({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [loading,  setLoading]  = React.useState(true);
+  const [search,   setSearch]   = React.useState('');
+  const [pbGrades, setPbGrades] = React.useState({});
+  const [saving,   setSaving]   = React.useState({});
+
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const rows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
+        const email = SESSION.email.toLowerCase().trim();
+        const pbList = rows
+          .filter(r => (r[4]||'').toLowerCase().trim() === email)
+          .map(r => ({
+            studentEmail : r[0] || '',
+            maSo         : r[1] || '',
+            studentName  : r[2] || '',
+            gvPBName     : r[3] || '',
+            truongHD     : r[5] || '',
+            thanhVien1   : r[6] || '',
+            thanhVien2   : r[7] || '',
+            thuKy        : r[8] || '',
+          }));
+        setStudents(pbList);
+        const init = {};
+        pbList.forEach(sv => { init[sv.maSo] = ''; });
+        setPbGrades(init);
+      } catch(e) { toast.show('Không tải được dữ liệu hội đồng.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtered = students.filter(s =>
+    s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
+  );
+
+  async function handleSavePbGrade(maSo, studentEmail) {
+    const g = pbGrades[maSo];
+    if (!g) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
+    const num = parseFloat(g);
+    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
+    setSaving(prev => ({ ...prev, [maSo]: true }));
+    try {
+      const res = await apiPost({ action:'saveGrade', type:'pb', studentEmail, grade: num });
+      if (res.success) {
+        toast.show(`Đã lưu điểm phản biện ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+      } else {
+        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    setSaving(prev => ({ ...prev, [maSo]: false }));
+  }
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">Đang tải từ sheet HoiDongKLTN...</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 anim-fade">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-black text-on-surface tracking-tight">Danh sách Phản biện</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Sinh viên bạn được phân công phản biện (từ sheet HoiDongKLTN)</p>
+        </div>
+        <div className="relative w-full md:w-80">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
+            placeholder="Tìm tên hoặc MSSV..."/>
+        </div>
+      </div>
+
+      {students.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+          <span className="material-symbols-outlined text-7xl opacity-10">rate_review</span>
+          <p className="text-base font-bold text-on-surface-variant">Chưa có sinh viên phản biện nào</p>
+          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">
+            Khi admin điền email GV vào cột "Email GV phản biện" trong sheet HoiDongKLTN, danh sách sẽ tự hiện ở đây.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse" style={{minWidth:'800px'}}>
+              <thead>
+                <tr className="bg-surface-container-low">
+                  {['Sinh viên','Thành phần hội đồng','Điểm phản biện','Thao tác'].map((h, i) => (
+                    <th key={i} className={`px-6 py-4 text-[11px] font-black uppercase tracking-widest text-on-surface-variant ${i===2?'text-center':''}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/10">
+                {filtered.length === 0 ? (
+                  <tr><td colSpan="4" className="px-6 py-12 text-center text-sm text-on-surface-variant">Không tìm thấy</td></tr>
+                ) : filtered.map(sv => (
+                  <tr key={sv.maSo} className="hover:bg-surface-container-low/30 transition-colors">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                        <div>
+                          <p className="font-bold text-sm text-on-surface">{sv.studentName}</p>
+                          <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.studentEmail}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="space-y-1 text-xs">
+                        {sv.truongHD    && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
+                        {sv.thanhVien1  && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
+                        {sv.thanhVien2  && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
+                        {sv.thuKy       && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
+                      </div>
+                    </td>
+                    <td className="px-4 py-5">
+                      <div className="flex justify-center items-center gap-2">
+                        <input type="number" min="0" max="10" step="0.1" placeholder="0.0"
+                          value={pbGrades[sv.maSo] || ''}
+                          onChange={e => setPbGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
+                          className="w-16 h-10 text-center bg-surface-container border-none rounded-lg font-bold text-primary focus:ring-2 focus:ring-primary/40 outline-none"/>
+                        <button onClick={() => handleSavePbGrade(sv.maSo, sv.studentEmail)}
+                          disabled={!!saving[sv.maSo]}
+                          className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
+                          {saving[sv.maSo]
+                            ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
+                            : <span className="material-symbols-outlined text-[16px]">save</span>}
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <button onClick={() => toast.show('Tính năng đang phát triển!', 'warn')}
+                        className="p-2 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
+                        <span className="material-symbols-outlined">edit_square</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10">
+            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {students.length} sinh viên phản biện</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TAB 4: HỘI ĐỒNG ──────────────────────────────────────────────────────────
+function TabHoiDong({toast}) {
+  const [hdList,   setHdList]   = React.useState([]);
+  const [loading,  setLoading]  = React.useState(true);
+  const [search,   setSearch]   = React.useState('');
+  const [hdGrades, setHdGrades] = React.useState({});
+  const [saving,   setSaving]   = React.useState({});
+
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const list = await fetchHoiDongByGV(SESSION.email);
+        setHdList(list);
+        const init = {};
+        list.forEach(sv => { init[sv.maSo] = ''; });
+        setHdGrades(init);
+      } catch(e) { toast.show('Không tải được dữ liệu hội đồng.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtered = hdList.filter(s =>
+    s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
+  );
+
+  function getRoleLabel(sv) {
+    const email = SESSION.email.toLowerCase().trim();
+    if ((sv.gvPhanBienEmail||'').toLowerCase().trim() === email) return { label:'Phản biện', color:'bg-secondary-container text-on-secondary-container' };
+    if ((sv.truongHD||'').toLowerCase().includes(email))         return { label:'Trưởng HĐ', color:'bg-primary text-white' };
+    if ((sv.thuKy||'').toLowerCase().includes(email))            return { label:'Thư ký',    color:'bg-tertiary-fixed text-on-tertiary-fixed' };
+    return { label:'Thành viên', color:'bg-surface-container-highest text-on-surface-variant' };
+  }
+
+  async function handleSaveHdGrade(maSo) {
+    const g = hdGrades[maSo];
+    if (!g) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
+    const num = parseFloat(g);
+    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
+    const sv = hdList.find(s => s.maSo === maSo);
+    if (!sv) return;
+    setSaving(prev => ({ ...prev, [maSo]: true }));
+    try {
+      const res = await apiPost({ action:'saveGrade', type:'hd', studentEmail: sv.studentEmail, grade: num });
+      if (res.success) {
+        toast.show(`Đã lưu điểm hội đồng ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
+      } else {
+        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
+    setSaving(prev => ({ ...prev, [maSo]: false }));
+  }
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">Đang tải từ sheet HoiDongKLTN...</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 anim-fade">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-on-surface tracking-tight">Hội đồng KLTN</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Danh sách sinh viên bạn tham gia hội đồng (đọc từ sheet HoiDongKLTN)</p>
+        </div>
+        <div className="relative w-full md:w-80">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
+            placeholder="Tìm tên hoặc MSSV..."/>
+        </div>
+      </div>
+
+      {hdList.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+          <span className="material-symbols-outlined text-7xl opacity-10">gavel</span>
+          <p className="text-base font-bold text-on-surface-variant">Chưa có dữ liệu hội đồng</p>
+          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">
+            Admin điền thông tin vào sheet HoiDongKLTN (cột Trưởng HĐ / TV / Thư ký) là sẽ hiện ở đây.
+          </p>
+        </div>
+      ) : (
+        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse" style={{minWidth:'900px'}}>
+              <thead>
+                <tr className="bg-surface-container-low">
+                  {['Sinh viên','Vai trò của bạn','Thành phần hội đồng','Điểm HĐ'].map((h, i) => (
+                    <th key={i} className={`px-8 py-4 text-left text-xs font-bold text-on-surface-variant/60 uppercase tracking-wider ${i===3?'text-center':''}`}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/15">
+                {filtered.map(sv => {
+                  const role = getRoleLabel(sv);
+                  return (
+                    <tr key={sv.maSo} className="hover:bg-surface-container-low/50 transition-colors">
+                      <td className="px-8 py-5">
+                        <div className="flex items-center gap-3">
+                          <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                          <div>
+                            <p className="font-bold text-on-surface">{sv.studentName}</p>
+                            <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.studentEmail}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${role.color}`}>{role.label}</span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="space-y-1 text-xs">
+                          {sv.truongHD   && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
+                          {sv.thanhVien1 && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
+                          {sv.thanhVien2 && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
+                          {sv.thuKy      && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
+                          {sv.gvPhanBienName && <p><span className="text-secondary font-bold">PB:</span> {sv.gvPhanBienName}</p>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="flex items-center gap-2">
+                            <input type="number" min="0" max="10" step="0.1" placeholder="0.0"
+                              value={hdGrades[sv.maSo] || ''}
+                              onChange={e => setHdGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
+                              className="w-16 h-10 rounded-xl bg-primary-container/10 text-center font-black text-primary focus:ring-2 focus:ring-primary/20 outline-none"/>
+                            <button onClick={() => handleSaveHdGrade(sv.maSo)}
+                              disabled={!!saving[sv.maSo]}
+                              className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
+                              {saving[sv.maSo]
+                                ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
+                                : <span className="material-symbols-outlined text-[16px]">save</span>}
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-8 py-4 bg-surface-container-low border-t border-outline-variant/10">
+            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {hdList.length} sinh viên trong hội đồng</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+// ── TAB 5: PHÂN CÔNG PHẢN BIỆN (TBM) ──────────────────────────────────────────
+function TabPhanCongPhanBien({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [initialStudents, setInitialStudents] = React.useState([]); // Dùng để so sánh xem dòng nào có thay đổi
+  const [teachers, setTeachers] = React.useState([]);
+  const [loading, setLoading]   = React.useState(true);
+  const [isBatchSaving, setIsBatchSaving] = React.useState(false);
+
+  React.useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      // Tải DS Sinh viên KLTN đã duyệt
+      const kltnRows = await fetchSheetCSV(SHEET_KLTN_TAB);
+      const kltnList = kltnRows
+        .filter(r => r[11] === 'approved' || parseInt(r[14]) >= 1)
+        .map(r => ({
+        studentEmail: r[1], studentName: r[2], maSo: r[3], topic: r[5], gvhd: r[6], term: r[9] || 'Kỳ 2 - 24/25'
+      }));
+
+      // Tải DS phân công hiện tại từ Hội Đồng
+      let hdMap = {};
+      try {
+        const hdRows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
+        hdRows.forEach(r => { hdMap[r[0]] = { gvPhanBienEmail: r[4], gvPhanBienName: r[3] }; });
+      } catch(e) {}
+
+      // Gộp data
+      const formattedData = kltnList.map(sv => ({
+        ...sv,
+        pbEmail: hdMap[sv.studentEmail]?.gvPhanBienEmail || '',
+        pbName: hdMap[sv.studentEmail]?.gvPhanBienName || ''
+      }));
+
+      setStudents(formattedData);
+      setInitialStudents(JSON.parse(JSON.stringify(formattedData))); // Lưu bản sao để so sánh
+
+      // Tải DS Giảng viên
+      const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
+      const gvList = userRows.filter(r => r[2] === 'giangvien' || r[2] === 'truongbomon').map(r => ({
+        email: r[0], name: r[3]
+      }));
+      setTeachers(gvList);
+
+    } catch(e) { toast.show('Lỗi tải dữ liệu!', 'error'); }
+    setLoading(false);
+  }
+
+  // Hàm Lưu Hàng Loạt (Chỉ lưu những sinh viên có thay đổi GV Phản biện)
+  async function handleBatchSave() {
+    const changes = students.filter(s => {
+      const init = initialStudents.find(i => i.maSo === s.maSo);
+      return init && init.pbEmail !== s.pbEmail && s.pbEmail !== '';
+    });
+
+    if (changes.length === 0) {
+      toast.show('Không có sự thay đổi nào cần lưu!', 'warn');
+      return;
+    }
+
+    setIsBatchSaving(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Gửi API lần lượt để không làm nghẽn Google Apps Script
+    for (const sv of changes) {
+      try {
+        const pbName = teachers.find(t => t.email === sv.pbEmail)?.name || '';
+        const res = await apiPost({
+          action: 'assignCouncil', studentEmail: sv.studentEmail, maSo: sv.maSo, studentName: sv.studentName,
+          gvPhanBienEmail: sv.pbEmail, gvPhanBienName: pbName
+        });
+        if (res.success) successCount++;
+        else errorCount++;
+      } catch (e) { errorCount++; }
+    }
+
+    setIsBatchSaving(false);
+
+    if (successCount > 0) {
+      toast.show(`✅ Đã phân công thành công cho ${successCount} sinh viên!`, 'success');
+      setInitialStudents(JSON.parse(JSON.stringify(students))); // Cập nhật lại mốc so sánh
+    }
+    if (errorCount > 0) {
+      toast.show(`❌ Có ${errorCount} sinh viên phân công thất bại.`, 'error');
+    }
+  }
+
+  // Tính toán số liệu thống kê
+  const totalStudents = students.length;
+  const assignedStudents = students.filter(s => s.pbEmail).length;
+  const pendingStudents = totalStudents - assignedStudents;
+  const progressPercent = totalStudents > 0 ? Math.round((assignedStudents / totalStudents) * 100) : 0;
+  const dashOffset = 220 - (220 * progressPercent) / 100;
+
+  return (
+    <div className="space-y-6 anim-fade max-w-6xl mx-auto">
+      
+      {/* Header Section */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight mb-2">Phân công Phản biện</h1>
+          <p className="text-on-surface-variant text-sm flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">location_on</span>
+            Hệ thống phân phối giảng viên đánh giá độc lập
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <div className="bg-surface-container-lowest px-4 py-2 rounded-xl shadow-sm flex items-center gap-3 border border-outline-variant/15">
+            <span className="material-symbols-outlined text-secondary">filter_list</span>
+            <select className="bg-transparent text-sm font-medium focus:outline-none border-none p-0 pr-8">
+              <option>Tất cả các đợt</option>
+              <option>Học kỳ 1 - 2024-2025</option>
+              <option>Học kỳ 2 - 2024-2025</option>
+            </select>
+          </div>
+          
+          {/* Nút Xác nhận phân công dùng để lưu hàng loạt */}
+          <button 
+            onClick={handleBatchSave} 
+            disabled={isBatchSaving}
+            className="bg-gradient-to-br from-primary to-primary-container text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50">
+            {isBatchSaving ? (
+              <span className="material-symbols-outlined text-[18px] anim-spin">refresh</span>
+            ) : (
+              <span className="material-symbols-outlined text-[18px]">task_alt</span>
+            )}
+            {isBatchSaving ? 'Đang lưu...' : 'Xác nhận phân công'}
+          </button>
+        </div>
+      </div>
+
+      {loading ? <Spinner text="Đang tải dữ liệu sinh viên và giảng viên..."/> : (
+        <>
+          {/* Stats Overview - Trải ngang toàn màn hình (Đã xóa cột Deadline) */}
+          <div className="mb-8 bg-surface-container-lowest p-6 md:px-12 rounded-3xl shadow-sm border border-outline-variant/10 flex items-center justify-between">
+            <div className="flex gap-6 md:gap-16 overflow-x-auto w-full justify-start items-center">
+              <div>
+                <p className="text-on-surface-variant text-[10px] md:text-xs uppercase tracking-widest font-bold mb-1">Tổng sinh viên</p>
+                <p className="text-3xl md:text-4xl font-black text-primary">{totalStudents}</p>
+              </div>
+              <div className="w-px h-16 bg-surface-container hidden sm:block"></div>
+              <div>
+                <p className="text-on-surface-variant text-[10px] md:text-xs uppercase tracking-widest font-bold mb-1">Đã phân công</p>
+                <p className="text-3xl md:text-4xl font-black text-tertiary-fixed-dim">{assignedStudents}</p>
+              </div>
+              <div className="w-px h-16 bg-surface-container hidden sm:block"></div>
+              <div>
+                <p className="text-on-surface-variant text-[10px] md:text-xs uppercase tracking-widest font-bold mb-1">Chờ xử lý</p>
+                <p className="text-3xl md:text-4xl font-black text-secondary">{pendingStudents}</p>
+              </div>
+            </div>
+            
+            <div className="hidden lg:flex items-center gap-5 flex-shrink-0 ml-8 pl-8 border-l border-outline-variant/10">
+              <div className="text-right">
+                <p className="text-sm font-bold text-on-surface">Tiến độ đợt này</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">Tự động cập nhật</p>
+              </div>
+              <div className="relative h-20 w-20">
+                <svg className="h-20 w-20 -rotate-90">
+                  <circle cx="40" cy="40" fill="transparent" r="35" stroke="#ededf6" strokeWidth="8"></circle>
+                  <circle cx="40" cy="40" fill="transparent" r="35" stroke="#4edea3" strokeDasharray="220" strokeDashoffset={dashOffset} strokeLinecap="round" strokeWidth="8" style={{transition: 'stroke-dashoffset 1s ease-in-out'}}></circle>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-black text-primary">{progressPercent}%</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Assignment Table Area - Giao diện sạch sẽ không có nút lưu rườm rà */}
+          <div className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/10 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse" style={{minWidth:'900px'}}>
+                <thead>
+                  <tr className="bg-surface-container-low border-b border-outline-variant/10">
+                    <th className="px-6 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Sinh viên</th>
+                    <th className="px-6 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Mã số</th>
+                    <th className="px-6 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Tên đề tài</th>
+                    <th className="px-6 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Đợt</th>
+                    <th className="px-6 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">GV Hướng dẫn</th>
+                    <th className="px-6 py-5 text-[11px] font-bold text-on-surface-variant uppercase tracking-wider min-w-[280px]">Giảng viên Phản biện</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-surface-container">
+                  {students.length === 0 ? (
+                    <tr><td colSpan="6" className="px-6 py-12 text-center text-on-surface-variant text-sm font-medium">Chưa có sinh viên KLTN nào được duyệt</td></tr>
+                  ) : students.map(sv => {
+                    // Kiểm tra xem dòng này có bị thay đổi (chưa lưu) không
+                    const initSv = initialStudents.find(i => i.maSo === sv.maSo);
+                    const isChanged = initSv && initSv.pbEmail !== sv.pbEmail;
+
+                    return (
+                      <tr key={sv.maSo} className="hover:bg-surface-container-low/50 transition-colors">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-3">
+                            <Av name={sv.studentName} cls="w-9 h-9 !rounded-xl text-xs shadow-sm" />
+                            <span className="font-bold text-on-surface text-sm">{sv.studentName}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5 text-sm text-on-surface-variant font-medium">{sv.maSo}</td>
+                        <td className="px-6 py-5">
+                          <p className="text-sm text-on-surface font-medium max-w-[220px] line-clamp-2" title={sv.topic}>{sv.topic}</p>
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="px-3 py-1.5 bg-surface-container text-on-surface-variant rounded-full text-[10px] font-bold truncate max-w-[100px] inline-block tracking-wide">{sv.term}</span>
+                        </td>
+                        <td className="px-6 py-5 text-sm text-on-surface-variant">{sv.gvhd}</td>
+                        <td className="px-6 py-5">
+                          <div className="relative">
+                            <select 
+                              value={sv.pbEmail}
+                              onChange={(e) => setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, pbEmail: e.target.value} : s))}
+                              className={`w-full bg-surface-container-low border rounded-xl text-sm py-2.5 px-3 focus:bg-white focus:ring-4 focus:ring-primary/5 appearance-none outline-none transition-all cursor-pointer font-semibold ${isChanged ? 'border-secondary/50 text-secondary' : 'border-transparent text-on-surface focus:border-primary/30'}`}
+                              style={{ backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23434653' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`, backgroundSize: '20px 20px', backgroundPosition: 'right 8px center', backgroundRepeat: 'no-repeat' }}>
+                              <option value="">-- Chọn giảng viên --</option>
+                              {teachers.filter(t => t.name !== sv.gvhd).map(t => (
+                                <option key={t.email} value={t.email}>{t.name}</option>
+                              ))}
+                            </select>
+                            
+                            {/* Hiển thị icon cảnh báo nhỏ nếu dòng này đã bị đổi nhưng chưa bấm Xác nhận */}
+                            {isChanged && (
+                              <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-secondary shadow-sm" title="Chưa lưu thay đổi"></span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant/10 flex justify-between items-center">
+              <p className="text-xs text-on-surface-variant font-medium">Hiển thị {students.length} trên {totalStudents} sinh viên</p>
+              <div className="flex items-center gap-1">
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-highest text-on-surface-variant transition-colors disabled:opacity-30"><span className="material-symbols-outlined text-sm">chevron_left</span></button>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white text-xs font-bold shadow-md shadow-primary/20">1</button>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-container-highest text-on-surface-variant transition-colors disabled:opacity-30"><span className="material-symbols-outlined text-sm">chevron_right</span></button>
+              </div>
+            </div>
+          </div>
+
+          {/* Guidance/Tips Panel */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-tertiary-fixed-dim/10 p-6 rounded-3xl border border-tertiary-fixed-dim/20">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="material-symbols-outlined text-tertiary-fixed-dim text-2xl">info</span>
+                <h3 className="font-bold text-on-surface text-base">Nguyên tắc phân công</h3>
+              </div>
+              <ul className="text-sm text-on-surface-variant space-y-3">
+                <li className="flex gap-2 items-start"><span className="text-tertiary-fixed-dim font-black mt-0.5">•</span> Giảng viên phản biện không được trùng với Giảng viên hướng dẫn của sinh viên đó.</li>
+                <li className="flex gap-2 items-start"><span className="text-tertiary-fixed-dim font-black mt-0.5">•</span> Cố gắng ưu tiên giảng viên có cùng chuyên môn với đề tài nghiên cứu.</li>
+                <li className="flex gap-2 items-start"><span className="text-tertiary-fixed-dim font-black mt-0.5">•</span> Sau khi chọn danh sách, nhớ bấm <strong>Xác nhận phân công</strong> ở góc trên.</li>
+              </ul>
+            </div>
+            <div className="bg-secondary-container/10 p-6 rounded-3xl border border-secondary-container/20">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="material-symbols-outlined text-secondary text-2xl">analytics</span>
+                <h3 className="font-bold text-on-surface text-base">Tải báo cáo phân công</h3>
+              </div>
+              <p className="text-sm text-on-surface-variant mb-6 leading-relaxed">Sau khi hoàn tất toàn bộ phân công, bạn có thể xuất tệp danh sách để nộp hoặc trình ban chủ nhiệm khoa ký duyệt một cách dễ dàng.</p>
+              <button onClick={() => toast.show('Chức năng tải file Excel đang bảo trì!', 'warn')} className="px-5 py-3 rounded-xl bg-white text-sm font-bold text-secondary flex items-center gap-2 hover:bg-secondary-container/10 transition-colors border border-secondary/20 shadow-sm w-fit">
+                <span className="material-symbols-outlined text-[20px]">download</span>
+                Tải file Excel báo cáo (.xlsx)
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+// ── TAB 6: PHÂN CÔNG HỘI ĐỒNG (TBM) ──────────────────────────────────────────
+function TabPhanCongHoiDong({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [initialStudents, setInitialStudents] = React.useState([]);
+  const [teachers, setTeachers] = React.useState([]);
+  const [loading, setLoading]   = React.useState(true);
+  const [saving, setSaving]     = React.useState({});
+  const [isBatchSaving, setIsBatchSaving] = React.useState(false);
+
+  React.useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const kltnRows = await fetchSheetCSV(SHEET_KLTN_TAB);
+      const kltnList = kltnRows.filter(r => r[11] === 'approved').map(r => ({
+        studentEmail: r[1], studentName: r[2], maSo: r[3], topic: r[5], gvhd: r[6]
+      }));
+
+      let hdMap = {};
+      try {
+        const hdRows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
+        hdRows.forEach(r => { hdMap[r[0]] = { truongHD: r[5], thanhVien1: r[6], thanhVien2: r[7], thuKy: r[8] }; });
+      } catch(e) {}
+
+      const formattedData = kltnList.map(sv => ({
+        ...sv,
+        truongHD: hdMap[sv.studentEmail]?.truongHD || '',
+        thanhVien1: hdMap[sv.studentEmail]?.thanhVien1 || '',
+        thanhVien2: hdMap[sv.studentEmail]?.thanhVien2 || '',
+        thuKy: hdMap[sv.studentEmail]?.thuKy || ''
+      }));
+
+      setStudents(formattedData);
+      setInitialStudents(JSON.parse(JSON.stringify(formattedData)));
+
+      const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
+      const gvList = userRows.filter(r => r[2] === 'giangvien' || r[2] === 'truongbomon').map(r => ({
+        email: r[0], name: r[3]
+      }));
+      setTeachers(gvList);
+
+    } catch(e) { toast.show('Lỗi tải dữ liệu!', 'error'); }
+    setLoading(false);
+  }
+
+  // Lưu 1 dòng
+  async function handleSingleSave(sv) {
+    setSaving(prev => ({...prev, [sv.maSo]: true}));
+    try {
+      const res = await apiPost({
+        action: 'assignCouncil', studentEmail: sv.studentEmail, maSo: sv.maSo, studentName: sv.studentName,
+        truongHD: sv.truongHD, thanhVien1: sv.thanhVien1, thanhVien2: sv.thanhVien2, thuKy: sv.thuKy
+      });
+      if(res.success) {
+        toast.show('Đã cập nhật Hội đồng!', 'success');
+        setInitialStudents(prev => prev.map(i => i.maSo === sv.maSo ? {...sv} : i));
+      }
+      else toast.show('Cập nhật thất bại', 'error');
+    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+    setSaving(prev => ({...prev, [sv.maSo]: false}));
+  }
+
+  // Lưu hàng loạt
+  async function handleBatchSave() {
+    const changes = students.filter(s => {
+      const init = initialStudents.find(i => i.maSo === s.maSo);
+      return init && (init.truongHD !== s.truongHD || init.thuKy !== s.thuKy || init.thanhVien1 !== s.thanhVien1 || init.thanhVien2 !== s.thanhVien2);
+    });
+
+    if (changes.length === 0) {
+      toast.show('Không có sự thay đổi nào cần lưu!', 'warn');
+      return;
+    }
+
+    setIsBatchSaving(true);
+    let successCount = 0;
+    for (const sv of changes) {
+      try {
+        const res = await apiPost({
+          action: 'assignCouncil', studentEmail: sv.studentEmail, maSo: sv.maSo, studentName: sv.studentName,
+          truongHD: sv.truongHD, thanhVien1: sv.thanhVien1, thanhVien2: sv.thanhVien2, thuKy: sv.thuKy
+        });
+        if (res.success) successCount++;
+      } catch (e) {}
+    }
+    setIsBatchSaving(false);
+
+    if (successCount > 0) {
+      toast.show(`✅ Đã lưu Hội đồng cho ${successCount} sinh viên!`, 'success');
+      setInitialStudents(JSON.parse(JSON.stringify(students)));
+    } else {
+      toast.show('Lưu thất bại, vui lòng thử lại!', 'error');
+    }
+  }
+
+  const updateField = (maSo, field, val) => {
+    setStudents(prev => prev.map(s => s.maSo === maSo ? {...s, [field]: val} : s));
+  };
+
+  // Tính toán khối lượng hội đồng của từng giảng viên để hiển thị Card
+  const getTeacherWorkload = () => {
+    const workload = {};
+    teachers.forEach(t => workload[t.name] = { count: 0, roles: { truongHD: 0, thuKy: 0, tv: 0 } });
+    
+    students.forEach(sv => {
+      if (sv.truongHD && workload[sv.truongHD]) { workload[sv.truongHD].count++; workload[sv.truongHD].roles.truongHD++; }
+      if (sv.thuKy && workload[sv.thuKy]) { workload[sv.thuKy].count++; workload[sv.thuKy].roles.thuKy++; }
+      if (sv.thanhVien1 && workload[sv.thanhVien1]) { workload[sv.thanhVien1].count++; workload[sv.thanhVien1].roles.tv++; }
+      if (sv.thanhVien2 && workload[sv.thanhVien2]) { workload[sv.thanhVien2].count++; workload[sv.thanhVien2].roles.tv++; }
+    });
+
+    return Object.entries(workload)
+      .filter(([_, data]) => data.count > 0)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 3); // Lấy top 3 GV có nhiều hội đồng nhất để hiển thị mẫu
+  };
+
+  const topTeachers = getTeacherWorkload();
+  const fullyAssigned = students.filter(s => s.truongHD && s.thuKy && s.thanhVien1 && s.thanhVien2).length;
+
+  return (
+    <div className="space-y-8 anim-fade max-w-[1400px] mx-auto">
+      
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-on-surface tracking-tight mb-2">Phân công Hội đồng</h1>
+          <p className="text-on-surface-variant text-sm flex items-center gap-2">
+            <span className="material-symbols-outlined text-sm">groups</span>
+            Thiết lập Chủ tịch, Thư ký, Ủy viên cho sinh viên bảo vệ KLTN
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleBatchSave} 
+            disabled={isBatchSaving}
+            className="bg-gradient-to-br from-primary to-primary-container text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-lg hover:shadow-primary/20 transition-all active:scale-95 flex items-center gap-2 disabled:opacity-50">
+            {isBatchSaving ? <span className="material-symbols-outlined text-[18px] anim-spin">refresh</span> : <span className="material-symbols-outlined text-[18px]">task_alt</span>}
+            {isBatchSaving ? 'Đang lưu...' : 'Xác nhận phân công'}
+          </button>
+        </div>
+      </div>
+
+      {loading ? <Spinner text="Đang tải dữ liệu hội đồng..."/> : (
+        <>
+          {/* Section 1: Thống kê Khối lượng Giảng viên (Cards) */}
+          {topTeachers.length > 0 && (
+            <section>
+              <h2 className="text-lg font-extrabold text-on-surface mb-4 flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">analytics</span>
+                Giảng viên tham gia nhiều Hội đồng nhất
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {topTeachers.map(([name, data], idx) => (
+                  <div key={idx} className="bg-surface-container-lowest p-5 rounded-2xl flex flex-col gap-4 border border-outline-variant/15 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3">
+                      <Av name={name} cls="w-12 h-12 !rounded-xl text-lg shadow-sm" />
+                      <div>
+                        <h3 className="font-bold text-on-surface text-sm line-clamp-1">{name}</h3>
+                        <p className="text-xs text-on-surface-variant">Thành viên Bộ môn</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center bg-surface-container-low p-3 rounded-xl">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase text-primary">Chủ tịch</p>
+                        <p className="font-black text-on-surface">{data.roles.truongHD}</p>
+                      </div>
+                      <div className="border-x border-outline-variant/10">
+                        <p className="text-[10px] font-bold uppercase text-secondary">Thư ký</p>
+                        <p className="font-black text-on-surface">{data.roles.thuKy}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold uppercase text-tertiary-fixed-dim">Ủy viên</p>
+                        <p className="font-black text-on-surface">{data.roles.tv}</p>
+                      </div>
+                    </div>
+                    <div className="pt-1 flex justify-between items-center">
+                      <span className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">schedule</span> Tổng tham gia: {data.count}
+                      </span>
+                      {data.count > 5 && (
+                        <span className="text-[10px] font-bold bg-error-container text-on-error-container px-2 py-0.5 rounded-full">Cao</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 2: Phân bổ Sinh viên (Main Table) */}
+          <section className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-extrabold text-on-surface flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">assignment_ind</span>
+                Phân bổ Sinh viên
+                <span className="ml-2 text-xs font-medium text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-full">
+                  Đã hoàn tất {fullyAssigned}/{students.length}
+                </span>
+              </h2>
+            </div>
+            
+            <div className="bg-surface-container-lowest rounded-3xl shadow-sm border border-outline-variant/15 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse" style={{minWidth:'1000px'}}>
+                  <thead>
+                    <tr className="bg-surface-container-low border-b border-outline-variant/10">
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant w-1/4">Sinh viên & Đề tài</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant w-1/4">Hướng dẫn / Phản biện</th>
+                      <th className="px-6 py-4 text-[11px] font-bold uppercase tracking-widest text-on-surface-variant w-2/4">Thành phần Hội đồng</th>
+                      <th className="px-4 py-4 w-16"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-surface-container">
+                    {students.map(sv => {
+                      const initSv = initialStudents.find(i => i.maSo === sv.maSo);
+                      const isChanged = initSv && (initSv.truongHD !== sv.truongHD || initSv.thuKy !== sv.thuKy || initSv.thanhVien1 !== sv.thanhVien1 || initSv.thanhVien2 !== sv.thanhVien2);
+                      const isComplete = sv.truongHD && sv.thuKy && sv.thanhVien1 && sv.thanhVien2;
+
+                      return (
+                        <tr key={sv.maSo} className="hover:bg-surface-container-low/30 transition-colors">
+                          <td className="px-6 py-5 align-top">
+                            <div className="flex flex-col gap-1.5">
+                              <span className="font-bold text-sm text-on-surface">{sv.studentName} <span className="text-xs font-normal text-on-surface-variant ml-1">({sv.maSo})</span></span>
+                              <span className="text-xs text-on-surface-variant line-clamp-2 leading-relaxed" title={sv.topic}>{sv.topic}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5 align-top">
+                            <div className="flex flex-col text-[11px] gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-primary-container"></span>
+                                <span className="text-on-surface-variant font-medium">HD: {sv.gvhd || 'Chưa rõ'}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-secondary"></span>
+                                <span className="text-on-surface-variant font-medium">PB: {sv.pbName || 'Chưa phân công'}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {/* Grid 4 Dropdowns cho Hội Đồng */}
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-3 relative">
+                              {[ 
+                                {label:'Chủ tịch HĐ', key:'truongHD', color:'text-primary'}, 
+                                {label:'Thư ký', key:'thuKy', color:'text-secondary'},
+                                {label:'Ủy viên 1', key:'thanhVien1', color:'text-tertiary-fixed-dim'}, 
+                                {label:'Ủy viên 2', key:'thanhVien2', color:'text-tertiary-fixed-dim'} 
+                              ].map(field => (
+                                <div key={field.key} className="flex flex-col gap-1 relative">
+                                  <span className={`text-[9px] font-black uppercase tracking-wider ${field.color}`}>{field.label}</span>
+                                  <select 
+                                    value={sv[field.key]} 
+                                    onChange={(e) => updateField(sv.maSo, field.key, e.target.value)}
+                                    className={`w-full text-xs font-semibold bg-surface-container-low border rounded-lg py-2 px-2 outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 appearance-none transition-colors cursor-pointer ${isChanged && sv[field.key] !== initSv[field.key] ? 'border-secondary text-secondary' : 'border-transparent text-on-surface hover:border-outline-variant/50'}`}
+                                    style={{ backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23434653' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`, backgroundSize: '16px 16px', backgroundPosition: 'right 4px center', backgroundRepeat: 'no-repeat' }}>
+                                    <option value="">-- Trống --</option>
+                                    {teachers.map(t => <option key={t.email} value={t.name}>{t.name}</option>)}
+                                  </select>
+                                </div>
+                              ))}
+                              {isChanged && <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-secondary"></span>}
+                            </div>
+                          </td>
+                          <td className="px-4 py-5 align-middle text-center">
+                            <button 
+                              onClick={() => handleSingleSave(sv)} 
+                              disabled={saving[sv.maSo]}
+                              title="Lưu dòng này"
+                              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${saving[sv.maSo] ? 'bg-surface-container text-on-surface-variant' : isComplete && !isChanged ? 'bg-tertiary-fixed text-tertiary hover:bg-tertiary-fixed-dim' : 'bg-primary-container text-white hover:bg-primary shadow-sm'}`}>
+                              {saving[sv.maSo] ? <span className="material-symbols-outlined text-[18px] anim-spin">refresh</span> : 
+                               isComplete && !isChanged ? <span className="material-symbols-outlined text-[18px]" style={{fontVariationSettings: "'FILL' 1"}}>check</span> :
+                               <span className="material-symbols-outlined text-[18px]">save</span>}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant/10 flex justify-between items-center">
+                <p className="text-xs text-on-surface-variant font-medium">Đang hiển thị {students.length} sinh viên</p>
+              </div>
+            </div>
+          </section>
+
+        </>
+      )}
+    </div>
+  );
+}
+// ── TAB 7: THỐNG KÊ (TBM) ────────────────────────────────────────────────────
+function TabThongKe({toast}) {
+  return (
+    <div className="space-y-6 anim-fade">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-on-surface tracking-tight">Thống kê dữ liệu</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Theo dõi tiến độ và điểm số tổng hợp</p>
+        </div>
+      </div>
+      <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+        <span className="material-symbols-outlined text-7xl opacity-10">bar_chart</span>
+        <p className="text-base font-bold text-on-surface-variant">Giao diện Thống kê</p>
+        <p className="text-sm text-on-surface-variant/60 text-center">Đang chờ kết nối Google Apps Script...</p>
+      </div>
+    </div>
+  );
+}
+// ── APP ROOT ──────────────────────────────────────────────────────────────────
+function App() {
+React.useEffect(() => {
+    const role  = localStorage.getItem('ute_role');
+    const email = localStorage.getItem('ute_email');
+    
+    // Nếu chưa đăng nhập -> đuổi ra login
+    if (!role || !email) { window.location.href = 'login.html'; return; }
+    // Nếu là sinh viên -> đuổi về trang sinh viên
+    if (role === 'sinhvien') { window.location.href = 'trangchusinhvien.html'; return; } 
+    // Nếu là giảng viên thường -> đuổi về trang giảng viên (chặn GV vào trang của TBM)
+    if (role === 'giangvien') { window.location.href = 'giangvien.html'; return; } 
+  }, []);
+  const [tab,  setTab]  = React.useState('dashboard');
+  const toast            = useToast();
+
+  const [notifications, setNotifications] = React.useState([]);
+
+  React.useEffect(() => {
+    (async () => {
+      const notis = await fetchGVNotifications(SESSION.email);
+      if (notis.length > 0) setNotifications(notis);
+    })();
+  }, []);
+
+  function addGVNotification(noti) {
+    setNotifications(prev => [noti, ...prev].slice(0, 20));
+  }
+
+  const baseNavMobile = [
+    {id:'dashboard', icon:'dashboard',   l:'Tổng quan'},
+    {id:'sinhvien',  icon:'group',        l:'Hướng dẫn'},
+    {id:'phanbien',  icon:'rate_review',  l:'Phản biện'},
+    {id:'hoidong',   icon:'gavel',        l:'Hội đồng'},
+  ];
+  const tbmNavMobile = [
+    {id:'phancong_pb', icon:'assignment_ind',  l:'PC.PB'},
+    {id:'phancong_hd', icon:'manage_accounts', l:'PC.HĐ'},
+    {id:'thongke',     icon:'bar_chart',       l:'Thống kê'},
+  ];
+  const navMobile = SESSION.role === 'truongbomon' ? [...baseNavMobile, ...tbmNavMobile] : baseNavMobile;
+
+  return (
+    <div className="min-h-screen bg-background">
+      {toast.toast && <Toast {...toast.toast} onClose={toast.hide}/>}
+
+      <Sidebar tab={tab} setTab={setTab} role={SESSION.role}
+        logout={() => { localStorage.clear(); window.location.href = 'login.html'; }}/>
+
+      <Header notifications={notifications}/>
+
+      <main className="pt-24 pb-20 md:pb-10 px-6 min-h-screen" style={{marginLeft:'18rem'}}>
+        <div className="max-w-7xl mx-auto">
+          {tab === 'dashboard'   && <TabThongTinChung toast={toast} addGVNotification={addGVNotification}/>}
+          {tab === 'sinhvien'    && <TabSinhVienHuongDan toast={toast}/>}
+          {tab === 'phanbien'    && <TabPhanBien toast={toast}/>}
+          {tab === 'hoidong'     && <TabHoiDong toast={toast}/>}
+          
+          {SESSION.role === 'truongbomon' && tab === 'phancong_pb' && <TabPhanCongPhanBien toast={toast}/>}
+          {SESSION.role === 'truongbomon' && tab === 'phancong_hd' && <TabPhanCongHoiDong toast={toast}/>}
+          {SESSION.role === 'truongbomon' && tab === 'thongke'     && <TabThongKe toast={toast}/>}
+        </div>
+      </main>
+
+      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-start sm:justify-around items-center px-2 pb-4 pt-2 bg-white/90 backdrop-blur-lg rounded-t-3xl shadow-2xl overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+        {navMobile.map(it => (
+          <button key={it.id} onClick={() => setTab(it.id)}
+            className={`flex flex-col items-center justify-center min-w-[70px] px-2 py-2 rounded-2xl transition-all ${tab===it.id?'bg-blue-50 text-blue-800':'text-slate-400'}`}>
+            <span className="material-symbols-outlined text-2xl">{it.icon}</span>
+            <span className="text-[10px] font-semibold mt-1 whitespace-nowrap">{it.l}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+
+</script>
+</body>
+</html>
