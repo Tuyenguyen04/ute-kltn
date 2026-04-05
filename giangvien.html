@@ -1267,6 +1267,58 @@ function FeedbackModal({ student, onSave, onClose, processing }) {
   );
 }
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
+// ── MODAL NHẬN XÉT (CHAT) KLTN ───────────────────────────────────────────────
+function FeedbackModal({ student, onSave, onClose, processing }) {
+  const [text, setText] = React.useState(student.nhanXet || '');
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl anim-slide flex flex-col">
+        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">chat</span>
+            </div>
+            <div>
+              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Nhận xét & Góp ý</h2>
+              <p className="text-xs text-on-surface-variant">{student.studentName} • KLTN</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+          </button>
+        </div>
+        
+        <div className="p-6">
+          <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+            Ghi chú / Yêu cầu chỉnh sửa cho sinh viên:
+          </label>
+          <textarea
+            value={text} onChange={e => setText(e.target.value)}
+            rows={6} autoFocus
+            placeholder="Nhập nội dung yêu cầu sinh viên hoàn thiện, sửa đổi..."
+            className="w-full bg-surface-container-lowest border-2 border-outline-variant/30 rounded-xl p-4 focus:border-primary focus:ring-0 outline-none text-sm resize-none"
+          />
+          <p className="text-xs text-on-surface-variant mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[14px]">info</span> Sinh viên sẽ thấy nhận xét này trên màn hình của họ.
+          </p>
+        </div>
+
+        <div className="p-5 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-lowest rounded-b-[2rem]">
+          <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
+            Đóng
+          </button>
+          <button onClick={() => onSave(text)} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
+            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">send</span>}
+            Lưu nhận xét
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
 function TabSinhVienHuongDan({toast}) {
   const [search,   setSearch]   = React.useState('');
   const [students, setStudents] = React.useState([]);
@@ -1279,48 +1331,21 @@ function TabSinhVienHuongDan({toast}) {
   const [kltnPending,  setKltnPending]  = React.useState([]);
   const [kltnInput, setKltnInput] = React.useState({});
   const [uploadingDaoVan, setUploadingDaoVan] = React.useState({});
+  const [uploadingKLTN, setUploadingKLTN] = React.useState({}); // MỚI: State cho upload KLTN
   const [kltnActive,   setKltnActive]   = React.useState([]);
   const [kltnLoading,  setKltnLoading]  = React.useState(true);
   const [kltnProcessing, setKltnProcessing] = React.useState(null);
   const [rejectOutlineTarget, setRejectOutlineTarget] = React.useState(null);
   const [editOutlineTarget, setEditOutlineTarget] = React.useState(null);
   const [gradingKLTNTarget, setGradingKLTNTarget] = React.useState(null); 
-  const [uploadingKLTN, setUploadingKLTN] = React.useState({});
-  const [feedbackTarget, setFeedbackTarget] = React.useState(null);
+  const [feedbackTarget, setFeedbackTarget] = React.useState(null); // MỚI: State cho Modal Chat
 
-  // Thêm hàm Lưu Nhận xét
-  async function handleSaveFeedback(text) {
-    const sv = feedbackTarget;
+  async function handleEditOutlineTopic(sv, newTopic) {
     setKltnProcessing(sv.studentEmail);
     try {
-      const res = await apiPost({
-        action: 'teacherUpdateKLTN', 
-        studentEmail: sv.studentEmail,
-        nhanXet: text
-      });
-      if (res.success) {
-        toast.show('Đã lưu nhận xét thành công!', 'success');
-        setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXet: text} : s));
-        setFeedbackTarget(null);
-      } else {
-        toast.show(res.message || 'Lỗi lưu nhận xét.', 'error');
-      }
-    } catch(e) { toast.show('Lỗi kết nối mạng.', 'error'); }
-    setKltnProcessing(null);
-  }
-    async function handleEditOutlineTopic(sv, newTopic) {
-    setKltnProcessing(sv.studentEmail);
-    try {
-      // Gọi API cập nhật tên đề tài
-      const res = await apiPost({
-        action: 'updateTopic', // Cần đảm bảo Google Apps Script của bạn hỗ trợ action này
-        type: 'kltn',
-        studentEmail: sv.studentEmail,
-        newTopic: newTopic
-      });
+      const res = await apiPost({ action: 'updateTopic', type: 'kltn', studentEmail: sv.studentEmail, newTopic: newTopic });
       if (res.success) {
         toast.show(`Đã cập nhật tên đề tài thành công!`, 'success');
-        // Cập nhật lại giao diện ngay lập tức
         setKltnPending(prev => prev.map(r => r.studentEmail === sv.studentEmail ? { ...r, topic: newTopic } : r));
       } else {
         toast.show(res.message || 'Cập nhật thất bại. Thử lại.', 'error');
@@ -1329,7 +1354,8 @@ function TabSinhVienHuongDan({toast}) {
     setKltnProcessing(null);
     setEditOutlineTarget(null);
   }
-React.useEffect(() => {
+
+  React.useEffect(() => {
     (async () => {
       setLoading(true);
       setKltnLoading(true);
@@ -1342,8 +1368,6 @@ React.useEffect(() => {
         const init = {};
         approvedList.forEach(sv => { init[sv.maSo] = sv.grade != null ? String(sv.grade) : ''; });
         setGrades(init);
-        
-        // FIX: dùng pendingTopic (SV chờ duyệt đề tài) thay vì pendingOutline (luôn rỗng)
         setKltnPending(pendingTopic); 
         setKltnActive(activeList);
       } catch(e) { toast.show('Không tải được danh sách sinh viên.', 'error'); }
@@ -1351,94 +1375,67 @@ React.useEffect(() => {
       setKltnLoading(false);
     })();
   }, []);
-// --- HÀM LƯU ĐIỂM KLTN TỪ MODAL RUBRIC (FIX BUG #2) ---
+
   async function handleSaveKLTNFromModal(totalGrade, nhanXetStr) {
     const sv = gradingKLTNTarget;
     setKltnProcessing(sv.studentEmail);
     try {
       const pct = kltnInput[sv.maSo]?.daoVanPct !== undefined ? kltnInput[sv.maSo].daoVanPct : sv.daoVanPct;
-
-      // Thử action 'saveKLTNGrade' trước (cần thêm vào Apps Script — xem hướng dẫn bên dưới)
-      // Nếu GAS chưa có, fallback: updateKLTNStatus với grade + status + note
-      let res = await apiPost({
-        action: 'saveKLTNGrade',
-        studentEmail: sv.studentEmail,
-        grade: totalGrade,
-        nhanXet: nhanXetStr,
-        daoVanPct: pct,
-      });
-
-      // Nếu GAS trả "Unknown action" → fallback updateKLTNStatus
+      let res = await apiPost({ action: 'saveKLTNGrade', studentEmail: sv.studentEmail, grade: totalGrade, nhanXet: nhanXetStr, daoVanPct: pct });
       if (!res.success && (res.message || '').toLowerCase().includes('unknown')) {
-        res = await apiPost({
-          action: 'updateKLTNStatus',
-          studentEmail: sv.studentEmail,
-          status: 'graded',
-          note: nhanXetStr,
-          grade: totalGrade,
-        });
+        res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'graded', note: nhanXetStr, grade: totalGrade });
       }
-
       if (res.success) {
-        toast.show('Da luu diem KLTN thanh cong!', 'success');
-        // FIX: cap nhat ca grade va status de hien thi "Da cham" ngay khong can reload
-        setKltnActive(prev => prev.map(s =>
-          s.maSo === sv.maSo ? {...s, grade: parseFloat(totalGrade), nhanXet: nhanXetStr, status: 'graded'} : s
-        ));
+        toast.show('Đã lưu điểm KLTN thành công!', 'success');
+        setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, grade: parseFloat(totalGrade), nhanXet: nhanXetStr, status: 'graded'} : s ));
         setGradingKLTNTarget(null);
-      } else {
-        toast.show(res.message || 'Luu diem that bai!', 'error');
-      }
-    } catch(e) {
-      toast.show('Loi ket noi.', 'error');
-    }
+      } else { toast.show(res.message || 'Lưu điểm thất bại!', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
     setKltnProcessing(null);
   }
-async function handleApproveOutline(sv) {
+
+  // MỚI: Hàm lưu nhận xét Chat
+  async function handleSaveFeedback(text) {
+    const sv = feedbackTarget;
     setKltnProcessing(sv.studentEmail);
     try {
-      // Đã sửa 'updateStatus' thành 'updateKLTNStatus' và thêm step: 2
-      const res = await apiPost({
-        action: 'updateKLTNStatus', 
-        studentEmail: sv.studentEmail,
-        status: 'approved',
-        step: 2 // Cập nhật sang bước 2 (Đang thực hiện)
-      });
-      
+      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: text });
+      if (res.success) {
+        toast.show('Đã lưu nhận xét thành công!', 'success');
+        setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXet: text} : s));
+        setFeedbackTarget(null);
+      } else { toast.show(res.message || 'Lỗi lưu nhận xét.', 'error'); }
+    } catch(e) { toast.show('Lỗi kết nối mạng.', 'error'); }
+    setKltnProcessing(null);
+  }
+
+  async function handleApproveOutline(sv) {
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'approved', step: 2 });
       if (res.success) {
         toast.show(`✅ Đã duyệt đề cương của ${sv.studentName}!`, 'success');
         setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail));
         setKltnActive(prev => [{ ...sv, step: 2, status: 'approved' }, ...prev]);
-      } else {
-        toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error');
-      }
+      } else { toast.show(res.message || 'Duyệt thất bại. Thử lại.', 'error'); }
     } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setKltnProcessing(null);
   }
-async function handleRejectOutline(sv, reason) {
+
+  async function handleRejectOutline(sv, reason) {
     setKltnProcessing(sv.studentEmail);
     try {
-      // Đã sửa 'updateStatus' thành 'updateKLTNStatus' và 'reason' thành 'note'
-      const res = await apiPost({
-        action: 'updateKLTNStatus',
-        studentEmail: sv.studentEmail,
-        status: 'rejected',
-        note: reason || '', 
-      });
-      
+      const res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'rejected', note: reason || '' });
       if (res.success) {
         toast.show(`Đã từ chối đề cương của ${sv.studentName}.`, 'warn');
         setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail));
-      } else {
-        toast.show(res.message || 'Từ chối thất bại. Thử lại.', 'error');
-      }
+      } else { toast.show(res.message || 'Từ chối thất bại. Thử lại.', 'error'); }
     } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setKltnProcessing(null);
     setRejectOutlineTarget(null);
   }
-  const filtered = students.filter(s =>
-    s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
-  );
+
+  const filtered = students.filter(s => s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search));
 
   async function handleSaveGrade(maSo, studentEmail) {
     const g = grades[maSo];
@@ -1450,7 +1447,6 @@ async function handleRejectOutline(sv, reason) {
       const res = await apiPost({ action:'updateStatus', studentEmail, status:'graded', grade: num });
       if (res.success) {
         toast.show(`Đã lưu điểm ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
-        // FIX: cập nhật cả status='graded' để điều kiện hiển thị (sv.grade != null && sv.status === 'graded') hoạt động ngay
         setStudents(prev => prev.map(sv => sv.maSo === maSo ? { ...sv, grade: num, status: 'graded' } : sv));
       } else { toast.show(res.message || 'Lưu điểm thất bại!', 'error'); }
     } catch(e) { toast.show('Lưu điểm thất bại!', 'error'); }
@@ -1470,53 +1466,16 @@ async function handleRejectOutline(sv, reason) {
     </div>
   );
 
-  // FIX v3.1: Bỏ bước đề cương. Flow: step=0/pending→chờ duyệt đề tài,
-  // step=0/approved→GV đã duyệt đề tài (SV cần nộp KLTN), step>=1→đã nộp KLTN
-  const stepLabel = (step, status) => {
-    if (step === 0 && status === 'pending')  return { text: 'Chờ duyệt đề tài', color: 'bg-secondary-fixed text-on-secondary-fixed' };
-    if (step === 0 && status === 'rejected') return { text: 'Đề tài bị từ chối', color: 'bg-error-container text-on-error-container' };
-    if (step === 0 && status === 'approved') return { text: 'Chờ SV nộp KLTN', color: 'bg-primary-fixed text-on-primary-fixed-variant' };
-    if (step >= 1) return { text: 'Đã nộp — chờ chấm', color: 'bg-tertiary-fixed text-on-tertiary-fixed' };
-    return { text: 'Không xác định', color: 'bg-surface-container text-on-surface-variant' };
-  };
-
   return (
     <div className="space-y-6 anim-fade">
 
-      {rejectOutlineTarget && (
-        <RejectOutlineModal
-          request={rejectOutlineTarget}
-          onConfirm={handleRejectOutline}
-          onClose={() => setRejectOutlineTarget(null)}
-        />
-        )}
-
-      {editOutlineTarget && (
-        <EditOutlineModal
-          request={editOutlineTarget}
-          onConfirm={handleEditOutlineTopic}
-          onClose={() => setEditOutlineTarget(null)}
-        />
-      )}
-
-      {viewerFile && (
-        <FileViewerModal
-          url={viewerFile.url}
-          studentName={viewerFile.studentName}
-          fileName={viewerFile.fileName}
-          isPlagiarism={viewerFile.isPlagiarism}
-          isXNTT={viewerFile.isXNTT}
-          onClose={() => setViewerFile(null)}
-        />
-      )}
-{/* GỌI MODAL CHẤM ĐIỂM KLTN Ở ĐÂY */}
-      {gradingKLTNTarget && (
-        <KLTNGradingModal
-          student={gradingKLTNTarget}
-          processing={kltnProcessing === gradingKLTNTarget.studentEmail}
-          onSave={handleSaveKLTNFromModal}
-          onClose={() => setGradingKLTNTarget(null)}
-        />
+      {rejectOutlineTarget && <RejectOutlineModal request={rejectOutlineTarget} onConfirm={handleRejectOutline} onClose={() => setRejectOutlineTarget(null)} />}
+      {editOutlineTarget && <EditOutlineModal request={editOutlineTarget} onConfirm={handleEditOutlineTopic} onClose={() => setEditOutlineTarget(null)} />}
+      {viewerFile && <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} isPlagiarism={viewerFile.isPlagiarism} isXNTT={viewerFile.isXNTT} onClose={() => setViewerFile(null)} />}
+      
+      {gradingKLTNTarget && <KLTNGradingModal student={gradingKLTNTarget} processing={kltnProcessing === gradingKLTNTarget.studentEmail} onSave={handleSaveKLTNFromModal} onClose={() => setGradingKLTNTarget(null)} />}
+      
+      {/* MỚI: Gọi Feedback Modal */}
       {feedbackTarget && (
         <FeedbackModal
           student={feedbackTarget}
@@ -1525,7 +1484,7 @@ async function handleRejectOutline(sv, reason) {
           onClose={() => setFeedbackTarget(null)}
         />
       )}
-      )}
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-on-surface tracking-tight">Sinh viên hướng dẫn</h2>
@@ -1553,7 +1512,6 @@ async function handleRejectOutline(sv, reason) {
         ))}
       </div>
 
-{/* ── KLTN CHỜ DUYỆT ĐỀ TÀI ── */}
       {kltnPending.length > 0 && (
         <section>
           <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
@@ -1585,12 +1543,6 @@ async function handleRejectOutline(sv, reason) {
                     <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Học kỳ</p>
                     <p className="font-semibold text-on-surface mt-0.5">{sv.term || '--'}</p>
                   </div>
-                  {sv.note && (
-                    <div className="col-span-2">
-                      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ghi chú SV</p>
-                      <p className="text-on-surface-variant mt-0.5 italic">"{sv.note}"</p>
-                    </div>
-                  )}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1609,17 +1561,11 @@ async function handleRejectOutline(sv, reason) {
                     disabled={kltnProcessing === sv.studentEmail}
                     className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
                     style={{background:'#00593c'}}>
-                    {kltnProcessing === sv.studentEmail
-                      ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span>
-                      : <span className="material-symbols-outlined text-sm">check_circle</span>}
+                    {kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">check_circle</span>}
                     Duyệt đề tài
                   </button>
-                  <button
-                    onClick={() => setRejectOutlineTarget(sv)}
-                    disabled={kltnProcessing === sv.studentEmail}
-                    className="flex-1 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
-                    <span className="material-symbols-outlined text-sm">cancel</span>
-                    Từ chối
+                  <button onClick={() => setRejectOutlineTarget(sv)} disabled={kltnProcessing === sv.studentEmail} className="flex-1 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
+                    <span className="material-symbols-outlined text-sm">cancel</span> Từ chối
                   </button>
                 </div>
               </div>
@@ -1627,8 +1573,6 @@ async function handleRejectOutline(sv, reason) {
           </div>
         </section>
       )}
-
-{/* Khóa luận tốt nghiệp (KLTN) */}
 
       {kltnActive.length > 0 && (
         <section>
@@ -1643,7 +1587,6 @@ async function handleRejectOutline(sv, reason) {
                   <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
                     <th className="px-6 py-4">Sinh viên</th>
                     <th className="px-4 py-4">Đề tài</th>
-                    <th className="px-4 py-4">Học kỳ</th>
                     <th className="px-4 py-4 text-center">Bản KLTN</th>
                     <th className="px-4 py-4 text-center">Check Đạo văn</th>
                     <th className="px-4 py-4 text-center">Điểm số</th>
@@ -1654,16 +1597,13 @@ async function handleRejectOutline(sv, reason) {
                   {kltnActive.map((sv, i) => {
                     const id = sv.maSo;
                     const pct = kltnInput[id]?.daoVanPct !== undefined ? kltnInput[id].daoVanPct : sv.daoVanPct;
-                    const gr = kltnInput[id]?.grade !== undefined ? kltnInput[id].grade : (sv.grade != null ? sv.grade : '');
+
                     const handleUploadDaoVan = async (e) => {
                       const file = e.target.files[0];
                       if (!file) return;
                       setUploadingDaoVan(prev => ({...prev, [id]: true}));
                       try {
-                        const res = await apiPostFile({
-                          action: 'saveKLTNDetails', studentEmail: sv.studentEmail,
-                          _file: file, folderName: 'KetQuaDaoVan_KLTN'
-                        });
+                        const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KetQuaDaoVan_KLTN' });
                         if (res.success) {
                           toast.show('Tải lên file đạo văn thành công!', 'success');
                           setKltnActive(prev => prev.map(s => s.maSo === id ? {...s, daoVanUrl: res.driveUrl} : s));
@@ -1671,60 +1611,45 @@ async function handleRejectOutline(sv, reason) {
                       } catch(err) { toast.show('Lỗi upload!', 'error'); }
                       setUploadingDaoVan(prev => ({...prev, [id]: false}));
                     };
-const handleUploadKLTN = async (e) => {
+
+                    // MỚI: Upload KLTN
+                    const handleUploadKLTN = async (e) => {
                       const file = e.target.files[0];
                       if (!file) return;
                       setUploadingKLTN(prev => ({...prev, [id]: true}));
                       try {
-                        const res = await apiPostFile({
-                          action: 'teacherUpdateKLTN', 
-                          studentEmail: sv.studentEmail,
-                          _file: file, 
-                          folderName: 'KhoaLuanKLTN_UTE'
-                        });
+                        const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KhoaLuanKLTN_UTE' });
                         if (res.success) {
                           toast.show('Tải lên Bản KLTN thành công!', 'success');
-                          // Cập nhật URL vào giao diện và đổi step để SV không bị báo "Chưa nộp"
                           setKltnActive(prev => prev.map(s => s.maSo === id ? {...s, kltnUrl: res.driveUrl, step: Math.max(s.step, 1)} : s));
                         } else toast.show(res.message, 'error');
                       } catch(err) { toast.show('Lỗi upload!', 'error'); }
                       setUploadingKLTN(prev => ({...prev, [id]: false}));
                     };
+
                     return (
                       <tr key={i} className="hover:bg-surface-container-low transition-colors align-middle">
-                        
-                        {/* 1. Sinh viên */}
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
                             <div>
                               <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
                               <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
-                              <p className="text-xs text-outline italic truncate max-w-[130px]">{sv.studentEmail}</p>
                             </div>
                           </div>
                         </td>
 
-                        {/* 2. Đề tài */}
                         <td className="px-4 py-4 max-w-[200px]">
                           <p className="text-sm font-medium line-clamp-2">{sv.topic}</p>
                         </td>
 
-                        {/* 3. Học kỳ */}
-                        <td className="px-4 py-4 text-xs text-on-surface-variant">{sv.term || '--'}</td>
-
-                        {/* 4. Bản KLTN */}
                         <td className="px-4 py-4 text-center">
                           {sv.kltnUrl ? (
-                             <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })}
-                               className="inline-flex flex-col items-center gap-0.5 group">
-                               <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors">
-                                 <span className="material-symbols-outlined fill-icon text-[20px] text-primary">menu_book</span>
-                               </span>
+                             <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })} className="inline-flex flex-col items-center gap-0.5 group">
+                               <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">menu_book</span></span>
                                <span className="text-[9px] font-bold text-primary">Xem Bản KLTN</span>
                              </button>
                           ) : (
-                             // Giao diện upload khi SV chưa nộp
                              <div className="inline-flex flex-col items-center gap-0.5">
                                 <label title="GV Upload hộ Bản KLTN" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
                                   {uploadingKLTN[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
@@ -1734,24 +1659,17 @@ const handleUploadKLTN = async (e) => {
                              </div>
                           )}
                         </td>
-                        {/* 5. Check Đạo văn (Nằm ngang + Highlight màu) */}
+
                         <td className="px-4 py-4 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            {/* Icon Upload / View */}
                             {sv.daoVanUrl ? (
-                              <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })}
-                                title="Xem file Check đạo văn"
-                                className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0">
-                                <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span>
-                              </button>
+                              <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></button>
                             ) : (
                               <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
                                 {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
                                 <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
                               </label>
                             )}
-                            
-                            {/* Ô nhập % Highlight */}
                             {(() => {
                                let pctColor = 'bg-surface-container-low border-outline-variant/40 text-on-surface';
                                const numPct = parseFloat(pct);
@@ -1762,9 +1680,7 @@ const handleUploadKLTN = async (e) => {
                                }
                                return (
                                  <div className={`flex items-center border rounded-lg overflow-hidden w-[65px] h-[40px] transition-colors ${pctColor}`}>
-                                    <input type="number" min="0" max="100" placeholder="%"
-                                       value={pct} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))}
-                                       className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
+                                    <input type="number" min="0" max="100" placeholder="%" value={pct} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))} className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
                                     <span className="text-[10px] font-bold opacity-60 pr-2">%</span>
                                  </div>
                                );
@@ -1772,8 +1688,6 @@ const handleUploadKLTN = async (e) => {
                           </div>
                         </td>
 
-                        {/* 6. Điểm số (Thu nhỏ + Icon Lưu) */}
-{/* 6. Điểm số (MỚI: Nút gọi Modal Chấm điểm) */}
                         <td className="px-4 py-4 text-center">
                           {sv.grade != null ? (
                             <div className="flex flex-col items-center gap-1">
@@ -1781,33 +1695,34 @@ const handleUploadKLTN = async (e) => {
                               <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
                             </div>
                           ) : (
-                            <div className="flex items-center justify-center">
-                              <button onClick={() => setGradingKLTNTarget(sv)} disabled={kltnProcessing === sv.studentEmail}
-                                title="Chấm điểm theo biểu mẫu"
-                                className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm">
-                                {kltnProcessing === sv.studentEmail 
-                                  ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> 
-                                  : <span className="material-symbols-outlined text-[16px]">edit_square</span>}
-                                Chấm điểm
-                              </button>
-                            </div>
+                            <button onClick={() => setGradingKLTNTarget(sv)} disabled={kltnProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm">
+                              {kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> : <span className="material-symbols-outlined text-[16px]">edit_square</span>} Chấm
+                            </button>
                           )}
                         </td>
-                        {/* 7. Thao tác (Chỉ giữ lại icon Chat) */}
+
+                        {/* MỚI: Bật tính năng Chat (Nhận xét) */}
                         <td className="px-2 py-4 text-center">
-                          <button onClick={() => setFeedbackTarget(sv)}
-                            title="Ghi nhận xét / Yêu cầu chỉnh sửa"
-                            className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
+                          <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
                             <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
-                            {/* Dấu chấm đỏ báo hiệu đã có nhận xét */}
                             {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
                           </button>
                         </td>
+
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* BCTT */}
       <div>
         <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-primary">assignment</span>
-          Báo cáo thực tập (BCTT)
+          <span className="material-symbols-outlined text-primary">assignment</span> Báo cáo thực tập (BCTT)
         </h3>
       </div>
 
@@ -1815,7 +1730,6 @@ const handleUploadKLTN = async (e) => {
         <div className="flex flex-col items-center justify-center py-24 gap-4 bg-surface-container-lowest rounded-3xl shadow-sm">
           <span className="material-symbols-outlined text-6xl opacity-15">school</span>
           <p className="text-sm font-medium text-on-surface-variant">Chưa có sinh viên nào được duyệt đề tài</p>
-          <p className="text-xs text-on-surface-variant/60">Duyệt đề tài ở tab Thông tin chung để sinh viên xuất hiện ở đây</p>
         </div>
       ) : (
         <div className="bg-surface-container-lowest rounded-2xl shadow-sm overflow-hidden border border-outline-variant/15">
@@ -1823,18 +1737,13 @@ const handleUploadKLTN = async (e) => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
-                  {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','File BC','Giấy XNTT','Điểm số',''].map((h, i) => (
-                    <th key={i} className={`px-4 py-4 ${i===4 || i===5 || i===6 ? 'text-center' : ''}`}>{h}</th>
+                  {['Sinh viên','Đề tài','Đơn vị TT','File BC','Giấy XNTT','Điểm số'].map((h, i) => (
+                    <th key={i} className={`px-4 py-4 ${i>=3 ? 'text-center' : ''}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-container">
-                {filtered.length === 0 ? (
-                  <tr><td colSpan="8" className="px-6 py-16 text-center text-on-surface-variant text-sm">
-                    <span className="material-symbols-outlined text-4xl opacity-20 block mb-2">search_off</span>
-                    Không tìm thấy sinh viên
-                  </td></tr>
-                ) : filtered.map(sv => (
+                {filtered.map(sv => (
                   <tr key={sv.maSo} className="hover:bg-surface-container-low transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -1842,100 +1751,46 @@ const handleUploadKLTN = async (e) => {
                         <div>
                           <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
                           <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
-                          <p className="text-xs text-outline italic truncate max-w-[130px]">{sv.studentEmail}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 max-w-[200px]">
-                      <p className="text-sm font-medium line-clamp-2">{sv.topic}</p>
-                    </td>
+                    <td className="px-6 py-4 max-w-[200px]"><p className="text-sm font-medium line-clamp-2">{sv.topic}</p></td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{sv.company || '--'}</td>
-                    <td className="px-6 py-4 text-xs text-on-surface-variant">{sv.term || '--'}</td>
 
-                    {/* File BC */}
                     <td className="px-4 py-4 text-center">
                       {sv.reportSubmitted && sv.reportDriveUrl ? (
-                        <button
-                          onClick={() => setViewerFile({ url: sv.reportDriveUrl, studentName: sv.studentName })}
-                          title="Xem / Tải báo cáo"
-                          className="inline-flex flex-col items-center gap-0.5 group">
-                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors">
-                            <span className="material-symbols-outlined fill-icon text-[20px] text-primary">description</span>
-                          </span>
-                          <span className="text-[9px] font-bold text-primary">Xem / Tải</span>
+                        <button onClick={() => setViewerFile({ url: sv.reportDriveUrl, studentName: sv.studentName })} className="inline-flex flex-col items-center gap-0.5 group">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">description</span></span>
+                          <span className="text-[9px] font-bold text-primary">Xem</span>
                         </button>
-                      ) : (
-                        <div className="inline-flex flex-col items-center gap-0.5">
-                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container">
-                            <span className="material-symbols-outlined text-[20px] text-on-surface-variant/30">description</span>
-                          </span>
-                          <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
-                        </div>
-                      )}
+                      ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
                     </td>
-{/* Giấy XNTT */}
+
                     <td className="px-4 py-4 text-center">
                       {sv.xnttDriveUrl ? (
-                        <button
-                          onClick={() => setViewerFile({ url: sv.xnttDriveUrl, studentName: sv.studentName, fileName: 'Giấy Xác Nhận Thực Tập', isXNTT: true })}
-                          title="Xem / Tải Giấy XNTT"
-                          className="inline-flex flex-col items-center gap-0.5 group">
-                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors">
-                            <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">verified</span>
-                          </span>
-                          <span className="text-[9px] font-bold text-tertiary">Xem / Tải</span>
+                        <button onClick={() => setViewerFile({ url: sv.xnttDriveUrl, studentName: sv.studentName, fileName: 'Giấy Xác Nhận Thực Tập', isXNTT: true })} className="inline-flex flex-col items-center gap-0.5 group">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">verified</span></span>
+                          <span className="text-[9px] font-bold text-tertiary">Xem</span>
                         </button>
-                      ) : (
-                        <div className="inline-flex flex-col items-center gap-0.5">
-                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container">
-                            <span className="material-symbols-outlined text-[20px] text-on-surface-variant/30">verified</span>
-                          </span>
-                          <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
-                        </div>
-                      )}
+                      ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
                     </td>
-                    {/* Điểm số */}
+                    
                     <td className="px-4 py-4">
                       {sv.grade != null && sv.status === 'graded' ? (
                         <div className="flex flex-col items-center gap-1">
                           <span className="text-2xl font-black text-primary">{sv.grade.toFixed(1)}</span>
-                          <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
                         </div>
                       ) : sv.reportSubmitted ? (
                         <div className="flex flex-col gap-1.5 w-[110px]">
-                          <input
-                            type="number" min="0" max="10" step="0.1"
-                            value={grades[sv.maSo] ?? ''}
-                            onChange={e => setGrades(prev => ({...prev, [sv.maSo]: e.target.value}))}
-                            placeholder="0–10"
-                            className="w-full text-sm font-bold text-center bg-surface-container-low border border-outline-variant/40 rounded-xl px-2 py-2 outline-none focus:ring-2 focus:ring-primary/30"
-                          />
-                          <button
-                            onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)}
-                            disabled={saving[sv.maSo]}
-                            className="w-full py-1.5 bg-primary text-white text-[10px] font-bold rounded-xl hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-1">
-                            {saving[sv.maSo]
-                              ? <span className="material-symbols-outlined anim-spin text-xs">refresh</span>
-                              : <><span className="material-symbols-outlined text-xs">save</span>Lưu điểm</>}
-                          </button>
+                          <input type="number" min="0" max="10" step="0.1" value={grades[sv.maSo] ?? ''} onChange={e => setGrades(prev => ({...prev, [sv.maSo]: e.target.value}))} className="w-full text-sm font-bold text-center bg-surface-container-low border border-outline-variant/40 rounded-xl px-2 py-2 outline-none" />
+                          <button onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)} disabled={saving[sv.maSo]} className="w-full py-1.5 bg-primary text-white text-[10px] font-bold rounded-xl">{saving[sv.maSo] ? 'Đang lưu...' : 'Lưu điểm'}</button>
                         </div>
-                      ) : (
-                        <span className="text-[10px] text-on-surface-variant/40 italic">Chờ nộp BC</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-4 text-center">
-                      <button onClick={() => toast.show('Hệ thống tin nhắn đang bảo trì!', 'warn')}
-                        className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all">
-                        <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
-                      </button>
+                      ) : (<span className="text-[10px] text-on-surface-variant/40 italic">Chờ nộp BC</span>)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-          <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10">
-            <span className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {students.length} sinh viên</span>
           </div>
         </div>
       )}
