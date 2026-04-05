@@ -1715,6 +1715,42 @@ function TabSinhVienHuongDan({toast}) {
                             {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
                           </button>
                         </td>
+                        {/* Nút Lưu tổng */}
+                        <td className="px-4 py-4 text-center">
+                          <button
+                            onClick={async () => {
+                              const currentPct = kltnInput[id]?.daoVanPct !== undefined ? kltnInput[id].daoVanPct : sv.daoVanPct;
+                              if (sv.grade === null || sv.grade === undefined || sv.grade === '') {
+                                toast.show('Hãy chấm điểm trước khi lưu!', 'warn');
+                                return;
+                              }
+                              setSaving(prev => ({...prev, [id]: true}));
+                              try {
+                                const res = await apiPost({
+                                  action: 'saveKLTNGrade',
+                                  studentEmail: sv.studentEmail,
+                                  grade: sv.grade,
+                                  daoVanPct: currentPct,
+                                  nhanXet: sv.nhanXet || ''
+                                });
+                                if (res.success) {
+                                  toast.show('Đã lưu thành công!', 'success');
+                                  setKltnActive(prev => prev.map(s => s.maSo === id ? {...s, daoVanPct: currentPct} : s));
+                                  setKltnInput(prev => { const n = {...prev}; if(n[id]) delete n[id].daoVanPct; return n; });
+                                } else toast.show(res.message || 'Lưu thất bại!', 'error');
+                              } catch(e) { toast.show('Lỗi kết nối!', 'error'); }
+                              setSaving(prev => ({...prev, [id]: false}));
+                            }}
+                            disabled={saving[id]}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:opacity-90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed mx-auto"
+                          >
+                            {saving[id]
+                              ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span>
+                              : <span className="material-symbols-outlined text-[14px]">save</span>
+                            }
+                            Lưu
+                          </button>
+                        </td>
 
                       </tr>
                     );
