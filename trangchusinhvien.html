@@ -1185,6 +1185,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
         const plagiarismPct = kltnSV?.plagiarismPct||kltnSV?.daoVanPct||null;
         const gvComment  = kltnSV?.gvComment||kltnSV?.nhanXet||kltnSV?.comment||null;
         const kltnUrl    = kltnSV?.kltnUrl||null;
+        const bienBanUrl = kltnSV?.bienBanUrl||kltnSV?.bienBanHoiDongUrl||kltnSV?.minutesUrl||null;
         const kltnPassed = kltnGradeSV>=5;
 
         return(
@@ -1206,14 +1207,14 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             </div>
 
             {/* Table header — desktop only */}
-            <div className="hidden md:grid grid-cols-[2fr_2fr_1.5fr_2.5fr] gap-4 px-6 py-3 bg-surface-container border-b border-outline-variant/10">
-              {['SINH VIÊN','ĐỀ TÀI','CHECK ĐẠO VĂN','NHẬN XÉT CỦA GV'].map(h=>(
+            <div className="hidden md:grid grid-cols-[2fr_2fr_1.8fr_1.8fr_2.5fr] gap-4 px-6 py-3 bg-surface-container border-b border-outline-variant/10">
+              {['SINH VIÊN','ĐỀ TÀI','CHECK ĐẠO VĂN','BIÊN BẢN HỘI ĐỒNG','NHẬN XÉT GVHD'].map(h=>(
                 <span key={h} className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">{h}</span>
               ))}
             </div>
 
             {/* Row */}
-            <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1.5fr_2.5fr] gap-4 px-6 py-5 items-start">
+            <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1.8fr_1.8fr_2.5fr] gap-4 px-6 py-5 items-start">
 
               {/* Cột 1: Sinh viên */}
               <div className="flex items-center gap-3">
@@ -1230,28 +1231,35 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                 <p className="text-sm font-semibold text-on-surface leading-snug">{kltnTopic}</p>
               </div>
 
-              {/* Cột 3: Check đạo văn — icon bấm được + % hiển thị ngay bên phải */}
+              {/* Cột 3: Check đạo văn — icon xem + % + nút tải về */}
               <div className="flex flex-col gap-2">
                 <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest md:hidden">Check đạo văn</p>
                 {plagiarismUrl?(
-                  <a href={plagiarismUrl} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-3 group w-fit">
-                    {/* Icon */}
-                    <div className="w-11 h-11 rounded-2xl bg-tertiary-container flex items-center justify-center shadow-sm group-hover:scale-105 transition-all flex-shrink-0">
-                      <span className="material-symbols-outlined fill-icon text-white text-xl">policy</span>
-                    </div>
-                    {/* % */}
-                    {plagiarismPct!==null?(
-                      <div className="flex items-baseline gap-0.5 px-3 py-1.5 border border-outline-variant/30 rounded-xl bg-surface-container-low">
-                        <span className={`text-xl font-black leading-none ${parseFloat(plagiarismPct)>30?'text-error':parseFloat(plagiarismPct)>20?'text-secondary':'text-on-surface'}`}>
-                          {plagiarismPct}
-                        </span>
-                        <span className="text-sm font-bold text-on-surface-variant">%</span>
+                  <div className="flex flex-col gap-2">
+                    {/* Icon + % */}
+                    <a href={plagiarismUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 group w-fit">
+                      <div className="w-11 h-11 rounded-2xl bg-tertiary-container flex items-center justify-center shadow-sm group-hover:scale-105 transition-all flex-shrink-0">
+                        <span className="material-symbols-outlined fill-icon text-white text-xl">policy</span>
                       </div>
-                    ):(
-                      <span className="text-xs text-primary font-bold group-hover:underline">Xem file</span>
-                    )}
-                  </a>
+                      {plagiarismPct!==null?(
+                        <div className="flex items-baseline gap-0.5 px-3 py-1.5 border border-outline-variant/30 rounded-xl bg-surface-container-low">
+                          <span className={`text-xl font-black leading-none ${parseFloat(plagiarismPct)>30?'text-error':parseFloat(plagiarismPct)>20?'text-secondary':'text-on-surface'}`}>
+                            {plagiarismPct}
+                          </span>
+                          <span className="text-sm font-bold text-on-surface-variant">%</span>
+                        </div>
+                      ):(
+                        <span className="text-xs text-primary font-bold group-hover:underline">Xem file</span>
+                      )}
+                    </a>
+                    {/* Nút tải về */}
+                    <a href={plagiarismUrl} download target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low border border-outline-variant/30 hover:bg-surface-container-high rounded-xl text-xs font-bold text-on-surface-variant hover:text-primary transition-all w-fit">
+                      <span className="material-symbols-outlined text-sm">download</span>
+                      Tải về
+                    </a>
+                  </div>
                 ):(
                   <div className="flex items-center gap-2 px-3 py-2 bg-surface-container rounded-xl w-fit">
                     <span className="material-symbols-outlined text-on-surface-variant/40 text-base">hourglass_empty</span>
@@ -1260,9 +1268,37 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                 )}
               </div>
 
-              {/* Cột 4: Nhận xét GV */}
+              {/* Cột 4: Biên bản hội đồng — do thư ký upload */}
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest md:hidden">Biên bản hội đồng</p>
+                {bienBanUrl?(
+                  <div className="flex flex-col gap-2">
+                    {/* Icon xem */}
+                    <a href={bienBanUrl} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2.5 group w-fit">
+                      <div className="w-11 h-11 rounded-2xl bg-secondary-container flex items-center justify-center shadow-sm group-hover:scale-105 transition-all flex-shrink-0">
+                        <span className="material-symbols-outlined fill-icon text-on-secondary-container text-xl">gavel</span>
+                      </div>
+                      <span className="text-xs text-primary font-bold group-hover:underline leading-snug">Xem biên bản</span>
+                    </a>
+                    {/* Nút tải về */}
+                    <a href={bienBanUrl} download target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low border border-outline-variant/30 hover:bg-surface-container-high rounded-xl text-xs font-bold text-on-surface-variant hover:text-primary transition-all w-fit">
+                      <span className="material-symbols-outlined text-sm">download</span>
+                      Tải về
+                    </a>
+                  </div>
+                ):(
+                  <div className="flex items-center gap-2 px-3 py-2 bg-surface-container rounded-xl w-fit">
+                    <span className="material-symbols-outlined text-on-surface-variant/40 text-base">hourglass_empty</span>
+                    <span className="text-xs text-on-surface-variant/60 font-medium">Chưa có</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cột 5: Nhận xét GVHD */}
               <div className="flex flex-col gap-1.5">
-                <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest md:hidden">Nhận xét của GV</p>
+                <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest md:hidden">Nhận xét GVHD</p>
                 {gvComment?(
                   <div className="bg-surface-container-low border border-outline-variant/20 rounded-2xl p-4">
                     <div className="flex items-start gap-2">
@@ -1273,7 +1309,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                 ):(
                   <div className="flex items-center gap-2 px-4 py-3 bg-surface-container rounded-2xl">
                     <span className="material-symbols-outlined text-on-surface-variant/40 text-base">chat_bubble_outline</span>
-                    <p className="text-sm text-on-surface-variant/60">GV chưa có nhận xét</p>
+                    <p className="text-sm text-on-surface-variant/60">GVHD chưa có nhận xét</p>
                   </div>
                 )}
               </div>
