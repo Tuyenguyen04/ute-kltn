@@ -1267,58 +1267,6 @@ function FeedbackModal({ student, onSave, onClose, processing }) {
   );
 }
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
-// ── MODAL NHẬN XÉT (CHAT) KLTN ───────────────────────────────────────────────
-function FeedbackModal({ student, onSave, onClose, processing }) {
-  const [text, setText] = React.useState(student.nhanXet || '');
-
-  return (
-    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl anim-slide flex flex-col">
-        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary">
-              <span className="material-symbols-outlined">chat</span>
-            </div>
-            <div>
-              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Nhận xét & Góp ý</h2>
-              <p className="text-xs text-on-surface-variant">{student.studentName} • KLTN</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
-            <span className="material-symbols-outlined text-on-surface-variant">close</span>
-          </button>
-        </div>
-        
-        <div className="p-6">
-          <label className="text-sm font-semibold text-on-surface-variant block mb-2">
-            Ghi chú / Yêu cầu chỉnh sửa cho sinh viên:
-          </label>
-          <textarea
-            value={text} onChange={e => setText(e.target.value)}
-            rows={6} autoFocus
-            placeholder="Nhập nội dung yêu cầu sinh viên hoàn thiện, sửa đổi..."
-            className="w-full bg-surface-container-lowest border-2 border-outline-variant/30 rounded-xl p-4 focus:border-primary focus:ring-0 outline-none text-sm resize-none"
-          />
-          <p className="text-xs text-on-surface-variant mt-2 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">info</span> Sinh viên sẽ thấy nhận xét này trên màn hình của họ.
-          </p>
-        </div>
-
-        <div className="p-5 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-lowest rounded-b-[2rem]">
-          <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
-            Đóng
-          </button>
-          <button onClick={() => onSave(text)} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
-            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">send</span>}
-            Lưu nhận xét
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
 function TabSinhVienHuongDan({toast}) {
   const [search,   setSearch]   = React.useState('');
   const [students, setStudents] = React.useState([]);
