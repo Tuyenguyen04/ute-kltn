@@ -53,7 +53,7 @@ borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"}}
 const {useState,useEffect,useCallback,useRef} = React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbyxhjdKRiO5sIOV7T7Yc34eqXWOxe-loVshdumWt9_uHMqC619fwfby2ZDO6G3cry7v/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbybWHCCeaHILRGyQnMIVhyGRUlyHQJppZMpe8PkB3zOFrxSLabk5JIo90BjjE1t1wDe/exec';
 
 // Đọc session giảng viên từ localStorage (được set bởi login.html)
 const SESSION = {
@@ -442,7 +442,7 @@ async function fetchKLTNByGV(gvEmail) {
   for (const r of rows) {
     if (!r[7] || r[7].toLowerCase().trim() !== gvEmail.toLowerCase().trim()) continue;
     
-    const step = parseInt(r[14]) || 1;
+    const step = (r[14] === '' || r[14] === null || r[14] === undefined) ? 0 : (parseInt(r[14]) || 0);
     const decuUrl = r[15] || '';
     
     const obj = {
@@ -458,11 +458,11 @@ async function fetchKLTNByGV(gvEmail) {
       step, decuUrl,
       type         : 'kltn',
       
-// -- CẬP NHẬT CỘT: Tránh xung đột với cột Lý do từ chối (cột R) --
-      kltnUrl      : r[16] || '', // Cột Q (Index 16): Link KLTN SV nộp
-      daoVanPct    : r[18] || '', // Cột S (Index 18): % Đạo văn
-      daoVanUrl    : r[19] || '', // Cột T (Index 19): File check đạo văn
-      nhanXet      : r[20] || ''  // Cột U (Index 20): Nhận xét
+      // -- ĐÂY LÀ 4 DÒNG MỚI ĐỂ ĐỌC DỮ LIỆU BƯỚC 2 --
+      kltnUrl      : r[16] || '', // Cột Q: Link KLTN SV nộp
+      daoVanPct    : r[17] || '', // Cột R: % Đạo văn
+      daoVanUrl    : r[18] || '', // Cột S: File check đạo văn
+      nhanXet      : r[19] || ''  // Cột T: Nhận xét
     };
 
     if (obj.status === 'pending') {
@@ -473,7 +473,7 @@ async function fetchKLTNByGV(gvEmail) {
         // Đã có đề cương -> Đợi duyệt đề cương
         pendingOutline.push(obj);
       }
-    } else if (obj.status === 'approved' || step >= 2) {
+    } else if (obj.status === 'approved' || step >= 1) {
       activeList.push(obj);
     }
   }
@@ -722,7 +722,7 @@ function TabThongTinChung({toast, addGVNotification}) {
       let res;
       // Phân nhánh API tùy theo KLTN hay BCTT
       if (req.type === 'kltn') {
-        res = await apiPost({ action: 'updateKLTNStatus', studentEmail: req.studentEmail, status: 'approved', step: 1 });
+        res = await apiPost({ action: 'approveKLTNTopic', studentEmail: req.studentEmail });
       } else {
         res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'approved' });
       }
@@ -743,7 +743,7 @@ function TabThongTinChung({toast, addGVNotification}) {
     try {
       let res;
       if (req.type === 'kltn') {
-        res = await apiPost({ action: 'updateKLTNStatus', studentEmail: req.studentEmail, status: 'rejected', note: reason });
+        res = await apiPost({ action: 'rejectKLTNTopic', studentEmail: req.studentEmail, reason: reason });
       } else {
         res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'rejected', reason: reason });
       }
@@ -1669,7 +1669,8 @@ async function handleRejectOutline(sv, reason) {
                           </div>
                         </td>
 
-                      {/* 6. Điểm số (MỚI: Nút gọi Modal Chấm điểm) */}
+                        {/* 6. Điểm số (Thu nhỏ + Icon Lưu) */}
+{/* 6. Điểm số (MỚI: Nút gọi Modal Chấm điểm) */}
                         <td className="px-4 py-4 text-center">
                           {sv.grade != null ? (
                             <div className="flex flex-col items-center gap-1">
