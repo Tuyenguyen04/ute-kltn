@@ -465,10 +465,15 @@ async function fetchKLTNByGV(gvEmail) {
       nhanXet      : r[19] || ''  // Cột T: Nhận xét
     };
 
-    if (obj.status === 'pending') {
-      // v3.1: step=0 khi SV vừa đăng ký đề tài (không còn bước đề cương)
+    // FIX: Ưu tiên step >= 1 TRƯỚC — SV đã nộp KLTN phải vào activeList
+    // dù status trong sheet là gì (tránh bị hiện lại ở "chờ duyệt đề tài")
+    if (step >= 1) {
+      activeList.push(obj);
+    } else if (obj.status === 'pending') {
+      // Chưa nộp KLTN, đề tài chờ GV duyệt
       pendingTopic.push(obj);
-    } else if (obj.status === 'approved' || step >= 1) {
+    } else if (obj.status === 'approved') {
+      // GV đã duyệt đề tài, SV chưa nộp KLTN → hiện trong bảng KLTN đang làm
       activeList.push(obj);
     }
   }
