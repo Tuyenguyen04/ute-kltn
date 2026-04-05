@@ -466,13 +466,8 @@ async function fetchKLTNByGV(gvEmail) {
     };
 
     if (obj.status === 'pending') {
-      // Nếu ở step 1 và chưa có link đề cương -> Là Đăng ký đề tài
-      if (step === 1 && !decuUrl) {
-        pendingTopic.push(obj);
-      } else {
-        // Đã có đề cương -> Đợi duyệt đề cương
-        pendingOutline.push(obj);
-      }
+      // v3.1: step=0 khi SV vừa đăng ký đề tài (không còn bước đề cương)
+      pendingTopic.push(obj);
     } else if (obj.status === 'approved' || step >= 1) {
       activeList.push(obj);
     }
@@ -730,7 +725,11 @@ function TabThongTinChung({toast, addGVNotification}) {
       if (res.success) {
         toast.show(`✅ Đã duyệt đề tài của ${req.studentName}!`, 'success');
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
-        if (req.type === 'bctt') setApprovedList(prev => [{ ...req, status:'approved' }, ...prev]);
+        if (req.type === 'bctt') {
+          setApprovedList(prev => [{ ...req, status: 'approved' }, ...prev]);
+        } else if (req.type === 'kltn') {
+          setKltnActive(prev => [{ ...req, status: 'approved', step: 0 }, ...prev]);
+        }
       } else {
         toast.show(res.message || 'Duyệt thất bại.', 'error');
       }
@@ -1451,100 +1450,6 @@ async function handleRejectOutline(sv, reason) {
         ))}
       </div>
 
-      {/* KLTN CHỜ DUYỆT */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined" style={{color:'#00593c'}}>description</span>
-            Đề cương KLTN chờ duyệt
-            {!kltnLoading && kltnPending.length > 0 && (
-              <span className="bg-error text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                {kltnPending.length}
-              </span>
-            )}
-          </h3>
-        </div>
-
-        {kltnLoading ? (
-          <div className="flex items-center justify-center py-10 gap-3 text-on-surface-variant">
-            <span className="material-symbols-outlined anim-spin text-xl text-primary">refresh</span>
-            <span className="text-sm font-medium">Đang tải từ sheet DangKyKLTN...</span>
-          </div>
-        ) : kltnPending.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 gap-3 bg-surface-container-lowest rounded-2xl border border-outline-variant/15">
-            <span className="material-symbols-outlined text-4xl opacity-15">task_alt</span>
-            <p className="text-sm font-medium text-on-surface-variant">Không có đề cương KLTN nào đang chờ duyệt</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {kltnPending.map((sv, i) => (
-              <div key={i} className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border-l-4 hover:shadow-md transition-shadow"
-                style={{borderColor:'#00593c'}}>
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                    <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-on-surface text-sm leading-snug line-clamp-1">📄 {sv.topic}</h4>
-                      <p className="text-xs text-on-surface-variant mt-0.5">
-                        <span className="font-semibold">{sv.studentName}</span> • MSSV: {sv.maSo}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] px-2.5 py-1 rounded-full font-bold bg-tertiary-fixed text-on-tertiary-fixed flex-shrink-0">
-                    KLTN
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded-xl mb-4 text-xs">
-                  <div>
-                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ngành</p>
-                    <p className="font-semibold text-on-surface mt-0.5">{sv.nganh || '--'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Học kỳ</p>
-                    <p className="font-semibold text-on-surface mt-0.5">{sv.term || '--'}</p>
-                  </div>
-                  {sv.note && (
-                    <div className="col-span-2">
-                      <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ghi chú SV</p>
-                      <p className="text-on-surface-variant mt-0.5 italic">"{sv.note}"</p>
-                    </div>
-                  )}
-                </div>
-<div className="flex gap-2">
-                  <button
-                    onClick={() => handleApproveOutline(sv)}
-                    disabled={kltnProcessing === sv.studentEmail}
-                    className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
-                    style={{background:'#00593c'}}>
-                    {kltnProcessing === sv.studentEmail
-                      ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span>
-                      : <span className="material-symbols-outlined text-sm">check_circle</span>}
-                    Duyệt đề cương
-                  </button>
-                  
-                  {/* NÚT CHỈNH SỬA Ở GIỮA */}
-                  <button
-                    onClick={() => setEditOutlineTarget(sv)}
-                    disabled={kltnProcessing === sv.studentEmail}
-                    className="flex-1 py-2.5 rounded-xl bg-primary-fixed text-on-primary-fixed-variant text-xs font-bold hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
-                    <span className="material-symbols-outlined text-sm">edit_document</span>
-                    Chỉnh sửa
-                  </button>
-
-                  <button
-                    onClick={() => setRejectOutlineTarget(sv)}
-                    disabled={kltnProcessing === sv.studentEmail}
-                    className="flex-1 py-2.5 rounded-xl bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
-                    <span className="material-symbols-outlined text-sm">cancel</span>
-                    Từ chối
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 {/* Khóa luận tốt nghiệp (KLTN) */}
       {kltnActive.length > 0 && (
         <section>
@@ -1670,6 +1575,7 @@ async function handleRejectOutline(sv, reason) {
                         </td>
 
                         {/* 6. Điểm số (Thu nhỏ + Icon Lưu) */}
+{/* 6. Điểm số (MỚI: Nút gọi Modal Chấm điểm) */}
                         <td className="px-4 py-4 text-center">
                           {sv.grade != null ? (
                             <div className="flex flex-col items-center gap-1">
