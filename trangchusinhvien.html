@@ -456,6 +456,23 @@ function Sidebar({tab,setTab,kltnUnlocked,kltnReg,bcttDisabled,logout,notifCount
             <span className="px-2 py-0.5 bg-green-100 text-green-800 text-[10px] font-black rounded-full">MỞ</span>
           </button>
         )}
+
+        {/* Nộp KLTN sau chỉnh sửa */}
+        {kltnReg?(
+          <button onClick={()=>setTab('kltn-revision')}
+            className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all text-left ${tab==='kltn-revision'?'bg-orange-100 text-orange-800':'text-slate-600 hover:bg-slate-200/50'}`}>
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined">rate_review</span>
+              <span>KLTN sau chỉnh sửa</span>
+            </div>
+          </button>
+        ):(
+          <div className="flex items-center justify-between px-4 py-3 text-slate-400 opacity-40 cursor-not-allowed rounded-xl"
+            title="Cần đăng ký KLTN trước">
+            <div className="flex items-center gap-3"><span className="material-symbols-outlined">rate_review</span><span className="font-medium">KLTN sau chỉnh sửa</span></div>
+            <span className="material-symbols-outlined text-sm">lock</span>
+          </div>
+        )}
       </nav>
 
     </aside>
@@ -2762,6 +2779,255 @@ function KLTNRegistration({onSuccess,dashData}){
     </div>
   );
 }
+// ── KLTN REVISION PAGE (Nộp KLTN sau chỉnh sửa) ──────────────────────────────
+function KLTNRevisionPage({dashData,onSuccess,toast}){
+  const kltn  = dashData?.kltn||null;
+  const instr = kltn?.instructor||dashData?.instructor||null;
+  const topic = kltn?.topic||'';
+
+  const [fileGiaiTrinh,setFileGiaiTrinh] = useState(null);
+  const [fileFinal,setFileFinal]         = useState(null);
+  const [note,setNote]                   = useState('');
+  const [submitting,setSubmitting]       = useState(false);
+  const [progress,setProgress]           = useState(0);
+  const [progressLabel,setProgressLabel] = useState('');
+  const [done,setDone]                   = useState(false);
+  const [doneUrls,setDoneUrls]           = useState({giaiTrinh:'',final:''});
+
+  function fmtSize(b){return b>1024*1024?(b/1024/1024).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';}
+
+  const ALLOWED_TYPES = ['application/pdf','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/msword','application/zip','application/x-zip-compressed'];
+  function checkFile(f,maxMB){
+    if(!f) return false;
+    if(!ALLOWED_TYPES.some(t=>f.type===t)&&!f.name.match(/\.(pdf|docx?|zip)$/i)){
+      toast.show('Chỉ chấp nhận file PDF, Word hoặc ZIP!','error'); return false;
+    }
+    if(f.size>maxMB*1024*1024){toast.show(`File tối đa ${maxMB} MB!`,'error'); return false;}
+    return true;
+  }
+
+  function pickGiaiTrinh(e){const f=e.target.files[0];if(f&&checkFile(f,50)) setFileGiaiTrinh(f);}
+  function pickFinal(e){const f=e.target.files[0];if(f&&checkFile(f,100)) setFileFinal(f);}
+
+  async function submit(){
+    if(!fileGiaiTrinh){toast.show('Vui lòng chọn file Biên bản giải trình!','error');return;}
+    if(!fileFinal){toast.show('Vui lòng chọn file KLTN sau chỉnh sửa!','error');return;}
+    setSubmitting(true); setProgress(0);
+    try{
+      // Bước 1: Upload Biên bản giải trình
+      setProgressLabel('Đang upload Biên bản giải trình...');
+      const urlGiaiTrinh = await uploadFileInChunks(
+        fileGiaiTrinh,
+        'KhoaLuanKLTN_UTE',
+        pct=>setProgress(Math.round(pct*0.45)),
+        {}
+      );
+
+      // Bước 2: Upload KLTN final
+      setProgressLabel('Đang upload KLTN sau chỉnh sửa...');
+      const urlFinal = await uploadFileInChunks(
+        fileFinal,
+        'KhoaLuanKLTN_UTE',
+        pct=>setProgress(45+Math.round(pct*0.45)),
+        {}
+      );
+
+      // Bước 3: Ghi vào sheet SauHoiDong qua GAS
+      setProgressLabel('Đang lưu thông tin...');
+      setProgress(92);
+      const res = await _gasPost({
+        action     : 'sauHDCreate',
+        hoTen      : SESSION.name,
+        emailSV    : SESSION.email,
+        urlGiaiTrinh,
+        urlFinal,
+        emailGVHD  : instr?.email||'',
+        gvhdStatus : '',
+        emailCTHD  : '',
+        cthdStatus : '',
+        diem       : '',
+      });
+      setProgress(100);
+
+      if(res?.success){
+        setDoneUrls({giaiTrinh:urlGiaiTrinh,final:urlFinal});
+        setDone(true);
+      } else {
+        toast.show(res?.message||'Gửi thất bại. Thử lại.','error');
+        setSubmitting(false);
+      }
+    }catch(e){
+      toast.show('Lỗi upload: '+e.message,'error');
+      setSubmitting(false);
+    }
+  }
+
+  if(done) return(
+    <div className="anim-fade max-w-lg mx-auto text-center py-20">
+      <div className="w-24 h-24 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg anim-pop">
+        <span className="material-symbols-outlined fill-icon text-5xl">task_alt</span>
+      </div>
+      <h3 className="text-2xl font-headline font-black text-on-surface mb-3">Nộp thành công!</h3>
+      <p className="text-on-surface-variant text-sm mb-6">GVHD <strong>{instr?.name}</strong> đã nhận được thông báo và sẽ xem xét.</p>
+      <div className="flex flex-col gap-3 mb-8">
+        {doneUrls.giaiTrinh&&(
+          <a href={doneUrls.giaiTrinh} target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-orange-50 text-orange-700 font-bold rounded-2xl hover:bg-orange-100 transition-all text-sm border border-orange-200">
+            <span className="material-symbols-outlined text-sm">open_in_new</span>Xem Biên bản giải trình trên Drive
+          </a>
+        )}
+        {doneUrls.final&&(
+          <a href={doneUrls.final} target="_blank" rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 bg-primary-fixed text-on-primary-fixed font-bold rounded-2xl hover:bg-primary-fixed-dim transition-all text-sm">
+            <span className="material-symbols-outlined text-sm">open_in_new</span>Xem KLTN sau chỉnh sửa trên Drive
+          </a>
+        )}
+      </div>
+      <button onClick={onSuccess}
+        className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20">
+        Về trang chủ
+      </button>
+    </div>
+  );
+
+  return(
+    <div className="anim-fade max-w-2xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-2">
+        <div className="w-12 h-12 rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600 shadow-sm flex-shrink-0">
+          <span className="material-symbols-outlined text-2xl">rate_review</span>
+        </div>
+        <div>
+          <h2 className="font-headline text-2xl font-extrabold text-on-surface">Nộp KLTN sau chỉnh sửa</h2>
+          <p className="text-sm text-on-surface-variant">Nộp Biên bản giải trình và bản KLTN hoàn chỉnh sau hội đồng</p>
+        </div>
+      </div>
+
+      {/* Thông tin đề tài */}
+      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10">
+        <p className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest mb-3">Thông tin khóa luận</p>
+        <p className="font-bold text-on-surface text-sm mb-3">{topic||'(Chưa có đề tài)'}</p>
+        {instr&&(
+          <div className="flex items-center gap-3 pt-3 border-t border-outline-variant/10">
+            <Av name={instr.name||''} cls="w-9 h-9 text-xs flex-shrink-0"/>
+            <div>
+              <p className="text-sm font-semibold text-on-surface">{instr.name||'--'}</p>
+              <p className="text-xs text-on-surface-variant">{instr.email||'--'}</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Banner hướng dẫn */}
+      <div className="flex items-start gap-3 bg-orange-50 border border-orange-200 rounded-2xl p-4">
+        <span className="material-symbols-outlined text-orange-500 text-base mt-0.5">info</span>
+        <p className="text-xs text-orange-800 leading-relaxed">
+          Sau hội đồng bảo vệ, bạn cần nộp <strong>Biên bản giải trình</strong> (phản hồi góp ý của hội đồng) và <strong>bản KLTN đã chỉnh sửa</strong> hoàn chỉnh để GVHD xem xét và xác nhận điểm cuối.
+        </p>
+      </div>
+
+      {/* Upload zone 1 — Biên bản giải trình */}
+      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-orange-600 text-sm">description</span>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-on-surface">Biên bản giải trình <span className="text-error">*</span></p>
+            <p className="text-xs text-on-surface-variant">PDF / Word / ZIP · tối đa 50 MB</p>
+          </div>
+        </div>
+        {!fileGiaiTrinh?(
+          <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-orange-300/50 rounded-2xl bg-orange-50/50 cursor-pointer hover:bg-orange-50 transition-colors group">
+            <span className="material-symbols-outlined text-4xl text-orange-300 group-hover:text-orange-400 transition-colors mb-2">upload_file</span>
+            <span className="text-sm font-medium text-orange-400 group-hover:text-orange-600 transition-colors">Kéo thả hoặc bấm để chọn file</span>
+            <input type="file" accept=".pdf,.doc,.docx,.zip" className="hidden" onChange={pickGiaiTrinh}/>
+          </label>
+        ):(
+          <div className="flex items-center gap-4 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
+            <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 flex-shrink-0">
+              <span className="material-symbols-outlined">description</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-on-surface text-sm truncate">{fileGiaiTrinh.name}</p>
+              <p className="text-xs text-on-surface-variant">{fmtSize(fileGiaiTrinh.size)}</p>
+            </div>
+            <button onClick={()=>setFileGiaiTrinh(null)} disabled={submitting}
+              className="p-1.5 hover:bg-error-container/30 rounded-full transition-colors disabled:opacity-50">
+              <span className="material-symbols-outlined text-sm text-on-surface-variant">close</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Upload zone 2 — KLTN sau chỉnh sửa */}
+      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-7 h-7 rounded-lg bg-primary-fixed flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-primary text-sm">menu_book</span>
+          </div>
+          <div>
+            <p className="text-sm font-bold text-on-surface">KLTN sau chỉnh sửa <span className="text-error">*</span></p>
+            <p className="text-xs text-on-surface-variant">PDF / Word / ZIP · tối đa 100 MB</p>
+          </div>
+        </div>
+        {!fileFinal?(
+          <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-primary/30 rounded-2xl bg-primary-fixed/10 cursor-pointer hover:bg-primary-fixed/20 transition-colors group">
+            <span className="material-symbols-outlined text-4xl text-primary/40 group-hover:text-primary/60 transition-colors mb-2">cloud_upload</span>
+            <span className="text-sm font-medium text-primary/50 group-hover:text-primary transition-colors">Kéo thả hoặc bấm để chọn file</span>
+            <input type="file" accept=".pdf,.doc,.docx,.zip" className="hidden" onChange={pickFinal}/>
+          </label>
+        ):(
+          <div className="flex items-center gap-4 p-4 bg-primary-fixed/20 border border-primary-fixed-dim/40 rounded-2xl">
+            <div className="w-12 h-12 rounded-xl bg-primary-fixed-dim/40 flex items-center justify-center text-primary flex-shrink-0">
+              <span className="material-symbols-outlined">menu_book</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-on-surface text-sm truncate">{fileFinal.name}</p>
+              <p className="text-xs text-on-surface-variant">{fmtSize(fileFinal.size)}</p>
+            </div>
+            <button onClick={()=>setFileFinal(null)} disabled={submitting}
+              className="p-1.5 hover:bg-error-container/30 rounded-full transition-colors disabled:opacity-50">
+              <span className="material-symbols-outlined text-sm text-on-surface-variant">close</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Ghi chú */}
+      <div className="bg-surface-container-lowest rounded-3xl p-6 shadow-sm border border-outline-variant/10">
+        <label className="text-sm font-bold text-on-surface-variant block mb-2">Ghi chú cho GVHD (tuỳ chọn)</label>
+        <textarea value={note} onChange={e=>setNote(e.target.value)} rows={3} disabled={submitting}
+          className="w-full bg-surface-container-low rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/50 resize-none text-sm disabled:opacity-60"
+          placeholder="VD: Em đã chỉnh sửa theo góp ý của hội đồng tại chương 3 và phần kết luận..."/>
+      </div>
+
+      {/* Progress bar */}
+      {submitting&&progress>0&&(
+        <div className="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/10">
+          <div className="flex justify-between text-xs text-on-surface-variant mb-2">
+            <span>{progress<100?(progressLabel||'Đang upload...'):'Đang xử lý...'}</span>
+            <span className="font-bold">{progress}%</span>
+          </div>
+          <div className="w-full bg-surface-container rounded-full h-2.5">
+            <div className="bg-gradient-to-r from-orange-400 to-primary h-2.5 rounded-full transition-all duration-300" style={{width:progress+'%'}}/>
+          </div>
+        </div>
+      )}
+
+      {/* Footer actions */}
+      <div className="flex items-center justify-end gap-3 pt-2 pb-10">
+        <button onClick={submit} disabled={!fileGiaiTrinh||!fileFinal||submitting}
+          className="flex items-center gap-2 px-10 py-3.5 rounded-xl bg-gradient-to-br from-orange-500 to-primary text-white font-bold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm">
+          {submitting
+            ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi{progress>0?` ${progress}%`:''}...</>
+            :<><span className="material-symbols-outlined text-sm">send</span>Xác nhận nộp</>}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
 function App(){
   // ── Auth guard + role routing ──────────────────────────────────
@@ -2808,6 +3074,7 @@ function App(){
   const [notifications, setNotifications] = useState([]);
   const [showSubmitReport, setShowSubmitReport] = useState(false);
   const [showSubmitKLTN, setShowSubmitKLTN] = useState(false);
+  const [showRevision, setShowRevision] = useState(false);
   const [kltnInstructorList, setKltnInstructorList] = useState([]);
   const [loadingKltnGV, setLoadingKltnGV] = useState(false);
   const toast = useToast();
@@ -2938,6 +3205,13 @@ function App(){
     toast.show('Đăng ký KLTN thành công! Đang chờ giảng viên xác nhận.','success');
   }
 
+  function handleRevisionSuccess(){
+    setTabPersist('dashboard');
+    setDashData(null);
+    loadDash();
+    toast.show('Nộp KLTN sau chỉnh sửa thành công! GVHD đã được thông báo.','success');
+  }
+
   // ── Làm mới dữ liệu thủ công (nút Refresh trên Header) ────────
   const handleRefresh = useCallback(async()=>{
     if(loadingDash) return;
@@ -3011,6 +3285,13 @@ function App(){
             <KLTNRegistration
               onSuccess={handleKltnRegSuccess}
               dashData={dashData}
+            />
+          )}
+          {tab==='kltn-revision'&&(
+            <KLTNRevisionPage
+              dashData={dashData}
+              onSuccess={handleRevisionSuccess}
+              toast={toast}
             />
           )}
         </div>
