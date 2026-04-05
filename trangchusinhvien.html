@@ -53,7 +53,7 @@ borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"}}
 const {useState,useEffect,useCallback} = React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbwi7YsrvUDl6wUIgyHMG1CHpazxgy2YOKr9uogyPfbhGWl9BaorEzevKNz8jJPETqs/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbz5ch_grp3iETN_BUheyAYXgmvBYykj_D2YVzsjvuQ1EWRP87FqRMRRhQnozW2oS5gn/exec';
 
 // 5 ngành khớp đúng cột Ngành trong sheet GV
 const NGANH_LIST = ['QLCN','Kế toán','Thương mại điện tử','Kinh doanh quốc tế','Logistic'];
@@ -387,7 +387,7 @@ function HoSoMenu({logout}){
   );
 }
 
-function Sidebar({tab,setTab,kltnUnlocked,kltnReg,bcttDisabled,logout,notifCount}){
+function Sidebar({tab,setTab,kltnUnlocked,kltnReg,kltnStep,bcttDisabled,logout,notifCount}){
   return(
     <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full w-72 bg-slate-50 rounded-r-3xl z-50 p-4 overflow-y-auto">
       {/* Logo */}
@@ -458,7 +458,7 @@ function Sidebar({tab,setTab,kltnUnlocked,kltnReg,bcttDisabled,logout,notifCount
         )}
 
         {/* Nộp KLTN sau chỉnh sửa */}
-        {kltnReg?(
+        {kltnReg&&kltnStep>=1?(
           <button onClick={()=>setTab('kltn-revision')}
             className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all text-left ${tab==='kltn-revision'?'bg-orange-100 text-orange-800':'text-slate-600 hover:bg-slate-200/50'}`}>
             <div className="flex items-center gap-3">
@@ -468,7 +468,7 @@ function Sidebar({tab,setTab,kltnUnlocked,kltnReg,bcttDisabled,logout,notifCount
           </button>
         ):(
           <div className="flex items-center justify-between px-4 py-3 text-slate-400 opacity-40 cursor-not-allowed rounded-xl"
-            title="Cần đăng ký KLTN trước">
+            title={!kltnReg?'Cần đăng ký KLTN trước':'Cần nộp KLTN trước'}>
             <div className="flex items-center gap-3"><span className="material-symbols-outlined">rate_review</span><span className="font-medium">KLTN sau chỉnh sửa</span></div>
             <span className="material-symbols-outlined text-sm">lock</span>
           </div>
@@ -1172,7 +1172,121 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
         </>
       )}
 
+      {/* ── Kết quả KLTN dành cho Sinh viên (hiện khi GV đã chấm xong) ──────── */}
+      {(()=>{
+        const kltnSV = dashData?.kltn||null;
+        const kltnGradeSV = (kltnSV?.kltnGrade!==null&&kltnSV?.kltnGrade!==undefined) ? parseFloat(kltnSV.kltnGrade) : null;
+        if(!kltnSV?.registered || kltnGradeSV===null) return null;
 
+        const svName  = SESSION.name||'';
+        const svMSSV  = SESSION.maSo||'';
+        const kltnTopic = kltnSV?.topic||'--';
+        const plagiarismUrl = kltnSV?.plagiarismUrl||kltnSV?.plagUrl||kltnSV?.checkDaoVanUrl||null;
+        const plagiarismPct = kltnSV?.plagiarismPct||kltnSV?.daoVanPct||null;
+        const gvComment  = kltnSV?.gvComment||kltnSV?.nhanXet||kltnSV?.comment||null;
+        const kltnUrl    = kltnSV?.kltnUrl||null;
+        const kltnPassed = kltnGradeSV>=5;
+
+        return(
+          <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
+            {/* Header */}
+            <div className="p-6 flex items-center gap-3 border-b border-outline-variant/10">
+              <div className="w-10 h-10 rounded-xl bg-primary-fixed flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-primary fill-icon">school</span>
+              </div>
+              <div>
+                <h3 className="font-bold text-on-surface">Khóa luận tốt nghiệp (KLTN)</h3>
+                <p className="text-xs text-on-surface-variant">Kết quả sau khi giảng viên chấm điểm</p>
+              </div>
+              <div className="ml-auto flex items-center gap-2">
+                <span className={`px-3 py-1 rounded-full text-[11px] font-black ${kltnPassed?'bg-tertiary-fixed text-on-tertiary-fixed':'bg-error-container text-on-error-container'}`}>
+                  {kltnPassed?'✓ Đạt':'✗ Không đạt'}
+                </span>
+              </div>
+            </div>
+
+            {/* Table header — desktop only */}
+            <div className="hidden md:grid grid-cols-[2fr_2fr_1.5fr_2.5fr] gap-4 px-6 py-3 bg-surface-container border-b border-outline-variant/10">
+              {['SINH VIÊN','ĐỀ TÀI','CHECK ĐẠO VĂN','NHẬN XÉT CỦA GV'].map(h=>(
+                <span key={h} className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest">{h}</span>
+              ))}
+            </div>
+
+            {/* Row */}
+            <div className="grid grid-cols-1 md:grid-cols-[2fr_2fr_1.5fr_2.5fr] gap-4 px-6 py-5 items-start">
+
+              {/* Cột 1: Sinh viên */}
+              <div className="flex items-center gap-3">
+                <Av name={svName} cls="w-10 h-10 flex-shrink-0"/>
+                <div className="min-w-0">
+                  <p className="font-bold text-on-surface text-sm truncate">{svName}</p>
+                  <p className="text-xs text-on-surface-variant">MSSV: {svMSSV}</p>
+                </div>
+              </div>
+
+              {/* Cột 2: Đề tài */}
+              <div className="flex flex-col gap-1.5 min-w-0">
+                <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest md:hidden">Đề tài</p>
+                <p className="text-sm font-semibold text-on-surface leading-snug">{kltnTopic}</p>
+              </div>
+
+              {/* Cột 3: Check đạo văn — icon bấm được + % hiển thị ngay bên phải */}
+              <div className="flex flex-col gap-2">
+                <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest md:hidden">Check đạo văn</p>
+                {plagiarismUrl?(
+                  <a href={plagiarismUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-3 group w-fit">
+                    {/* Icon */}
+                    <div className="w-11 h-11 rounded-2xl bg-tertiary-container flex items-center justify-center shadow-sm group-hover:scale-105 transition-all flex-shrink-0">
+                      <span className="material-symbols-outlined fill-icon text-white text-xl">policy</span>
+                    </div>
+                    {/* % */}
+                    {plagiarismPct!==null?(
+                      <div className="flex items-baseline gap-0.5 px-3 py-1.5 border border-outline-variant/30 rounded-xl bg-surface-container-low">
+                        <span className={`text-xl font-black leading-none ${parseFloat(plagiarismPct)>30?'text-error':parseFloat(plagiarismPct)>20?'text-secondary':'text-on-surface'}`}>
+                          {plagiarismPct}
+                        </span>
+                        <span className="text-sm font-bold text-on-surface-variant">%</span>
+                      </div>
+                    ):(
+                      <span className="text-xs text-primary font-bold group-hover:underline">Xem file</span>
+                    )}
+                  </a>
+                ):(
+                  <div className="flex items-center gap-2 px-3 py-2 bg-surface-container rounded-xl w-fit">
+                    <span className="material-symbols-outlined text-on-surface-variant/40 text-base">hourglass_empty</span>
+                    <span className="text-xs text-on-surface-variant/60 font-medium">Chưa có</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cột 4: Nhận xét GV */}
+              <div className="flex flex-col gap-1.5">
+                <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest md:hidden">Nhận xét của GV</p>
+                {gvComment?(
+                  <div className="bg-surface-container-low border border-outline-variant/20 rounded-2xl p-4">
+                    <div className="flex items-start gap-2">
+                      <span className="material-symbols-outlined text-primary text-sm mt-0.5 flex-shrink-0">format_quote</span>
+                      <p className="text-sm text-on-surface leading-relaxed italic">{gvComment}</p>
+                    </div>
+                  </div>
+                ):(
+                  <div className="flex items-center gap-2 px-4 py-3 bg-surface-container rounded-2xl">
+                    <span className="material-symbols-outlined text-on-surface-variant/40 text-base">chat_bubble_outline</span>
+                    <p className="text-sm text-on-surface-variant/60">GV chưa có nhận xét</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer note */}
+            <div className="px-6 py-3 border-t border-outline-variant/10 bg-surface-container-low/50 flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm text-on-surface-variant/60">info</span>
+              <p className="text-[11px] text-on-surface-variant/70">Điểm KLTN được hiển thị tại ô <strong>Kết quả KLTN</strong> phía trên. Liên hệ GVHD nếu cần giải đáp thêm.</p>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Row 4: Lịch sử hoạt động ──────────────────────────── */}
       {(()=>{
@@ -3250,6 +3364,7 @@ function App(){
         tab={tab} setTab={setTabPersist}
         kltnUnlocked={kltnUnlocked}
         kltnReg={dashData?.kltn?.registered||false}
+        kltnStep={(()=>{const s=dashData?.kltn?.step;return(s===''||s===null||s===undefined)?0:(isNaN(parseInt(s))?0:parseInt(s));})()}
         bcttDisabled={bcttDisabled}
         logout={()=>{localStorage.clear();sessionStorage.removeItem('ute_tab');window.location.href='login.html';}}
         notifCount={notifications.length}
