@@ -458,11 +458,11 @@ async function fetchKLTNByGV(gvEmail) {
       step, decuUrl,
       type         : 'kltn',
       
-      // -- ĐÂY LÀ 4 DÒNG MỚI ĐỂ ĐỌC DỮ LIỆU BƯỚC 2 --
-      kltnUrl      : r[16] || '', // Cột Q: Link KLTN SV nộp
-      daoVanPct    : r[17] || '', // Cột R: % Đạo văn
-      daoVanUrl    : r[18] || '', // Cột S: File check đạo văn
-      nhanXet      : r[19] || ''  // Cột T: Nhận xét
+// -- CẬP NHẬT CỘT: Tránh xung đột với cột Lý do từ chối (cột R) --
+      kltnUrl      : r[16] || '', // Cột Q (Index 16): Link KLTN SV nộp
+      daoVanPct    : r[18] || '', // Cột S (Index 18): % Đạo văn
+      daoVanUrl    : r[19] || '', // Cột T (Index 19): File check đạo văn
+      nhanXet      : r[20] || ''  // Cột U (Index 20): Nhận xét
     };
 
     if (obj.status === 'pending') {
