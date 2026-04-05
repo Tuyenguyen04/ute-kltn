@@ -562,7 +562,7 @@ function AvatarMenu(){
 }
 
 // ── DASHBOARD VIEW ────────────────────────────────────────────────────────────
-function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onRegisterKLTN,onSubmitKLTN,toast,kltnUnlocked,bcttDisabled}){
+function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onRegisterKLTN,onSubmitKLTN,toast,kltnUnlocked,bcttDisabled,onDecuSubmit}){
   const [filterLoai,setFilterLoai]=useState('all');
   const [showAll,setShowAll]=useState(false);
 
@@ -724,7 +724,8 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
           {/* ── Row 2 (kltnUnlocked): KLTNActionPanel (trái) + Hành trình KLTN (phải) ── */}
           {(()=>{
             const kltnData3   = dashData?.kltn||null;
-            const kltnStep3   = parseInt(kltnData3?.step)||0;
+            // FIX #4: parse an toàn (parseInt(0)||0 = 0 đúng, nhưng tường minh hơn)
+            const _ks3=kltnData3?.step; const kltnStep3=(_ks3===''||_ks3===null||_ks3===undefined)?0:(isNaN(parseInt(_ks3))?0:parseInt(_ks3));
             const kltnStatus3 = kltnData3?.status||null;
             const kltnStepLabel3 = kltnData3?.stepLabel||'• Chưa đăng ký';
             // Hành trình 5 bước hiển thị (giữ nguyên theo yêu cầu)
@@ -760,6 +761,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                       onRegisterKLTN={onRegisterKLTN}
                       onSubmitKLTN={onSubmitKLTN}
                       toast={toast}
+                      onDecuSubmit={onDecuSubmit}
                     />
                   </div>
                   <section className="md:col-span-5 h-full p-8 bg-surface-container-lowest rounded-3xl shadow-sm flex flex-col justify-center">
@@ -1238,7 +1240,8 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
         // KLTN history — phản ánh đầy đủ vòng lặp duyệt/từ chối
         const kltnData=dashData?.kltn||null;
         if(kltnData?.registered&&kltnData?.topic){
-          const kStep   = parseInt(kltnData.step)||0;
+          // FIX #4: dùng parse an toàn thay vì parseInt()||0 (sẽ fail khi step=0)
+          const _ksr=kltnData.step; const kStep=(_ksr===''||_ksr===null||_ksr===undefined)?0:(isNaN(parseInt(_ksr))?0:parseInt(_ksr));
           const kStatus = kltnData.status||'pending';
           const kInstr  = kltnData.instructor||null;
 
@@ -2340,12 +2343,14 @@ function SubmitKLTNModal({dashData,onClose,onSuccess,toast}){
 // step=1, status=approved          : GV duyệt đề cương   → [Nộp KLTN] active, 3 nút còn lại khoá
 // step=2+                          : SV đã nộp KLTN      → 4 nút đều khoá (done)
 // ═════════════════════════════════════════════════════════════════════════════
-function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
+// FIX #3: Nhận thêm prop onDecuSubmit để refresh dashboard sau khi nộp đề cương thành công
+function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast,onDecuSubmit}){
   const kltn       = dashData?.kltn||null;
   const kltnReg    = kltn?.registered||false;
   const kltnTopic  = kltn?.topic||'';
   const kltnStatus = kltn?.status||null;   // null | pending | approved | rejected
-  const kltnStep   = parseInt(kltn?.step)||0;
+  // FIX #4: parseInt(0)||0 = 0 (OK), nhưng dùng hàm rõ ràng để mirror parseStep_() của GAS
+  const _ks = kltn?.step; const kltnStep = (_ks===''||_ks===null||_ks===undefined)?0:(isNaN(parseInt(_ks))?0:parseInt(_ks));
   // step 0 = SV đã đăng ký, GV chưa duyệt hoặc đã phản hồi đề tài
   //          pending  = đang chờ GV duyệt đề tài
   //          rejected = GV từ chối đề tài → SV cần đổi đề tài
@@ -2401,6 +2406,8 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
           : 'Nộp đề cương thành công! Chờ GV xét duyệt.';
         toast.show(msg,'success');
         setShowUploadDecu(false); setDecuFile(null); setDecuNote(''); setDecuProgress(0);
+        // FIX #3: Refresh dashboard để UI phản ánh step mới ngay lập tức
+        if(onDecuSubmit) onDecuSubmit();
       } else {
         toast.show(result?.message||'Gửi thất bại. Thử lại.','error');
       }
@@ -2651,7 +2658,8 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast}){
         <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-error-container rounded-2xl text-on-error-container text-sm font-medium">
           <span className="material-symbols-outlined text-base">report</span>
           Đề cương bị từ chối. Nhấn <strong className="mx-1">"Chỉnh sửa đề cương"</strong> để nộp lại.
-          {kltn?.reason&&<span className="text-xs opacity-80 ml-1">({kltn.reason})</span>}
+          {/* FIX #1: Dùng decuReason (lý do từ chối ĐỀ CƯƠNG), không phải reason (lý do từ chối đề tài) */}
+          {(kltn?.decuReason||kltn?.reason)&&<span className="text-xs opacity-80 ml-1">({kltn.decuReason||kltn.reason})</span>}
         </div>
       )}
       {/* step=1, approved: GV duyệt đề cương → SV cần nộp KLTN */}
@@ -3055,6 +3063,7 @@ function App(){
       const notes = [...sheetNotis];
 
       // Thêm thông báo dựa trên trạng thái hiện tại (nếu chưa có trong sheet)
+      // ── Thông báo BCTT ──────────────────────────────────────────────
       if(data?.status==='approved'&&!data?.reportSubmitted
          && !notes.some(n=>n.message.includes('đã duyệt đề tài')))
         notes.unshift({message:`✅ Đề tài "${data.topic}" đã được GV duyệt! Hãy thực hiện và nộp báo cáo.`,time:'Vừa cập nhật'});
@@ -3067,6 +3076,32 @@ function App(){
         notes.push({message:`📊 Điểm thực tập của bạn: ${data.grade} — ${data.grade>=5?'Đạt ✓':'Không đạt ✗'}`,time:'Vừa cập nhật'});
       if(data?.grade>=5&&data?.gradeLocked)
         notes.push({message:`🎓 Bạn đủ điều kiện đăng ký Khóa Luận Tốt Nghiệp!`,time:'Vừa cập nhật'});
+
+      // ── FIX #2: Thông báo KLTN theo từng bước workflow ──────────────
+      // (thiếu ở code gốc → SV không biết cần làm gì sau khi GV duyệt)
+      const kd = data?.kltn;
+      if(kd?.registered){
+        const ks = kd.status, kp = parseInt(kd.step)||0;
+        // Bước 0: GV duyệt đề tài KLTN → SV cần nộp đề cương
+        if(kp===0&&ks==='approved'
+           &&!notes.some(n=>n.message.includes('Nộp đề cương KLTN')))
+          notes.unshift({message:`✅ Đề tài KLTN "${kd.topic}" đã được GV duyệt! Hãy nhấn "Nộp đề cương" để tiếp tục.`,time:'Vừa cập nhật'});
+        // Bước 0: GV từ chối đề tài KLTN
+        if(kp===0&&ks==='rejected'
+           &&!notes.some(n=>n.message.includes('từ chối đề tài KLTN')))
+          notes.unshift({message:`❌ Đề tài KLTN "${kd.topic}" bị từ chối. Nhấn "Đổi đề tài" để đăng ký lại.`,time:'Vừa cập nhật'});
+        // Bước 1: GV duyệt đề cương KLTN → SV cần nộp KLTN
+        if(kp===1&&ks==='approved'
+           &&!notes.some(n=>n.message.includes('Nộp KLTN')))
+          notes.unshift({message:`✅ Đề cương KLTN đã được GV duyệt! Hãy nhấn "Nộp KLTN" khi hoàn thành khóa luận.`,time:'Vừa cập nhật'});
+        // Bước 1: GV từ chối đề cương KLTN
+        if(kp===1&&ks==='rejected'
+           &&!notes.some(n=>n.message.includes('từ chối đề cương')))
+          notes.unshift({message:`❌ Đề cương KLTN bị từ chối. Nhấn "Chỉnh sửa đề cương" để nộp lại.`,time:'Vừa cập nhật'});
+        // Bước 2+: đã nộp KLTN
+        if(kp>=2&&!notes.some(n=>n.message.includes('nộp khóa luận')))
+          notes.push({message:`📖 Đã nộp khóa luận. GV sẽ chấm điểm theo lịch bảo vệ.`,time:'Vừa cập nhật'});
+      }
 
       if(notes.length>0) setNotifications(notes);
 
@@ -3120,6 +3155,12 @@ function App(){
     setDashData(null);
     loadDash();
     toast.show('Nộp khóa luận thành công! GV sẽ chấm điểm theo lịch bảo vệ.','success');
+  }
+
+  // FIX #3: Refresh dashboard sau khi SV nộp đề cương thành công
+  function handleDecuSubmit(){
+    setDashData(null);
+    loadDash();
   }
 
   function handleKltnRegSuccess(){
@@ -3188,6 +3229,7 @@ function App(){
               toast={toast}
               kltnUnlocked={kltnUnlocked}
               bcttDisabled={bcttDisabled}
+              onDecuSubmit={handleDecuSubmit}
             />
           )}
           {tab==='registration'&&(
