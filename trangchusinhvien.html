@@ -3168,8 +3168,7 @@ function KLTNRevisionPage({dashData,onSuccess,toast}){
       {/* Footer actions */}
       <div className="flex items-center justify-end gap-3 pt-2 pb-10">
         <button onClick={submit} disabled={!fileGiaiTrinh||!fileFinal||submitting}
-          className="flex items-center gap-2 px-10 py-3.5 rounded-xl bg-gradient-to-br from-orange-500 to-primary text-white font-bold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm">
-          {submitting
+          className="flex items-center gap-2 px-10 py-3.5 rounded-xl bg-primary text-white font-bold shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm"
             ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi{progress>0?` ${progress}%`:''}...</>
             :<><span className="material-symbols-outlined text-sm">send</span>Xác nhận nộp</>}
         </button>
