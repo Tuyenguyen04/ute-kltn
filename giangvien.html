@@ -460,9 +460,9 @@ async function fetchKLTNByGV(gvEmail) {
       
       // -- ĐÂY LÀ 4 DÒNG MỚI ĐỂ ĐỌC DỮ LIỆU BƯỚC 2 --
       kltnUrl      : r[16] || '', // Cột Q: Link KLTN SV nộp
-      daoVanPct    : r[17] || '', // Cột R: % Đạo văn
-      daoVanUrl    : r[18] || '', // Cột S: File check đạo văn
-      nhanXet      : r[19] || ''  // Cột T: Nhận xét
+      daoVanUrl    : r[17] || '', // Cột R: File check đạo văn  ← FIX (trước đọc nhầm là daoVanPct)
+      daoVanPct    : r[18] || '', // Cột S: % Đạo văn            ← FIX (cột mới T)
+      nhanXet      : r[19] || '', // Cột T: Nhận xét GVHD       ← FIX (index đúng)
     };
 
     // FIX: Ưu tiên step >= 1 TRƯỚC — SV đã nộp KLTN phải vào activeList
