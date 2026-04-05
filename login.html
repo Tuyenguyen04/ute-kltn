@@ -56,7 +56,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:#e2e5ec;min-height:100vh
 
 <div class="card">
   <div class="card-title">Đăng nhập</div>
-  <div class="card-sub">Đăng ký đề tài KLTN</div>
+  <div class="card-sub">Hệ thống Quản lý Đề tài Sinh viên & Giảng viên</div>
 
   <!-- Form Admin -->
   <div class="field" id="fu">
@@ -204,7 +204,7 @@ async function handleGoogleLogin(response){
     // (để tránh trường hợp GV bị nhầm sang SV nếu email trùng)
     const gv = findEmailInRows(rowsGV, email);
     if(gv){
-      // Xác định role dựa vào cột E trong sheet
+      // Xác định role dựa vào cột E trong sheet (nếu có chữ "trưởng" thì là TBM)
       const roleRaw = gv.role.toLowerCase();
       const role = roleRaw.includes('trưởng') ? 'truongbomon' : 'giangvien';
 
@@ -217,8 +217,17 @@ async function handleGoogleLogin(response){
       const greeting = role === 'truongbomon'
         ? 'Chào mừng Trưởng bộ môn ' + (gv.name || nameGG) + '!'
         : 'Chào mừng Giảng viên '    + (gv.name || nameGG) + '!';
+        
       showOverlay('success','🎉', greeting, 'Đang chuyển hướng...');
-      setTimeout(()=>{ window.location.href = 'giangvien.html'; }, 2000);
+      
+      // CHUYỂN HƯỚNG THEO ROLE
+      setTimeout(()=>{ 
+        if (role === 'truongbomon') {
+            window.location.href = 'truongbomon.html'; 
+        } else {
+            window.location.href = 'giangvien.html'; 
+        }
+      }, 2000);
       return;
     }
 
