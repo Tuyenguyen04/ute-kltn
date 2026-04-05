@@ -1714,31 +1714,14 @@ function TabSinhVienHuongDan({toast}) {
                         </td>
 
                         <td className="px-4 py-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            {sv.daoVanUrl ? (
-                              <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></button>
-                            ) : (
-                              <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
-                                {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
-                                <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
-                              </label>
-                            )}
-                            {(() => {
-                               let pctColor = 'bg-surface-container-low border-outline-variant/40 text-on-surface';
-                               const numPct = parseFloat(pct);
-                               if (!isNaN(numPct)) {
-                                  if (numPct <= 20) pctColor = 'bg-emerald-50 border-emerald-500/50 text-emerald-700';
-                                  else if (numPct <= 30) pctColor = 'bg-orange-50 border-orange-500/50 text-orange-700';
-                                  else pctColor = 'bg-red-50 border-red-500/50 text-red-700';
-                               }
-                               return (
-                                 <div className={`flex items-center border rounded-lg overflow-hidden w-[65px] h-[40px] transition-colors ${pctColor}`}>
-                                    <input type="number" min="0" max="100" placeholder="%" value={pct} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))} className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
-                                    <span className="text-[10px] font-bold opacity-60 pr-2">%</span>
-                                 </div>
-                               );
-                            })()}
-                          </div>
+                          {sv.daoVanUrl ? (
+                            <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors mx-auto"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></button>
+                          ) : (
+                            <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer mx-auto">
+                              {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
+                              <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
+                            </label>
+                          )}
                         </td>
 
                         <td className="px-4 py-4 text-center">
