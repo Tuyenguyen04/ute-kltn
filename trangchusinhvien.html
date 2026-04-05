@@ -728,24 +728,21 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             const _ks3=kltnData3?.step; const kltnStep3=(_ks3===''||_ks3===null||_ks3===undefined)?0:(isNaN(parseInt(_ks3))?0:parseInt(_ks3));
             const kltnStatus3 = kltnData3?.status||null;
             const kltnStepLabel3 = kltnData3?.stepLabel||'• Chưa đăng ký';
-            // Hành trình 5 bước hiển thị (giữ nguyên theo yêu cầu)
-            // Backend step 0→1→2+ map vào visual step 1→2→3 (index 0=Đăng ký đã done)
-            // visual: 0=Đăng ký, 1=Đề cương, 2=Thực hiện, 3=Bảo vệ, 4=Kết thúc
-            // Khi SV đăng ký (step=0, pending/approved/rejected) → visual step 1
-            // Khi SV nộp đề cương (step=1, pending/approved/rejected) → visual step 2
-            // Khi SV nộp KLTN (step=2+) → visual step 3
+            // Hành trình 4 bước: Đăng ký → Thực hiện → Bảo vệ → Kết thúc
+            // Backend step 0 (pending/approved/rejected) → visual step 1
+            // Backend step 1 (đã nộp KLTN, pending/approved/rejected) → visual step 2
+            // Backend step 2+ → visual step 3
             const kltnVisualStep3 = !kltnData3?.registered?0
               :kltnStep3===0?1
               :kltnStep3===1?2
               :kltnStep3>=2?3:3;
             const kltnStepDefs3=[
               {l:'Đăng ký',   icon:'how_to_reg'},
-              {l:'Đề cương',  icon:'description'},
               {l:'Thực hiện', icon:'potted_plant'},
               {l:'Bảo vệ',    icon:'record_voice_over'},
               {l:'Kết thúc',  icon:'verified'},
             ];
-            const kltnPcts3=[0,25,50,75,100];
+            const kltnPcts3=[0,33,66,100];
             const kltnObj3   = kltnData3;
             const kltnGrade3 = (kltnObj3?.kltnGrade!==null&&kltnObj3?.kltnGrade!==undefined) ? parseFloat(kltnObj3.kltnGrade) : null;
             const kltnLocked3= kltnObj3?.kltnGradeLocked||false;
@@ -769,9 +766,9 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                       <h3 className="text-lg font-bold">Hành trình KLTN</h3>
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black
                         ${kltnVisualStep3===0?'bg-surface-container text-on-surface-variant':
-                          kltnVisualStep3>=4?'bg-tertiary-fixed text-on-tertiary-fixed':
+                          kltnVisualStep3>=3?'bg-tertiary-fixed text-on-tertiary-fixed':
                           'bg-primary-fixed text-on-primary-fixed'}`}>
-                        {kltnVisualStep3===0?'Chưa đăng ký':kltnVisualStep3>=4?'Hoàn tất':`Bước ${kltnVisualStep3}/4`}
+                        {kltnVisualStep3===0?'Chưa đăng ký':kltnVisualStep3>=3?'Hoàn tất':`Bước ${kltnVisualStep3}/3`}
                       </span>
                     </div>
                     <div className="relative flex justify-between">
@@ -1283,60 +1280,14 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
               action:'GV duyệt đề tài KLTN',
               topic:kltnData.topic,
               detail:`GV ${kInstr?.name||'--'} đã chấp thuận đề tài`,
-              sub:'Tiếp theo: Nộp đề cương',
+              sub:'Tiếp theo: Nộp khóa luận',
               time:'--',
               status:'approved',
             });
           }
 
-          // ── Sự kiện 3: Nộp đề cương ─────────────────────────────
+          // ── Sự kiện 3: Nộp KLTN ─────────────────────────────────
           if(kStep>=1){
-            allHistory.push({
-              loai:'KLTN',
-              icon:'description',
-              iconBg:'bg-primary-fixed/40',
-              iconTx:'text-primary',
-              action:'Nộp đề cương KLTN',
-              topic:kltnData.topic,
-              detail:`GV ${kInstr?.name||'--'} đang xét duyệt đề cương`,
-              sub:'',
-              time:'--',
-              status: kStep===1&&kStatus==='rejected'?'rejected':kStep===1&&kStatus==='pending'?'pending':'approved',
-            });
-          }
-
-          // ── Sự kiện 4: GV duyệt hoặc từ chối đề cương ──────────
-          if(kStep===1&&kStatus==='rejected'){
-            allHistory.push({
-              loai:'KLTN',
-              icon:'cancel',
-              iconBg:'bg-error-container',
-              iconTx:'text-on-error-container',
-              action:'GV từ chối đề cương KLTN',
-              topic:kltnData.topic,
-              detail:`GV ${kInstr?.name||'--'} yêu cầu chỉnh sửa đề cương`,
-              sub:kltnData.decuReason?`Lý do: ${kltnData.decuReason}`:'',
-              time:'--',
-              status:'rejected',
-            });
-          }
-          if(kStep>=2){
-            allHistory.push({
-              loai:'KLTN',
-              icon:'task_alt',
-              iconBg:'bg-tertiary-fixed/30',
-              iconTx:'text-on-tertiary-fixed',
-              action:'GV duyệt đề cương KLTN',
-              topic:kltnData.topic,
-              detail:`GV ${kInstr?.name||'--'} đã phê duyệt đề cương`,
-              sub:'Tiếp theo: Thực hiện và nộp khóa luận',
-              time:'--',
-              status:'approved',
-            });
-          }
-
-          // ── Sự kiện 5: Nộp KLTN ─────────────────────────────────
-          if(kStep>=3){
             allHistory.push({
               loai:'KLTN',
               icon:'upload_file',
@@ -1351,7 +1302,7 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
             });
           }
 
-          // ── Sự kiện 6: Điểm KLTN ────────────────────────────────
+          // ── Sự kiện 4: Điểm KLTN ────────────────────────────────
           if(kltnData.kltnGrade!==null&&kltnData.kltnGrade!==undefined){
             const kp=parseFloat(kltnData.kltnGrade)>=5;
             allHistory.push({
@@ -2208,8 +2159,8 @@ function SubmitKLTNModal({dashData,onClose,onSuccess,toast}){
       const result=await apiPostFile({
         action:'updateKLTNStatus',
         studentEmail:SESSION.email,
-        step:3,
-        status:'approved',
+        step:1,
+        status:'pending',
         topic,
         note:note.trim(),
         folderName:'KhoaLuanKLTN_UTE',
@@ -2334,114 +2285,45 @@ function SubmitKLTNModal({dashData,onClose,onSuccess,toast}){
 
 // ── KLTN ACTION PANEL (hiển thị trong Dashboard khi kltnUnlocked) ────────────
 // ══ FLOW KLTN ════════════════════════════════════════════════════════════════
-// Chưa đăng ký                    : sidebar "Đăng ký KLTN" active, 4 nút đều khoá
-// step=0, status=pending           : SV vừa đăng ký, chờ GV duyệt đề tài → 4 nút khoá
-// step=0, status=rejected          : GV từ chối đề tài   → [Đổi đề tài] active, 3 nút còn lại khoá
-// step=0, status=approved          : GV duyệt đề tài     → [Nộp đề cương] active, 3 nút còn lại khoá
-// step=1, status=pending           : SV đã nộp đề cương, chờ GV duyệt → 4 nút khoá
-// step=1, status=rejected          : GV từ chối đề cương → [Chỉnh sửa đề cương] active, 3 nút còn lại khoá
-// step=1, status=approved          : GV duyệt đề cương   → [Nộp KLTN] active, 3 nút còn lại khoá
-// step=2+                          : SV đã nộp KLTN      → 4 nút đều khoá (done)
+// Chưa đăng ký                    : sidebar "Đăng ký KLTN" active, 2 nút đều khoá
+// step=0, status=pending           : SV vừa đăng ký, chờ GV duyệt đề tài → 2 nút khoá
+// step=0, status=rejected          : GV từ chối đề tài → [Đổi đề tài] active
+// step=0, status=approved          : GV duyệt đề tài   → [Nộp KLTN] active
+// step=1+                          : SV đã nộp KLTN    → 2 nút đều khoá (done)
 // ═════════════════════════════════════════════════════════════════════════════
-// FIX #3: Nhận thêm prop onDecuSubmit để refresh dashboard sau khi nộp đề cương thành công
 function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast,onDecuSubmit}){
   const kltn       = dashData?.kltn||null;
   const kltnReg    = kltn?.registered||false;
   const kltnTopic  = kltn?.topic||'';
-  const kltnStatus = kltn?.status||null;   // null | pending | approved | rejected
-  // FIX #4: parseInt(0)||0 = 0 (OK), nhưng dùng hàm rõ ràng để mirror parseStep_() của GAS
+  const kltnStatus = kltn?.status||null;
   const _ks = kltn?.step; const kltnStep = (_ks===''||_ks===null||_ks===undefined)?0:(isNaN(parseInt(_ks))?0:parseInt(_ks));
-  // step 0 = SV đã đăng ký, GV chưa duyệt hoặc đã phản hồi đề tài
-  //          pending  = đang chờ GV duyệt đề tài
-  //          rejected = GV từ chối đề tài → SV cần đổi đề tài
-  //          approved = GV duyệt đề tài   → SV cần nộp đề cương
-  // step 1 = SV đã nộp đề cương, GV chưa duyệt hoặc đã phản hồi đề cương
-  //          pending  = đang chờ GV duyệt đề cương
-  //          rejected = GV từ chối đề cương → SV cần chỉnh sửa & nộp lại
-  //          approved = GV duyệt đề cương   → SV cần nộp KLTN hoàn chỉnh
-  // step 2+ = SV đã nộp KLTN / đang bảo vệ / hoàn tất
 
-  // ── Điều kiện từng nút (chỉ đúng 1 nút active tại một thời điểm) ──
+  // ── Điều kiện 2 nút ──────────────────────────────────────────────
   // Đổi đề tài: GV từ chối đề tài (step=0, rejected)
   const canChangeTopic = kltnReg && kltnStep===0 && kltnStatus==='rejected';
-  // Nộp đề cương: GV duyệt đề tài (step=0, approved) → SV upload file đề cương
-  const canNopDecu     = kltnReg && kltnStep===0 && kltnStatus==='approved';
-  // Chỉnh sửa đề cương: GV từ chối đề cương (step=1, rejected)
-  const canEditDecu    = kltnReg && kltnStep===1 && kltnStatus==='rejected';
-  // Nộp KLTN: GV duyệt đề cương (step=1, approved)
-  const canSubmitKLTN  = kltnReg && kltnStep===1 && kltnStatus==='approved';
-
-  const [showUploadDecu,setShowUploadDecu]=useState(false);
-  const [decuFile,setDecuFile]=useState(null);
-  const [decuNote,setDecuNote]=useState('');
-  const [uploadingDecu,setUploadingDecu]=useState(false);
-  const [decuProgress,setDecuProgress]=useState(0);
-
-  function pickDecu(e){
-    const f=e.target.files[0]; if(!f) return;
-    if(f.size>100*1024*1024){toast.show('File tối đa 100 MB!','error');return;}
-    setDecuFile(f);
-  }
-  function fmtSize(b){return b>1024*1024?(b/1024/1024).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';}
-
-  async function submitDecu(){
-    if(!decuFile){toast.show('Vui lòng chọn file đề cương!','error');return;}
-    setUploadingDecu(true); setDecuProgress(0);
-    try{
-      const result=await apiPostFile({
-        action:'updateKLTNStatus',
-        studentEmail:SESSION.email,
-        // Nộp đề cương lần đầu (canNopDecu): step 0→1, status=pending (chờ GV duyệt đề cương)
-        // Nộp lại đề cương sau khi bị từ chối (canEditDecu): giữ step=1, status=pending
-        status:'pending',
-        step:1,
-        topic:kltnTopic,
-        note:decuNote.trim(),
-        folderName:'DeCuongKLTN_UTE',
-        _file:decuFile,
-      }, pct=>setDecuProgress(pct));
-      if(result?.success){
-        const msg = canEditDecu
-          ? 'Đã gửi đề cương chỉnh sửa! GV sẽ xem xét lại.'
-          : 'Nộp đề cương thành công! Chờ GV xét duyệt.';
-        toast.show(msg,'success');
-        setShowUploadDecu(false); setDecuFile(null); setDecuNote(''); setDecuProgress(0);
-        // FIX #3: Refresh dashboard để UI phản ánh step mới ngay lập tức
-        if(onDecuSubmit) onDecuSubmit();
-      } else {
-        toast.show(result?.message||'Gửi thất bại. Thử lại.','error');
-      }
-    }catch(e){ toast.show('Lỗi upload: '+e.message,'error'); }
-    setUploadingDecu(false);
-  }
+  // Nộp KLTN: GV duyệt đề tài (step=0, approved)
+  const canSubmitKLTN  = kltnReg && kltnStep===0 && kltnStatus==='approved';
 
   // ── Badge trạng thái header ──────────────────────────────────────
   const stepBadgeMap = {
-    notReg:  {l:'Chưa đăng ký',              bg:'bg-surface-container text-on-surface-variant'},
-    wait0:   {l:'Chờ GV duyệt đề tài',       bg:'bg-secondary-container/30 text-on-secondary-container'},
-    rej0:    {l:'Đề tài bị từ chối',          bg:'bg-error-container text-on-error-container'},
-    approved0:{l:'Đề tài được duyệt — Nộp đề cương', bg:'bg-primary-fixed text-on-primary-fixed'},
-    wait1:   {l:'Chờ GV duyệt đề cương',     bg:'bg-secondary-container/30 text-on-secondary-container'},
-    rej1:    {l:'Đề cương bị từ chối',        bg:'bg-error-container text-on-error-container'},
-    approved1:{l:'Đề cương được duyệt — Nộp KLTN', bg:'bg-primary-fixed text-on-primary-fixed'},
-    step2:   {l:'Chuẩn bị bảo vệ',           bg:'bg-tertiary-fixed text-on-tertiary-fixed'},
-    step3:   {l:'Hoàn tất',                  bg:'bg-tertiary-fixed-dim text-on-tertiary-fixed'},
+    notReg:   {l:'Chưa đăng ký',              bg:'bg-surface-container text-on-surface-variant'},
+    wait0:    {l:'Chờ GV duyệt đề tài',       bg:'bg-secondary-container/30 text-on-secondary-container'},
+    rej0:     {l:'Đề tài bị từ chối',          bg:'bg-error-container text-on-error-container'},
+    approved0:{l:'Đề tài được duyệt — Nộp KLTN', bg:'bg-primary-fixed text-on-primary-fixed'},
+    step1:    {l:'Chuẩn bị bảo vệ',           bg:'bg-tertiary-fixed text-on-tertiary-fixed'},
+    step2:    {l:'Hoàn tất',                  bg:'bg-tertiary-fixed-dim text-on-tertiary-fixed'},
   };
   const badgeKey = !kltnReg?'notReg'
     :kltnStep===0&&kltnStatus==='pending'?'wait0'
     :kltnStep===0&&kltnStatus==='rejected'?'rej0'
     :kltnStep===0&&kltnStatus==='approved'?'approved0'
-    :kltnStep===1&&kltnStatus==='pending'?'wait1'
-    :kltnStep===1&&kltnStatus==='rejected'?'rej1'
-    :kltnStep===1&&kltnStatus==='approved'?'approved1'
-    :kltnStep===2?'step2':'step3';
+    :kltnStep===1?'step1':'step2';
   const stepBadge = stepBadgeMap[badgeKey]||stepBadgeMap.notReg;
 
-  // Bước hiển thị 1-4 cho người dùng
+  // Bước hiển thị 1-3 cho người dùng
   const displayStep = !kltnReg?0
     :kltnStep===0?1
-    :kltnStep===1?2
-    :kltnStep>=2?3:3;
+    :kltnStep>=1?2:2;
 
   return(
     <div className="h-full p-6 bg-surface-container-lowest rounded-3xl shadow-sm border-l-4 border-primary anim-fade flex flex-col">
@@ -2458,13 +2340,13 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast,onDecuSubmi
         </div>
         {kltnReg&&(
           <span className={`flex-shrink-0 px-3 py-1 rounded-full text-[10px] font-black leading-tight text-center ${stepBadge.bg}`}>
-            Bước {displayStep}/3<br/>{stepBadge.l}
+            Bước {displayStep}/2<br/>{stepBadge.l}
           </span>
         )}
       </div>
 
-      {/* 4 nút hành động */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 2 nút hành động */}
+      <div className="grid grid-cols-2 gap-3">
 
         {/* 1. Đổi đề tài — active chỉ khi step=0 + rejected */}
         <button onClick={canChangeTopic?onRegisterKLTN:undefined} disabled={!canChangeTopic}
@@ -2483,147 +2365,25 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast,onDecuSubmi
           {canChangeTopic&&<span className="text-[9px] opacity-80">GV từ chối</span>}
         </button>
 
-        {/* 2. Nộp đề cương — active khi step=0, approved (GV vừa duyệt đề tài) */}
-        <button
-          onClick={canNopDecu?()=>setShowUploadDecu(v=>!v):undefined}
-          disabled={!canNopDecu}
+        {/* 2. Nộp KLTN — active khi step=0, approved (GV vừa duyệt đề tài) */}
+        <button onClick={canSubmitKLTN?onSubmitKLTN:undefined} disabled={!canSubmitKLTN}
           title={
-            !kltnReg?'Đăng ký KLTN qua sidebar trước':
+            !kltnReg?'Đăng ký KLTN trước':
             kltnStep===0&&kltnStatus==='pending'?'Chờ GV duyệt đề tài trước':
             kltnStep===0&&kltnStatus==='rejected'?'Đề tài bị từ chối — hãy đổi đề tài':
-            kltnStep===1&&kltnStatus==='pending'?'Đề cương đã nộp, đang chờ GV duyệt':
-            kltnStep===1&&kltnStatus==='rejected'?'Đề cương bị từ chối — dùng "Chỉnh sửa đề cương"':
-            kltnStep>=1&&kltnStatus==='approved'?'Đề cương đã được duyệt':
-            canNopDecu?'Nộp file đề cương KLTN':'Không khả dụng'
+            kltnStep>=1?'Đã nộp khóa luận':'Nộp file khóa luận tốt nghiệp'
           }
           className={`p-5 rounded-2xl font-bold flex flex-col items-center justify-center gap-2.5 transition-all relative text-center
-            ${canNopDecu
+            ${canSubmitKLTN
               ?'bg-gradient-to-br from-primary to-primary-container text-white shadow-lg hover:scale-[1.02] cursor-pointer'
               :kltnStep>=1
                 ?'bg-tertiary-fixed/30 text-on-tertiary-fixed/50 cursor-not-allowed opacity-70'
                 :'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-40'}`}>
-          {canNopDecu&&<span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/70 animate-pulse"/>}
-          <span className="material-symbols-outlined text-2xl">
-            {kltnStep>=1&&kltnStatus==='approved'?'task_alt':kltnStep>=1?'hourglass_top':canNopDecu?'description':'lock'}
-          </span>
-          <span className="text-xs leading-tight">Nộp đề cương</span>
-          {kltnStep>=1&&kltnStatus==='approved'&&<span className="text-[9px] opacity-70">Đã duyệt</span>}
-          {kltnStep>=1&&kltnStatus==='pending'&&<span className="text-[9px] opacity-70">Chờ duyệt</span>}
-          {kltnStep>=1&&kltnStatus==='rejected'&&<span className="text-[9px] opacity-70">Bị từ chối</span>}
-        </button>
-
-        {/* 3. Chỉnh sửa đề cương — active khi step=1 + rejected */}
-        <button
-          onClick={canEditDecu?()=>setShowUploadDecu(v=>!v):undefined}
-          disabled={!canEditDecu}
-          title={
-            !kltnReg?'Đăng ký KLTN trước':
-            kltnStep===0?'Chờ GV duyệt đề tài trước':
-            kltnStep===1&&kltnStatus==='pending'?'Đề cương đang chờ GV xét duyệt':
-            kltnStep>=2?'Đề cương đã được duyệt':
-            canEditDecu?'Upload lại đề cương đã chỉnh sửa':'Không khả dụng'
-          }
-          className={`p-5 rounded-2xl font-bold flex flex-col items-center justify-center gap-2.5 transition-all text-center
-            ${canEditDecu
-              ?'bg-gradient-to-br from-secondary to-secondary-container text-white shadow-lg hover:scale-[1.02] cursor-pointer'
-              :'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-40'}`}>
-          <span className="material-symbols-outlined text-2xl">edit_document</span>
-          <span className="text-xs leading-tight">Chỉnh sửa đề cương</span>
-          {canEditDecu&&<span className="text-[9px] opacity-90">GV từ chối</span>}
-        </button>
-
-        {/* 4. Nộp KLTN — active khi step=1, approved (GV vừa duyệt đề cương) */}
-        <button onClick={canSubmitKLTN?onSubmitKLTN:undefined} disabled={!canSubmitKLTN}
-          title={
-            !kltnReg?'Đăng ký KLTN trước':
-            kltnStep===0?'Cần nộp đề cương và được GV duyệt trước':
-            kltnStep===1&&kltnStatus==='pending'?'Đề cương đang chờ GV duyệt':
-            kltnStep===1&&kltnStatus==='rejected'?'Đề cương bị từ chối — hãy chỉnh sửa và nộp lại':
-            kltnStep>=2?'Đã nộp khóa luận':'Nộp file khóa luận tốt nghiệp'
-          }
-          className={`p-5 rounded-2xl font-bold flex flex-col items-center justify-center gap-2.5 transition-all relative text-center
-            ${canSubmitKLTN
-              ?'bg-gradient-to-br from-tertiary-container to-tertiary text-white shadow-lg hover:scale-[1.02] cursor-pointer'
-              :kltnStep>=2
-                ?'bg-tertiary-fixed/30 text-on-tertiary-fixed/50 cursor-not-allowed opacity-70'
-                :'bg-surface-container-highest text-on-surface/30 cursor-not-allowed opacity-40'}`}>
           {canSubmitKLTN&&<span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-white/70 animate-pulse"/>}
-          <span className="material-symbols-outlined text-2xl">{kltnStep>=2?'task_alt':'upload_file'}</span>
-          <span className="text-xs leading-tight">{kltnStep>=2?'Đã nộp KLTN':'Nộp KLTN'}</span>
+          <span className="material-symbols-outlined text-2xl">{kltnStep>=1?'task_alt':'upload_file'}</span>
+          <span className="text-xs leading-tight">{kltnStep>=1?'Đã nộp KLTN':'Nộp KLTN'}</span>
         </button>
       </div>
-
-      {/* Panel upload đề cương (dùng chung cho Nộp & Chỉnh sửa đề cương) */}
-      {showUploadDecu&&(canNopDecu||canEditDecu)&&(
-        <div className="mt-4 p-5 bg-surface-container-low rounded-2xl border border-outline-variant/20 anim-fade space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="font-bold text-sm text-on-surface flex items-center gap-2">
-              <span className="material-symbols-outlined text-base text-primary">
-                {canEditDecu?'edit_document':'description'}
-              </span>
-              {canEditDecu?'Nộp lại đề cương đã chỉnh sửa':'Nộp đề cương KLTN'}
-            </p>
-            <button onClick={()=>{setShowUploadDecu(false);setDecuFile(null);setDecuNote('');}}
-              className="p-1 hover:bg-surface-container rounded-full transition-colors">
-              <span className="material-symbols-outlined text-sm text-on-surface-variant">close</span>
-            </button>
-          </div>
-          {/* Lý do từ chối (chỉ hiện khi chỉnh sửa) */}
-          {canEditDecu&&kltn?.reason&&(
-            <div className="flex items-start gap-3 p-3 bg-error-container/30 rounded-xl text-xs text-on-error-container leading-relaxed">
-              <span className="material-symbols-outlined text-sm flex-shrink-0 mt-0.5">report</span>
-              <span><strong>Lý do từ chối:</strong> {kltn.reason}</span>
-            </div>
-          )}
-          {/* Upload file */}
-          {!decuFile?(
-            <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-primary/30 rounded-2xl bg-primary-fixed/10 cursor-pointer hover:bg-primary-fixed/20 transition-colors group">
-              <span className="material-symbols-outlined text-3xl text-primary/40 group-hover:text-primary/70 transition-colors mb-1">cloud_upload</span>
-              <span className="text-sm font-medium text-primary/60 group-hover:text-primary transition-colors">Kéo thả hoặc bấm chọn file</span>
-              <span className="text-xs text-on-surface-variant/50 mt-0.5">PDF / Word / ZIP · tối đa 100 MB</span>
-              <input type="file" accept=".pdf,.doc,.docx,.zip" className="hidden" onChange={pickDecu}/>
-            </label>
-          ):(
-            <div className="flex items-center gap-3 p-3 bg-tertiary-fixed/20 border border-tertiary-fixed-dim/40 rounded-xl">
-              <span className="material-symbols-outlined text-on-tertiary-fixed">description</span>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-on-surface text-sm truncate">{decuFile.name}</p>
-                <p className="text-xs text-on-surface-variant">{fmtSize(decuFile.size)}</p>
-              </div>
-              <button onClick={()=>setDecuFile(null)} className="p-1 hover:bg-error-container/30 rounded-full">
-                <span className="material-symbols-outlined text-sm text-on-surface-variant">close</span>
-              </button>
-            </div>
-          )}
-          {/* Progress bar khi đang upload */}
-          {uploadingDecu&&decuProgress>0&&(
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-on-surface-variant">
-                <span>Đang tải lên...</span><span>{decuProgress}%</span>
-              </div>
-              <div className="w-full bg-surface-container-highest rounded-full h-2">
-                <div className="bg-primary h-full rounded-full transition-all duration-300" style={{width:`${decuProgress}%`}}/>
-              </div>
-            </div>
-          )}
-          <textarea value={decuNote} onChange={e=>setDecuNote(e.target.value)} rows={2}
-            className="w-full bg-surface-container rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-on-surface placeholder:text-outline/50 resize-none text-sm"
-            placeholder={canEditDecu?'Ghi chú những gì đã chỉnh sửa so với bản trước (tuỳ chọn)...':'Ghi chú cho GV (tuỳ chọn)...'}/>
-          <div className="flex justify-end gap-3">
-            <button onClick={()=>{setShowUploadDecu(false);setDecuFile(null);setDecuNote('');}}
-              disabled={uploadingDecu}
-              className="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface font-bold text-sm hover:bg-surface-container transition-all disabled:opacity-50">Hủy</button>
-            <button onClick={submitDecu} disabled={!decuFile||uploadingDecu}
-              className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-bold text-sm shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-              {uploadingDecu
-                ?<><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</>
-                :<><span className="material-symbols-outlined text-sm">send</span>{canEditDecu?'Gửi bản chỉnh sửa':'Nộp đề cương'}</>}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Banners trạng thái */}
       {/* step=0, pending: chờ GV duyệt đề tài */}
       {kltnReg&&kltnStep===0&&kltnStatus==='pending'&&(
         <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-secondary-container/20 border border-secondary-container/30 rounded-2xl text-on-secondary-container text-sm font-medium">
@@ -2639,43 +2399,20 @@ function KLTNActionPanel({dashData,onRegisterKLTN,onSubmitKLTN,toast,onDecuSubmi
           {kltn?.reason&&<span className="text-xs opacity-80 ml-1">({kltn.reason})</span>}
         </div>
       )}
-      {/* step=0, approved: GV duyệt đề tài → SV cần nộp đề cương */}
+      {/* step=0, approved: GV duyệt đề tài → SV cần nộp KLTN */}
       {kltnReg&&kltnStep===0&&kltnStatus==='approved'&&(
         <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-primary-fixed/40 rounded-2xl text-on-primary-fixed text-sm font-medium">
           <span className="material-symbols-outlined text-base">check_circle</span>
-          Đề tài đã được GV duyệt! Nhấn <strong className="mx-1">"Nộp đề cương"</strong> để upload file đề cương.
+          Đề tài đã được GV duyệt! Nhấn <strong className="mx-1">"Nộp KLTN"</strong> khi hoàn thành khóa luận.
         </div>
       )}
-      {/* step=1, pending: SV đã nộp đề cương, chờ GV duyệt */}
-      {kltnReg&&kltnStep===1&&kltnStatus==='pending'&&(
-        <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-secondary-container/20 border border-secondary-container/30 rounded-2xl text-on-secondary-container text-sm font-medium">
-          <span className="material-symbols-outlined text-base">hourglass_top</span>
-          Đề cương KLTN đã nộp. Đang chờ GV xét duyệt.
-        </div>
-      )}
-      {/* step=1, rejected: GV từ chối đề cương */}
-      {canEditDecu&&(
-        <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-error-container rounded-2xl text-on-error-container text-sm font-medium">
-          <span className="material-symbols-outlined text-base">report</span>
-          Đề cương bị từ chối. Nhấn <strong className="mx-1">"Chỉnh sửa đề cương"</strong> để nộp lại.
-          {/* FIX #1: Dùng decuReason (lý do từ chối ĐỀ CƯƠNG), không phải reason (lý do từ chối đề tài) */}
-          {(kltn?.decuReason||kltn?.reason)&&<span className="text-xs opacity-80 ml-1">({kltn.decuReason||kltn.reason})</span>}
-        </div>
-      )}
-      {/* step=1, approved: GV duyệt đề cương → SV cần nộp KLTN */}
-      {kltnReg&&kltnStep===1&&kltnStatus==='approved'&&(
-        <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-primary-fixed/40 rounded-2xl text-on-primary-fixed text-sm font-medium">
-          <span className="material-symbols-outlined text-base">check_circle</span>
-          Đề cương đã được duyệt! Nhấn <strong className="mx-1">"Nộp KLTN"</strong> khi hoàn thành khóa luận.
-        </div>
-      )}
-      {kltnStep===2&&(
+      {kltnStep===1&&(
         <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-tertiary-fixed/30 rounded-2xl text-on-tertiary-fixed text-sm font-medium">
           <span className="material-symbols-outlined">record_voice_over</span>
           Đang chuẩn bị bảo vệ khóa luận. Theo dõi lịch từ GV hướng dẫn.
         </div>
       )}
-      {kltnStep>=3&&(
+      {kltnStep>=2&&(
         <div className="mt-4 flex items-center gap-2 px-4 py-3 bg-tertiary-fixed/30 rounded-2xl text-on-tertiary-fixed text-sm font-medium">
           <span className="material-symbols-outlined fill-icon text-base">verified</span>
           Khóa luận đã hoàn tất! Xem điểm trong thẻ Kết quả KLTN.
@@ -3082,24 +2819,16 @@ function App(){
       const kd = data?.kltn;
       if(kd?.registered){
         const ks = kd.status, kp = parseInt(kd.step)||0;
-        // Bước 0: GV duyệt đề tài KLTN → SV cần nộp đề cương
+        // Bước 0: GV duyệt đề tài KLTN → SV cần nộp KLTN
         if(kp===0&&ks==='approved'
-           &&!notes.some(n=>n.message.includes('Nộp đề cương KLTN')))
-          notes.unshift({message:`✅ Đề tài KLTN "${kd.topic}" đã được GV duyệt! Hãy nhấn "Nộp đề cương" để tiếp tục.`,time:'Vừa cập nhật'});
+           &&!notes.some(n=>n.message.includes('Nộp KLTN')))
+          notes.unshift({message:`✅ Đề tài KLTN "${kd.topic}" đã được GV duyệt! Hãy nhấn "Nộp KLTN" để tiếp tục.`,time:'Vừa cập nhật'});
         // Bước 0: GV từ chối đề tài KLTN
         if(kp===0&&ks==='rejected'
            &&!notes.some(n=>n.message.includes('từ chối đề tài KLTN')))
           notes.unshift({message:`❌ Đề tài KLTN "${kd.topic}" bị từ chối. Nhấn "Đổi đề tài" để đăng ký lại.`,time:'Vừa cập nhật'});
-        // Bước 1: GV duyệt đề cương KLTN → SV cần nộp KLTN
-        if(kp===1&&ks==='approved'
-           &&!notes.some(n=>n.message.includes('Nộp KLTN')))
-          notes.unshift({message:`✅ Đề cương KLTN đã được GV duyệt! Hãy nhấn "Nộp KLTN" khi hoàn thành khóa luận.`,time:'Vừa cập nhật'});
-        // Bước 1: GV từ chối đề cương KLTN
-        if(kp===1&&ks==='rejected'
-           &&!notes.some(n=>n.message.includes('từ chối đề cương')))
-          notes.unshift({message:`❌ Đề cương KLTN bị từ chối. Nhấn "Chỉnh sửa đề cương" để nộp lại.`,time:'Vừa cập nhật'});
-        // Bước 2+: đã nộp KLTN
-        if(kp>=2&&!notes.some(n=>n.message.includes('nộp khóa luận')))
+        // Bước 1+: đã nộp KLTN
+        if(kp>=1&&!notes.some(n=>n.message.includes('nộp khóa luận')))
           notes.push({message:`📖 Đã nộp khóa luận. GV sẽ chấm điểm theo lịch bảo vệ.`,time:'Vừa cập nhật'});
       }
 
@@ -3157,7 +2886,7 @@ function App(){
     toast.show('Nộp khóa luận thành công! GV sẽ chấm điểm theo lịch bảo vệ.','success');
   }
 
-  // FIX #3: Refresh dashboard sau khi SV nộp đề cương thành công
+  // Làm mới dashboard sau khi SV nộp KLTN thành công
   function handleDecuSubmit(){
     setDashData(null);
     loadDash();
