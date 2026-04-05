@@ -2189,13 +2189,31 @@ function TabPhanCongPhanBien({toast}) {
       setStudents(formattedData);
       setInitialStudents(JSON.parse(JSON.stringify(formattedData))); // Lưu bản sao để so sánh
 
-      // Tải DS Giảng viên
-      const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
-      const gvList = userRows.filter(r => r[2] === 'giangvien' || r[2] === 'truongbomon').map(r => ({
-        email: r[0], name: r[3]
-      }));
-      setTeachers(gvList);
-
+// Tải DS Giảng viên từ sheet "GV KLTN" (Chính xác & an toàn hơn)
+      try {
+        const gvRows = await fetchSheetCSV('GV KLTN');
+        // Lấy cột B (index 1) là Tên, cột D (index 3) là Email
+        const gvList = gvRows
+          .filter(r => r[1] && r[3]) 
+          .map(r => ({
+            name: (r[1] || '').trim(),
+            email: (r[3] || '').toLowerCase().trim()
+          }));
+        
+        // Lọc bỏ các dòng trùng lặp email (nếu có)
+        const uniqueTeachers = Array.from(new Map(gvList.map(item => [item.email, item])).values());
+        setTeachers(uniqueTeachers);
+      } catch(err) {
+        // Backup: Nếu không có sheet GV KLTN, lấy từ sheet Users với bộ lọc linh hoạt hơn
+        const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
+        const gvList = userRows
+          .filter(r => {
+            const role = (r[2] || '').toLowerCase().trim();
+            return role.includes('giangvien') || role.includes('truongbomon');
+          })
+          .map(r => ({ email: (r[0] || '').trim(), name: (r[3] || '').trim() }));
+        setTeachers(gvList);
+      }
     } catch(e) { toast.show('Lỗi tải dữ liệu!', 'error'); }
     setLoading(false);
   }
@@ -2461,11 +2479,26 @@ const kltnRows = await fetchSheetCSV(SHEET_KLTN_TAB);
       setStudents(formattedData);
       setInitialStudents(JSON.parse(JSON.stringify(formattedData)));
 
-      const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
-      const gvList = userRows.filter(r => r[2] === 'giangvien' || r[2] === 'truongbomon').map(r => ({
-        email: r[0], name: r[3]
-      }));
-      setTeachers(gvList);
+try {
+        const gvRows = await fetchSheetCSV('GV KLTN');
+        const gvList = gvRows
+          .filter(r => r[1] && r[3]) 
+          .map(r => ({
+            name: (r[1] || '').trim(),
+            email: (r[3] || '').toLowerCase().trim()
+          }));
+        const uniqueTeachers = Array.from(new Map(gvList.map(item => [item.email, item])).values());
+        setTeachers(uniqueTeachers);
+      } catch(err) {
+        const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
+        const gvList = userRows
+          .filter(r => {
+            const role = (r[2] || '').toLowerCase().trim();
+            return role.includes('giangvien') || role.includes('truongbomon');
+          })
+          .map(r => ({ email: (r[0] || '').trim(), name: (r[3] || '').trim() }));
+        setTeachers(gvList);
+      }
 
     } catch(e) { toast.show('Lỗi tải dữ liệu!', 'error'); }
     setLoading(false);
