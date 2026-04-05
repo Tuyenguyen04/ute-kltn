@@ -53,7 +53,7 @@ borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"}}
 const {useState,useEffect,useCallback} = React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbzv6TfUyneZrRugVCtBgw8w_LZM70_njhdVenj9ri9A3fNuopv6desSAAOzbkTJDKkA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyVZtt-rXyHNt3CxFVvNeijPOkLk32ABRVrTSZLXB-8aDte4LMjVk5zyA0I6WyDB9U/exec';
 
 // 5 ngành khớp đúng cột Ngành trong sheet GV
 const NGANH_LIST = ['QLCN','Kế toán','Thương mại điện tử','Kinh doanh quốc tế','Logistic'];
@@ -1291,28 +1291,20 @@ function Dashboard({dashData,loading,onRegister,onChangeTopic,onSubmitReport,onR
                 <p className="text-xs font-black text-on-surface-variant uppercase tracking-widest md:hidden">Check đạo văn</p>
                 {plagiarismUrl?(
                   <div className="flex flex-col gap-2">
-                    {/* Icon + % */}
+                    {/* Icon xanh lá — bấm vào mở link Drive */}
                     <a href={plagiarismUrl} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-3 group w-fit">
                       <div className="w-11 h-11 rounded-2xl bg-tertiary-container flex items-center justify-center shadow-sm group-hover:scale-105 transition-all flex-shrink-0">
                         <span className="material-symbols-outlined fill-icon text-white text-xl">policy</span>
                       </div>
-                      {plagiarismPct!==null?(
+                      {plagiarismPct!==null&&(
                         <div className="flex items-baseline gap-0.5 px-3 py-1.5 border border-outline-variant/30 rounded-xl bg-surface-container-low">
                           <span className={`text-xl font-black leading-none ${parseFloat(plagiarismPct)>30?'text-error':parseFloat(plagiarismPct)>20?'text-secondary':'text-on-surface'}`}>
                             {plagiarismPct}
                           </span>
                           <span className="text-sm font-bold text-on-surface-variant">%</span>
                         </div>
-                      ):(
-                        <span className="text-xs text-primary font-bold group-hover:underline">Xem file</span>
                       )}
-                    </a>
-                    {/* Nút tải về */}
-                    <a href={plagiarismUrl} download target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low border border-outline-variant/30 hover:bg-surface-container-high rounded-xl text-xs font-bold text-on-surface-variant hover:text-primary transition-all w-fit">
-                      <span className="material-symbols-outlined text-sm">download</span>
-                      Tải về
                     </a>
                   </div>
                 ):(
