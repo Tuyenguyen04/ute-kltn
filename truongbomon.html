@@ -2721,13 +2721,26 @@ function TabPhanCongHoiDong({toast}) {
                                 <div key={field.key} className="flex flex-col gap-1 relative">
                                   <span className={`text-[9px] font-black uppercase tracking-wider ${field.color}`}>{field.label}</span>
                                   <select 
-                                    value={sv[field.key]} 
-                                    onChange={(e) => updateField(sv.maSo, field.key, e.target.value)}
-                                    className={`w-full text-xs font-semibold bg-surface-container-low border rounded-lg py-2 px-2 outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 appearance-none transition-colors cursor-pointer ${isChanged && sv[field.key] !== initSv[field.key] ? 'border-secondary text-secondary' : 'border-transparent text-on-surface hover:border-outline-variant/50'}`}
-                                    style={{ backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23434653' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`, backgroundSize: '16px 16px', backgroundPosition: 'right 4px center', backgroundRepeat: 'no-repeat' }}>
-                                    <option value="">-- Trống --</option>
-                                    {teachers.map(t => <option key={t.email} value={t.name}>{t.name}</option>)}
-                                  </select>
+  value={sv[field.key]} 
+  onChange={(e) => updateField(sv.maSo, field.key, e.target.value)}
+  className={`w-full text-xs font-semibold bg-surface-container-low border rounded-lg py-2 px-2 outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 appearance-none transition-colors cursor-pointer ${isChanged && sv[field.key] !== initSv[field.key] ? 'border-secondary text-secondary' : 'border-transparent text-on-surface hover:border-outline-variant/50'}`}
+  style={{ backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23434653' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`, backgroundSize: '16px 16px', backgroundPosition: 'right 4px center', backgroundRepeat: 'no-repeat' }}>
+  <option value="">-- Trống --</option>
+  {teachers
+    .filter(t => t.name !== sv.gvhd) // BƯỚC 1: LỌC BỎ GIẢNG VIÊN HƯỚNG DẪN
+    .map(t => {
+      // BƯỚC 2: KIỂM TRA XEM GV ĐÃ ĐƯỢC CHỌN Ở VỊ TRÍ KHÁC TRONG HỘI ĐỒNG CHƯA
+      const isSelectedElsewhere = ['truongHD', 'thuKy', 'thanhVien1', 'thanhVien2', 'thanhVien3']
+        .filter(k => k !== field.key)
+        .some(k => sv[k] === t.name);
+
+      return (
+        <option key={t.email} value={t.name} disabled={isSelectedElsewhere}>
+          {t.name} {isSelectedElsewhere ? '(Đã chọn)' : ''}
+        </option>
+      );
+  })}
+</select>
                                 </div>
                               ))}
                               {isChanged && <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-secondary"></span>}
