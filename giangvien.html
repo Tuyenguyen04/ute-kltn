@@ -2832,39 +2832,31 @@ function getRoleInfo(sv) {
                           <td className="px-4 py-5 align-middle">
                             <div className="flex flex-col items-center gap-3">
                               
-{/* Tác vụ chung: Chấm điểm HĐ kèm Icon Chat bên cạnh */}
-<div className="flex items-center justify-center gap-4">
-  {/* KIỂM TRA QUYỀN CHẤM ĐIỂM: Chủ tịch hoặc Uỷ viên mới được chấm, Thư ký thì ẩn */}
-  {((sv.truongHD||'').toLowerCase().includes(SESSION.name.toLowerCase().trim()) || 
-    (sv.thanhVien1||'').toLowerCase().includes(SESSION.name.toLowerCase().trim()) || 
-    (sv.thanhVien2||'').toLowerCase().includes(SESSION.name.toLowerCase().trim())) && (
-    <>
-      {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
-        <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
-          <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
-          <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">✓ Đã lưu</span>
-        </div>
-      ) : (
-        <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-[11px] shadow-sm">
-          {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span> : <span className="material-symbols-outlined text-[14px]">edit_square</span>} Nhập điểm
-        </button>
-      )}
-    </>
-  )}
-
-  {/* Icon Nhận Xét (Bấm vào mở Pop-up cũ) */}
-  <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
-    <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
-    {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
-  </button>
-</div>
-
-  {/* Icon Nhận Xét (Bấm vào mở Pop-up cũ) */}
-  <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
-    <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
-    {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
-  </button>
-</div>
+              {/* Tác vụ chung: Chấm điểm HĐ kèm Icon Chat bên cạnh */}
+              <div className="flex items-center justify-center gap-4">
+                {/* KIỂM TRA QUYỀN CHẤM ĐIỂM: Chủ tịch hoặc Uỷ viên mới được chấm, Thư ký thì ẩn */}
+                {((sv.truongHD||'').toLowerCase().includes(SESSION.name.toLowerCase().trim()) ||
+                  (sv.thanhVien1||'').toLowerCase().includes(SESSION.name.toLowerCase().trim()) ||
+                  (sv.thanhVien2||'').toLowerCase().includes(SESSION.name.toLowerCase().trim())) && (
+                  <>
+                    {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
+                      <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
+                        <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
+                        <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">✓ Đã lưu</span>
+                      </div>
+                    ) : (
+                      <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-[11px] shadow-sm">
+                        {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span> : <span className="material-symbols-outlined text-[14px]">edit_square</span>} Nhập điểm
+                      </button>
+                    )}
+                  </>
+                )}
+                {/* Icon Nhận Xét */}
+                <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
+                  <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                  {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
+                </button>
+              </div>
                               {/* Tác vụ của Thư ký */}
                               {(sv.thuKy||'').toLowerCase().includes(SESSION.email.toLowerCase()) && (
                                 <div className="flex gap-2 w-full justify-center border-t border-outline-variant/20 pt-2 mt-1">
@@ -3623,6 +3615,7 @@ function TabSauBaoVe({toast}) {
           };
         });
         // ── Lọc từ DangKyKLTN: SV mà GV là GVHD HOẶC Chủ tịch HĐ ──
+        // Hiện ngay khi GV liên quan, không cần chờ SV upload file
         // Cột H(7)=emailGVHD, U(20)=bienBanHD, V(21)=bienBanGiaiTrinh, W(22)=baiChinhSua, X(23)=gvhdDuyet, Y(24)=chuTichDuyet
         const list = kltnRows
           .filter(r => {
@@ -3631,24 +3624,23 @@ function TabSauBaoVe({toast}) {
             const sEmail       = (r[1] || '').toLowerCase().trim();
             const truongHDName = (hdMap[sEmail]?.truongHD || '').toLowerCase();
             const isChuTich    = truongHDName.includes(gvName);
-            // Bỏ qua nếu GV không liên quan đến SV này
-            if (!isGVHD && !isChuTich) return false;
-            const step = parseInt(r[14]) || 0;
-            // Hiện khi đã vào giai đoạn sau bảo vệ: step>=2 hoặc đã có bất kỳ file/trạng thái sau bảo vệ
-            return step >= 2 || !!(r[20] || r[21] || r[22]);
+            // Hiện ngay khi GV là GVHD hoặc Chủ tịch HĐ — không lọc theo step hay file
+            return isGVHD || isChuTich;
           })
           .map(r => {
-            const sEmail = (r[1] || '').toLowerCase().trim();
-            const hd     = hdMap[sEmail] || {};
-            const kl     = kltnMap[sEmail] || {};
+            const sEmail       = (r[1] || '').toLowerCase().trim();
+            const hd           = hdMap[sEmail] || {};
+            const kl           = kltnMap[sEmail] || {};
             const truongHDName = hd.truongHD || '';
+            const isGVHD       = (r[7] || '').toLowerCase().trim() === email;
+            const isChuTich    = truongHDName.toLowerCase().includes(gvName);
             return {
               studentEmail        : r[1] || '',
               maSo                : r[3] || '',
               studentName         : r[2] || '',
               topic               : r[5] || '',
-              isGVHD              : true,
-              isChuTich           : truongHDName.toLowerCase().includes(gvName),
+              isGVHD,
+              isChuTich,
               truongHD            : truongHDName,
               // Tất cả đọc từ DangKyKLTN qua kltnMap
               bienBanUrl          : kl.bienBanUrl || '',           // Cột U
