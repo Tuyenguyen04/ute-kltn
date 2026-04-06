@@ -2342,6 +2342,11 @@ function BienBanHDModal({ student, onSave, onClose, processing }) {
     onSave(student, nhanXetHD, fileBB);
   };
 
+  const handleAutoFill = () => {
+    const combined = nhanXetHD + (nhanXetHD ? '\n\n' : '') + "--- TỔNG HỢP NHẬN XÉT HỘI ĐỒNG ---\n" + (student.nhanXet || 'Chưa có nhận xét nào từ thành viên HĐ.');
+    setNhanXetHD(combined);
+  };
+
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
       <div className="bg-white w-full max-w-3xl rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[90vh]">
@@ -2374,9 +2379,15 @@ function BienBanHDModal({ student, onSave, onClose, processing }) {
           </div>
 
           <div>
-            <label className="text-sm font-bold text-on-surface block mb-2 text-primary">Ý kiến của Hội đồng (Thư ký nhập):</label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="text-sm font-bold text-on-surface text-primary">Ý kiến của Hội đồng (Thư ký nhập):</label>
+              <button onClick={handleAutoFill} className="flex items-center gap-1 text-[11px] font-bold bg-primary-fixed text-on-primary-fixed-variant px-3 py-1.5 rounded-lg hover:bg-primary-fixed-dim transition-colors">
+                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                Tổng hợp từ Icon Chat
+              </button>
+            </div>
             <textarea
-              value={nhanXetHD} onChange={e => setNhanXetHD(e.target.value)} rows={4}
+              value={nhanXetHD} onChange={e => setNhanXetHD(e.target.value)} rows={5}
               placeholder="Nhập các góp ý, nhận xét từ Hội đồng đánh giá..."
               className="w-full bg-white border border-outline-variant/50 rounded-xl p-4 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm resize-none shadow-inner"
             />
@@ -2404,9 +2415,12 @@ function BienBanHDModal({ student, onSave, onClose, processing }) {
     </div>
   );
 }
-
 // ── MODAL XEM CHI TIẾT ĐIỂM (DÀNH CHO THƯ KÝ) ─────────────────────────────────
-function ScoreDetailModal({ student, onClose }) {
+function ScoreDetailModal({ student, onClose, onCalculateAndSave, processing }) {
+  // Tính điểm trung bình (Không cộng điểm của Thư ký vì TK không chấm)
+  const scoresToAvg = [student.diemGVHD, student.diemPB, student.diemCT, student.diemTV].filter(s => s !== null && s !== undefined && !isNaN(s));
+  const avgScore = scoresToAvg.length > 0 ? (scoresToAvg.reduce((a,b)=>a+b,0) / scoresToAvg.length).toFixed(1) : null;
+
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm" onClick={onClose}>
       <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl anim-pop p-6" onClick={e => e.stopPropagation()}>
@@ -2417,15 +2431,23 @@ function ScoreDetailModal({ student, onClose }) {
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Hướng dẫn</span><span className="font-black text-primary">{student.diemGVHD ?? '--'}</span></div>
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Phản biện</span><span className="font-black text-secondary">{student.diemPB ?? '--'}</span></div>
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Chủ tịch Hội đồng</span><span className="font-black text-tertiary">{student.diemCT ?? '--'}</span></div>
-          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Thư ký Hội đồng</span><span className="font-black text-on-surface">{student.diemTK ?? '--'}</span></div>
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Ủy viên Hội đồng</span><span className="font-black text-on-surface">{student.diemTV ?? '--'}</span></div>
         </div>
         
-        <div className="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center px-3">
-          <span className="text-base font-black uppercase text-on-surface">ĐIỂM FINAL</span>
-          <span className="text-3xl font-black text-error">{student.diemHD ?? '--'}</span>
+        <div className="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center px-3 mb-6">
+          <span className="text-base font-black uppercase text-on-surface">ĐIỂM FINAL (TRUNG BÌNH)</span>
+          <span className="text-3xl font-black text-error">{avgScore ?? '--'}</span>
         </div>
-        <button onClick={onClose} className="w-full mt-6 py-3 rounded-xl bg-surface-container font-bold text-on-surface hover:bg-surface-container-high transition-colors">Đóng bảng điểm</button>
+        
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={processing} className="flex-1 py-3 rounded-xl bg-surface-container font-bold text-on-surface hover:bg-surface-container-high transition-colors">Đóng</button>
+          {avgScore && (
+            <button onClick={() => onCalculateAndSave(avgScore)} disabled={processing} className="flex-1 py-3 rounded-xl bg-error text-white font-bold hover:opacity-90 transition-colors flex items-center justify-center gap-2 shadow-md">
+              {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
+              Lưu Điểm
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -2543,7 +2565,21 @@ function TabHoiDong({toast}) {
     } catch(e) { toast.show('Lỗi kết nối tới Google Sheet.', 'error'); }
     setHdProcessing(null);
   }
-
+// THÊM HÀM NÀY: Thư ký lưu điểm tổng hợp
+  async function handleSaveFinalScore(sv, finalScore) {
+    setHdProcessing(sv.studentEmail); 
+    try {
+      const res = await apiPost({ action:'saveGrade', type:'hd', studentEmail: sv.studentEmail, grade: finalScore });
+      if (res.success) {
+        toast.show('Đã chốt điểm tổng hợp Hội đồng thành công!', 'success');
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemHD: parseFloat(finalScore)} : s));
+        setScoreDetailTarget(null);
+      } else {
+        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+      }
+    } catch(e) { toast.show('Lỗi kết nối tới Google Sheet.', 'error'); }
+    setHdProcessing(null);
+  }
   async function handleSaveFeedback(text) {
     const sv = feedbackTarget;
     setHdProcessing(sv.studentEmail);
@@ -2683,8 +2719,13 @@ function getRoleInfo(sv) {
       {bienBanTarget && (
         <BienBanHDModal student={bienBanTarget} processing={hdProcessing === bienBanTarget.studentEmail} onSave={handleSaveBienBan} onClose={() => setBienBanTarget(null)} />
       )}
-      {scoreDetailTarget && (
-        <ScoreDetailModal student={scoreDetailTarget} onClose={() => setScoreDetailTarget(null)} />
+{scoreDetailTarget && (
+        <ScoreDetailModal 
+          student={scoreDetailTarget} 
+          processing={hdProcessing === scoreDetailTarget.studentEmail}
+          onCalculateAndSave={(score) => handleSaveFinalScore(scoreDetailTarget, score)}
+          onClose={() => setScoreDetailTarget(null)} 
+        />
       )}
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -2793,16 +2834,30 @@ function getRoleInfo(sv) {
                               
 {/* Tác vụ chung: Chấm điểm HĐ kèm Icon Chat bên cạnh */}
 <div className="flex items-center justify-center gap-4">
-  {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
-    <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
-      <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
-      <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">✓ Đã lưu</span>
-    </div>
-  ) : (
-    <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-[11px] shadow-sm">
-      {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span> : <span className="material-symbols-outlined text-[14px]">edit_square</span>} Nhập điểm
-    </button>
+  {/* KIỂM TRA QUYỀN CHẤM ĐIỂM: Chủ tịch hoặc Uỷ viên mới được chấm, Thư ký thì ẩn */}
+  {((sv.truongHD||'').toLowerCase().includes(SESSION.name.toLowerCase().trim()) || 
+    (sv.thanhVien1||'').toLowerCase().includes(SESSION.name.toLowerCase().trim()) || 
+    (sv.thanhVien2||'').toLowerCase().includes(SESSION.name.toLowerCase().trim())) && (
+    <>
+      {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
+        <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
+          <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
+          <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">✓ Đã lưu</span>
+        </div>
+      ) : (
+        <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-[11px] shadow-sm">
+          {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span> : <span className="material-symbols-outlined text-[14px]">edit_square</span>} Nhập điểm
+        </button>
+      )}
+    </>
   )}
+
+  {/* Icon Nhận Xét (Bấm vào mở Pop-up cũ) */}
+  <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
+    <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+    {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
+  </button>
+</div>
 
   {/* Icon Nhận Xét (Bấm vào mở Pop-up cũ) */}
   <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
