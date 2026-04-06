@@ -2059,13 +2059,14 @@ function TabPhanBien({toast}) {
           fetchSheetCSV(SHEET_KLTN_TAB)
         ]);
         
-        const kltnMap = {};
+const kltnMap = {};
         kltnRows.forEach(r => {
            kltnMap[r[3]] = { 
              topic: r[5] || '',
              kltnUrl: r[16] || '',
              daoVanUrl: r[17] || '',
-             nhanXet: r[19] || ''
+             nhanXet: r[19] || '',
+             diemGVHD: r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null
            };
         });
 
@@ -2331,6 +2332,103 @@ function HDGradingModal({ student, onSave, onClose, processing }) {
   );
 }
 // ── TAB 4: HỘI ĐỒNG ──────────────────────────────────────────────────────────
+  // ── MODAL BIÊN BẢN HỘI ĐỒNG (DÀNH CHO THƯ KÝ) ─────────────────────────────────
+function BienBanHDModal({ student, onSave, onClose, processing }) {
+  const [nhanXetHD, setNhanXetHD] = React.useState(student.nhanXetHD || '');
+  const [fileBB, setFileBB] = React.useState(null);
+
+  const handleSave = () => {
+    onSave(student, nhanXetHD, fileBB);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-3xl rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[90vh]">
+        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+              <span className="material-symbols-outlined">edit_document</span>
+            </div>
+            <div>
+              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Biên bản Hội đồng</h2>
+              <p className="text-xs text-on-surface-variant">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto space-y-5 bg-surface-container-lowest">
+          <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/20">
+            <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-1">Tên Đề tài</p>
+            <p className="text-sm font-semibold text-on-surface">{student.topic || 'Chưa cập nhật'}</p>
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-on-surface block mb-2 text-secondary">Ý kiến của GV Phản biện (Hệ thống điền sẵn):</label>
+            <div className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 text-sm text-on-surface-variant whitespace-pre-wrap min-h-[80px]">
+              {student.nhanXetPB || 'Chưa có ý kiến từ GV Phản biện.'}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-on-surface block mb-2 text-primary">Ý kiến của Hội đồng (Thư ký nhập):</label>
+            <textarea
+              value={nhanXetHD} onChange={e => setNhanXetHD(e.target.value)} rows={4}
+              placeholder="Nhập các góp ý, nhận xét từ Hội đồng đánh giá..."
+              className="w-full bg-white border border-outline-variant/50 rounded-xl p-4 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm resize-none shadow-inner"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-bold text-on-surface block mb-2">Tải lên File Biên bản (PDF/Doc/Ảnh):</label>
+            <div className="flex items-center gap-3">
+              <input type="file" accept=".pdf,.doc,.docx,.jpg,.png" onChange={e => setFileBB(e.target.files[0])} className="text-sm text-on-surface-variant file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary-fixed file:text-primary hover:file:bg-primary-fixed-dim cursor-pointer"/>
+              {student.bienBanUrl && !fileBB && (
+                <span className="text-xs font-bold text-tertiary bg-tertiary-fixed px-3 py-1 rounded-full flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">check_circle</span> Đã có file trên hệ thống</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-5 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-low rounded-b-[2rem]">
+          <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">Đóng</button>
+          <button onClick={handleSave} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
+            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
+            Cập nhật Biên bản
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL XEM CHI TIẾT ĐIỂM (DÀNH CHO THƯ KÝ) ─────────────────────────────────
+function ScoreDetailModal({ student, onClose }) {
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl anim-pop p-6" onClick={e => e.stopPropagation()}>
+        <h3 className="font-headline font-extrabold text-xl text-center mb-1 text-on-surface">Bảng điểm chi tiết</h3>
+        <p className="text-center text-xs text-on-surface-variant mb-6">{student.studentName} • {student.maSo}</p>
+        
+        <div className="space-y-3">
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Hướng dẫn</span><span className="font-black text-primary">{student.diemGVHD ?? '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Phản biện</span><span className="font-black text-secondary">{student.diemPB ?? '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Chủ tịch Hội đồng</span><span className="font-black text-tertiary">{student.diemCT ?? '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Thư ký Hội đồng</span><span className="font-black text-on-surface">{student.diemTK ?? '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Ủy viên Hội đồng</span><span className="font-black text-on-surface">{student.diemTV ?? '--'}</span></div>
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center px-3">
+          <span className="text-base font-black uppercase text-on-surface">ĐIỂM FINAL</span>
+          <span className="text-3xl font-black text-error">{student.diemHD ?? '--'}</span>
+        </div>
+        <button onClick={onClose} className="w-full mt-6 py-3 rounded-xl bg-surface-container font-bold text-on-surface hover:bg-surface-container-high transition-colors">Đóng bảng điểm</button>
+      </div>
+    </div>
+  );
+}
 function TabHoiDong({toast}) {
   const [students, setStudents] = React.useState([]);
   const [loading,  setLoading]  = React.useState(true);
@@ -2340,6 +2438,47 @@ function TabHoiDong({toast}) {
   const [feedbackTarget, setFeedbackTarget] = React.useState(null);
   const [hdProcessing, setHdProcessing] = React.useState(null);
   const [gradingHDTarget, setGradingHDTarget] = React.useState(null);
+  
+  // State mới cho Thư ký và Chủ tịch
+  const [bienBanTarget, setBienBanTarget] = React.useState(null);
+  const [scoreDetailTarget, setScoreDetailTarget] = React.useState(null);
+
+  // Xử lý lưu Biên bản Hội đồng (Thư ký)
+  async function handleSaveBienBan(sv, nhanXetHD, fileBB) {
+    setHdProcessing(sv.studentEmail);
+    try {
+      let driveUrl = sv.bienBanUrl;
+      if (fileBB) {
+        toast.show('Đang tải file lên Drive...', 'success');
+        const resFile = await apiPostFile({ action: 'uploadCouncilMinutes', studentEmail: sv.studentEmail, _file: fileBB, folderName: 'BienBanHoiDong_UTE' });
+        if (resFile.success) driveUrl = resFile.driveUrl;
+        else throw new Error(resFile.message);
+      }
+      
+      const res = await apiPost({ action: 'updateCouncilMinutes', studentEmail: sv.studentEmail, nhanXetHD: nhanXetHD, bienBanUrl: driveUrl });
+      if (res.success) {
+        toast.show('Đã cập nhật Biên bản thành công!', 'success');
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXetHD, bienBanUrl: driveUrl} : s));
+        setBienBanTarget(null);
+      } else toast.show(res.message || 'Lỗi cập nhật', 'error');
+    } catch(e) { toast.show(e.message || 'Lỗi kết nối', 'error'); }
+    setHdProcessing(null);
+  }
+
+  // Xử lý Chủ tịch duyệt chỉnh sửa sau bảo vệ
+  async function handleChuTichDuyet(sv, isApproved) {
+    if(!window.confirm(`Xác nhận ${isApproved ? 'ĐỒNG Ý' : 'TỪ CHỐI'} bản chỉnh sửa của sinh viên?`)) return;
+    setHdProcessing(sv.studentEmail);
+    const status = isApproved ? 'Yes' : 'No';
+    try {
+      const res = await apiPost({ action: 'presidentApprovePostDefense', studentEmail: sv.studentEmail, chuTichDuyetSauBv: status });
+      if (res.success) {
+        toast.show('Đã cập nhật trạng thái duyệt!', 'success');
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, chuTichDuyetSauBv: status} : s));
+      } else toast.show(res.message || 'Lỗi cập nhật', 'error');
+    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+    setHdProcessing(null);
+  }
 
   async function handleSaveHdFromModal(totalGrade, nhanXetStr) {
     const sv = gradingHDTarget;
@@ -2414,8 +2553,19 @@ function TabHoiDong({toast}) {
               thuKy        : r[8] || '',
               ngayBaoVe    : r[12] || '', 
               gioBaoVe     : r[13] || '',
-              phongBaoVe   : r[14] || '',
+phongBaoVe   : r[14] || '',
               diemHD       : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',', '.')))) ? parseFloat(String(r[11]).replace(',', '.')) : null,
+              
+              // Các cột mới bổ sung cho tính năng Hội đồng
+              nhanXetPB    : r[15] || kData.nhanXet || '', 
+              nhanXetHD    : r[16] || '',
+              bienBanUrl   : r[17] || '',
+              diemCT       : (r[18] !== '') ? parseFloat(String(r[18]).replace(',', '.')) : null,
+              diemTK       : (r[19] !== '') ? parseFloat(String(r[19]).replace(',', '.')) : null,
+              diemTV       : (r[20] !== '') ? parseFloat(String(r[20]).replace(',', '.')) : null,
+              gvhdDuyetSauBv: r[21] || '', // Trạng thái GVHD duyệt (Yes/No)
+              chuTichDuyetSauBv: r[22] || '', // Trạng thái Chủ tịch duyệt (Yes/No)
+
               ...kData
             };
           });
@@ -2467,8 +2617,14 @@ function TabHoiDong({toast}) {
         <FeedbackModal student={feedbackTarget} processing={hdProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)} />
       )}
       
-      {gradingHDTarget && (
+{gradingHDTarget && (
         <HDGradingModal student={gradingHDTarget} processing={hdProcessing === gradingHDTarget.studentEmail} onSave={handleSaveHdFromModal} onClose={() => setGradingHDTarget(null)} />
+      )}
+      {bienBanTarget && (
+        <BienBanHDModal student={bienBanTarget} processing={hdProcessing === bienBanTarget.studentEmail} onSave={handleSaveBienBan} onClose={() => setBienBanTarget(null)} />
+      )}
+      {scoreDetailTarget && (
+        <ScoreDetailModal student={scoreDetailTarget} onClose={() => setScoreDetailTarget(null)} />
       )}
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -2491,13 +2647,13 @@ function TabHoiDong({toast}) {
         <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden border border-outline-variant/10">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse" style={{minWidth:'1000px'}}>
-              <thead>
+<thead>
                 <tr className="bg-surface-container-low text-on-surface-variant text-[11px] font-black uppercase tracking-widest">
                   <th className="px-6 py-4">Sinh viên & Đề tài</th>
                   <th className="px-4 py-4">Hội đồng & Lịch bảo vệ</th>
                   <th className="px-4 py-4 text-center">Bản KLTN</th>
-                  <th className="px-4 py-4 text-center">Check Đạo văn</th>
-                  <th className="px-4 py-4 text-center">Điểm HĐ</th>
+                  <th className="px-4 py-4 text-center">Biên bản & Đạo văn</th>
+                  <th className="px-4 py-4 text-center">Tác vụ Vai trò</th>
                   <th className="px-2 py-4"></th>
                 </tr>
               </thead>
@@ -2555,33 +2711,76 @@ function TabHoiDong({toast}) {
                             ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
                           </td>
 
-                          {/* Đạo văn (Chỉ xem) */}
+{/* Biên bản & Đạo văn */}
                           <td className="px-4 py-5 text-center align-middle">
-                            {sv.daoVanUrl ? (
-                              <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="inline-flex flex-col items-center gap-0.5 group mx-auto">
-                                <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></span>
-                                <span className="text-[9px] font-bold text-tertiary">Xem kết quả</span>
-                              </button>
-                            ) : (
-                              <span className="text-[9px] text-on-surface-variant/40">Chưa có file</span>
-                            )}
+                            <div className="flex justify-center gap-3">
+                              {sv.daoVanUrl && (
+                                <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} title="Xem Đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors">
+                                  <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span>
+                                </button>
+                              )}
+                              {sv.bienBanUrl && (
+                                <button onClick={() => setViewerFile({ url: sv.bienBanUrl, studentName: sv.studentName, fileName: 'Biên Bản Hội Đồng' })} title="Xem Biên bản HĐ" className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary-container hover:bg-secondary transition-colors text-on-secondary-container hover:text-white">
+                                  <span className="material-symbols-outlined fill-icon text-[20px]">assignment</span>
+                                </button>
+                              )}
+                              {!sv.daoVanUrl && !sv.bienBanUrl && <span className="text-[9px] text-on-surface-variant/40">Chưa có file</span>}
+                            </div>
                           </td>
 
-                          <td className="px-4 py-5 text-center align-middle">
-                            {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
-                              <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
-                                <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
-                                <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
-                              </div>
-                            ) : (
-                              <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm mx-auto">
-                                {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> : <span className="material-symbols-outlined text-[16px]">edit_square</span>} Chấm
-                              </button>
-                            )}
+                          {/* Tác vụ Vai trò (Chủ tịch / Thư ký / GV chấm) */}
+                          <td className="px-4 py-5 align-middle">
+                            <div className="flex flex-col items-center gap-3">
+                              
+                              {/* Tác vụ chung: Chấm điểm HĐ */}
+                              {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
+                                <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
+                                  <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
+                                  <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm điểm HĐ</span>
+                                </div>
+                              ) : (
+                                <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-[11px] shadow-sm">
+                                  {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span> : <span className="material-symbols-outlined text-[14px]">edit_square</span>} Nhập điểm cá nhân
+                                </button>
+                              )}
+
+                              {/* Tác vụ của Thư ký */}
+                              {(sv.thuKy||'').toLowerCase().includes(SESSION.email.toLowerCase()) && (
+                                <div className="flex gap-2 w-full justify-center border-t border-outline-variant/20 pt-2 mt-1">
+                                  <button onClick={() => setBienBanTarget(sv)} className="px-2 py-1 bg-surface-container text-on-surface text-[10px] font-bold rounded-lg hover:bg-surface-container-high transition-colors flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px]">edit_document</span> Lập Biên bản
+                                  </button>
+                                  <button onClick={() => setScoreDetailTarget(sv)} className="px-2 py-1 bg-surface-container text-on-surface text-[10px] font-bold rounded-lg hover:bg-surface-container-high transition-colors flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[13px]">visibility</span> Xem bảng điểm
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Tác vụ của Chủ tịch */}
+                              {(sv.truongHD||'').toLowerCase().includes(SESSION.email.toLowerCase()) && (
+                                <div className="flex flex-col items-center w-full border-t border-outline-variant/20 pt-2 mt-1">
+                                  {sv.gvhdDuyetSauBv !== 'Yes' ? (
+                                    <span className="text-[10px] text-on-surface-variant italic">Chờ GVHD duyệt chỉnh sửa...</span>
+                                  ) : sv.chuTichDuyetSauBv === 'Yes' ? (
+                                    <span className="text-[10px] font-bold text-white bg-primary px-3 py-1 rounded-full flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">verified</span> CT Đã duyệt</span>
+                                  ) : (
+                                    <div className="flex gap-2">
+                                      <button onClick={() => handleChuTichDuyet(sv, true)} disabled={hdProcessing === sv.studentEmail} className="px-2 py-1 bg-[#00593c] text-white text-[10px] font-bold rounded-lg hover:opacity-90 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[12px]">check</span> Duyệt sửa
+                                      </button>
+                                      <button onClick={() => handleChuTichDuyet(sv, false)} disabled={hdProcessing === sv.studentEmail} className="px-2 py-1 bg-error text-white text-[10px] font-bold rounded-lg hover:opacity-90 flex items-center gap-1">
+                                        <span className="material-symbols-outlined text-[12px]">close</span> Từ chối
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              
+                            </div>
                           </td>
 
                           <td className="px-2 py-5 text-center align-middle">
-                            <button onClick={() => setFeedbackTarget(sv)} title="Nhận xét Hội đồng" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
+                            <button onClick={() => setFeedbackTarget(sv)} title="Nhận xét cá nhân (Chỉ mình xem)" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
                               <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
                               {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
                             </button>
