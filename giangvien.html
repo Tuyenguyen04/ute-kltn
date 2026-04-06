@@ -3433,102 +3433,196 @@ hdRows.forEach(r => {
   );
 }
 // ── TAB: SAU BẢO VỆ ──────────────────────────────────────────────────────────
+// ── MODAL DUYỆT SAU BẢO VỆ (GVHD) ───────────────────────────────────────────
+function GVHDApproveModal({ student, onConfirm, onClose }) {
+  const [decision, setDecision] = React.useState('');
+  const [note, setNote] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleSubmit() {
+    if (!decision) return;
+    setSubmitting(true);
+    await onConfirm(student, decision === 'yes', note.trim());
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-on-surface/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-[2rem] p-8 shadow-2xl anim-slide">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center flex-shrink-0">
+            <span className="material-symbols-outlined text-primary">how_to_reg</span>
+          </div>
+          <div>
+            <h2 className="font-headline font-extrabold text-lg text-on-surface">Duyệt bản chỉnh sửa</h2>
+            <p className="text-xs text-on-surface-variant">Xem xét bài chỉnh sửa sau bảo vệ của sinh viên</p>
+          </div>
+        </div>
+
+        <div className="bg-surface-container-low rounded-2xl p-4 mb-5">
+          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">Sinh viên</p>
+          <p className="font-bold text-on-surface text-sm">{student.studentName}</p>
+          <p className="text-xs text-on-surface-variant mt-0.5">{student.maSo} • {student.topic || '--'}</p>
+          {student.baiChinhSuaUrl && (
+            <a href={student.baiChinhSuaUrl} target="_blank" rel="noreferrer"
+              className="inline-flex items-center gap-1.5 mt-2 text-[11px] font-bold text-primary hover:underline">
+              <span className="material-symbols-outlined text-sm">open_in_new</span>
+              Xem bài chỉnh sửa
+            </a>
+          )}
+        </div>
+
+        <div className="mb-5">
+          <p className="text-sm font-semibold text-on-surface-variant mb-3">Quyết định của bạn <span className="text-error">*</span></p>
+          <div className="flex gap-3">
+            <button onClick={() => setDecision('yes')}
+              className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all
+                ${decision === 'yes' ? 'border-[#00593c] bg-tertiary-fixed text-on-tertiary-fixed' : 'border-outline-variant text-on-surface hover:border-[#00593c]/40'}`}>
+              <span className="material-symbols-outlined text-base" style={decision==='yes'?{color:'#003f29'}:{}}>check_circle</span>
+              Đồng ý duyệt
+            </button>
+            <button onClick={() => setDecision('no')}
+              className={`flex-1 py-3 rounded-xl border-2 font-bold text-sm flex items-center justify-center gap-2 transition-all
+                ${decision === 'no' ? 'border-error bg-error-container text-on-error-container' : 'border-outline-variant text-on-surface hover:border-error/40'}`}>
+              <span className="material-symbols-outlined text-base">cancel</span>
+              Không đồng ý
+            </button>
+          </div>
+        </div>
+
+        {decision === 'no' && (
+          <div className="mb-5">
+            <label className="text-sm font-semibold text-on-surface-variant block mb-2">
+              Lý do không đồng ý <span className="text-error">*</span>
+            </label>
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} autoFocus
+              className="w-full bg-surface-container-low rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-error/20 text-on-surface placeholder:text-outline/50 resize-none text-sm"
+              placeholder="VD: Bài chỉnh sửa chưa đáp ứng yêu cầu hội đồng, cần sửa thêm phần..."/>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={submitting}
+            className="flex-1 py-3 rounded-xl border-2 border-outline-variant text-on-surface font-bold hover:bg-surface-container transition-all text-sm disabled:opacity-50">
+            Hủy
+          </button>
+          <button onClick={handleSubmit}
+            disabled={!decision || (decision === 'no' && !note.trim()) || submitting}
+            className={`flex-1 py-3 rounded-xl text-white font-bold shadow-lg hover:opacity-90 transition-all disabled:opacity-40 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2
+              ${decision === 'no' ? 'bg-error' : 'bg-[#00593c]'}`}>
+            {submitting
+              ? <><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang lưu...</>
+              : <><span className="material-symbols-outlined text-sm">{decision === 'no' ? 'send' : 'task_alt'}</span>Xác nhận</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TabSauBaoVe({toast}) {
   const [students, setStudents] = React.useState([]);
   const [loading,  setLoading]  = React.useState(true);
   const [search,   setSearch]   = React.useState('');
   const [processing, setProcessing] = React.useState(null);
   const [viewerFile, setViewerFile] = React.useState(null);
+  // Modal duyệt GVHD
+  const [approveTarget, setApproveTarget] = React.useState(null);
 
   React.useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const [hdRows, kltnRows] = await Promise.all([
-          fetchSheetCSV(SHEET_HOIDONG_TAB),
-          fetchSheetCSV(SHEET_KLTN_TAB)
+        // Đọc cả 2 sheet song song
+        const [kltnRows, hdRows] = await Promise.all([
+          fetchSheetCSV(SHEET_KLTN_TAB),
+          fetchSheetCSV(SHEET_HOIDONG_TAB)
         ]);
 
-        const kltnMap = {};
-        kltnRows.forEach(r => {
-          kltnMap[r[3]] = { topic: r[5] || '', kltnUrl: r[16] || '' };
+        const email   = SESSION.email.toLowerCase().trim();
+        const gvName  = SESSION.name.toLowerCase().trim();
+
+        // ── Map HoiDongKLTN theo studentEmail ──
+        // Cấu trúc HoiDongKLTN: A=studentEmail, B=maSo, C=studentName,
+        // D=gvPBName, E=gvPBEmail, F=truongHD, G-I=TV1-3, J=thuKy,
+        // K=diemPB(10), L=diemHD(11), ...U=bienBanHD(20)
+        const hdMap = {};
+        hdRows.forEach(r => {
+          const sEmail = (r[0] || '').toLowerCase().trim();
+          hdMap[sEmail] = {
+            truongHD : r[5] || '',  // F = Chủ tịch HĐ (tên)
+            diemHD   : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',','.')))) ? parseFloat(String(r[11]).replace(',','.')) : null,
+            bienBanUrl: r[20] || '', // U(20) = Biên bản hội đồng
+          };
         });
 
-        const email = SESSION.email.toLowerCase().trim();
-        const gvName = SESSION.name.toLowerCase().trim();
-
-        const list = hdRows
+        // ── Lọc từ DangKyKLTN: SV mà GV đang đăng nhập là GVHD ──
+        // Cột H(7)=emailGVHD, W(22)=baiChinhSuaUrl, X(23)=gvhdDuyetSauBv, Y(24)=chuTichDuyetSauBv
+        const list = kltnRows
           .filter(r => {
-            // Chỉ hiện SV đã có điểm HĐ (đã bảo vệ xong) hoặc có biên bản
-            const coKetQua = r[11] !== '' || r[17] !== '';
-            if (!coKetQua) return false;
-            // Hiện nếu là GVHD (email col r[4]... không — GVHD ở DangKyKLTN)
-            // Hoặc là Chủ tịch HĐ (r[5] chứa tên)
-            return (r[4]||'').toLowerCase().trim() === email  // PB email — không phải GVHD
-              || (r[5]||'').toLowerCase().includes(gvName)    // Chủ tịch
-              || (r[6]||'').toLowerCase().includes(gvName)    // TV1
-              || (r[7]||'').toLowerCase().includes(gvName)    // TV2
-              || (r[8]||'').toLowerCase().includes(gvName)    // TV3
-              || (r[9]||'').toLowerCase().includes(gvName);   // Thư ký
+            const gvhdEmail = (r[7] || '').toLowerCase().trim();
+            if (gvhdEmail !== email) return false;
+            const step   = parseInt(r[14]) || 0;
+            const sEmail = (r[1] || '').toLowerCase().trim();
+            const hd     = hdMap[sEmail];
+            // Hiện SV đã vào giai đoạn sau bảo vệ: step>=2 hoặc đã có biên bản / bài chỉnh sửa
+            return step >= 2 || (hd && hd.bienBanUrl) || !!(r[22] || r[23]);
           })
           .map(r => {
-            const maSo = r[1] || '';
-            const kData = kltnMap[maSo] || {};
+            const sEmail = (r[1] || '').toLowerCase().trim();
+            const hd     = hdMap[sEmail] || {};
+            const truongHDName = hd.truongHD || '';
             return {
-              studentEmail      : r[0] || '',
-              maSo              : maSo,
+              studentEmail      : r[1] || '',
+              maSo              : r[3] || '',
               studentName       : r[2] || '',
-              truongHD          : r[5] || '',
-              diemHD            : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',','.')))) ? parseFloat(String(r[11]).replace(',','.')) : null,
-              bienBanUrl        : r[17] || '',
-              gvhdDuyetSauBv    : r[21] || '',
-              chuTichDuyetSauBv : r[22] || '',
-              baiChinhSuaUrl    : r[23] || '',
-              bienBanGiaiTrinhUrl: r[24] || '',
-              topic             : kData.topic || '',
-              kltnUrl           : kData.kltnUrl || '',
-              gvhdEmail         : r[4] || '', // dùng tạm — thực ra GVHD lưu ở KLTN
+              topic             : r[5] || '',
+              // Phân quyền: luôn là GVHD (filter ở trên)
+              isGVHD            : true,
+              // Chủ tịch HĐ: so khớp tên GV đăng nhập với tên truongHD trong sheet HĐ
+              isChuTich         : truongHDName.toLowerCase().includes(gvName),
+              truongHD          : truongHDName,
+              // Từ HoiDongKLTN
+              bienBanUrl        : hd.bienBanUrl || '',   // U(20) HoiDongKLTN
+              // Từ DangKyKLTN
+              baiChinhSuaUrl    : r[22] || '',  // W(22) = KLTN sau chỉnh sửa
+              gvhdDuyetSauBv    : r[23] || '',  // X(23) = GVHD duyệt
+              chuTichDuyetSauBv : r[24] || '',  // Y(24) = CTHD duyệt
+              // Biên bản giải trình: cột V(21) trong HoiDongKLTN (nếu có)
+              bienBanGiaiTrinhUrl: r[21] || '', // V(21) DangKyKLTN — giữ nguyên để tương thích
             };
           });
 
-        // Thêm: lấy GVHD từ DangKyKLTN theo maSo
-        const kltnGvhdMap = {};
-        kltnRows.forEach(r => { kltnGvhdMap[r[3]] = r[7] || ''; }); // r[7] = email GVHD
-
-        const enriched = list.map(sv => ({
-          ...sv,
-          isGVHD    : (kltnGvhdMap[sv.maSo] || '').toLowerCase().trim() === email,
-          isChuTich : (sv.truongHD || '').toLowerCase().includes(gvName),
-        }));
-
-        setStudents(enriched);
+        setStudents(list);
       } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
       setLoading(false);
     })();
   }, []);
 
-  // GVHD duyệt chỉnh sửa
-  async function handleGVHDDuyet(sv, isApproved) {
-    if (!window.confirm(`Xác nhận ${isApproved ? 'ĐỒNG Ý' : 'KHÔNG ĐỒNG Ý'} bản chỉnh sửa của sinh viên?`)) return;
+  // GVHD duyệt chỉnh sửa — gọi từ GVHDApproveModal
+  async function handleGVHDDuyet(sv, isApproved, note) {
     setProcessing(sv.studentEmail);
     const status = isApproved ? 'Yes' : 'No';
     try {
-      const res = await apiPost({ action: 'gvhdApprovePostDefense', studentEmail: sv.studentEmail, gvhdDuyetSauBv: status });
+      const res = await apiPost({
+        action: 'gvhdApprovePostDefense',
+        studentEmail: sv.studentEmail,
+        gvhdDuyetSauBv: status,
+        ...(note ? { note } : {})
+      });
       if (res.success) {
-        toast.show(`GVHD đã ${isApproved ? 'đồng ý' : 'từ chối'} bản chỉnh sửa!`, isApproved ? 'success' : 'warn');
+        toast.show(`GVHD đã ${isApproved ? 'đồng ý' : 'không đồng ý'} bản chỉnh sửa!`, isApproved ? 'success' : 'warn');
         setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, gvhdDuyetSauBv: status} : s));
       } else toast.show(res.message || 'Lỗi cập nhật', 'error');
     } catch(e) { toast.show('Lỗi kết nối', 'error'); }
     setProcessing(null);
+    setApproveTarget(null);
   }
 
-  // Chủ tịch HĐ duyệt chỉnh sửa
+  // Chủ tịch HĐ duyệt chỉnh sửa — chỉ hiện khi GVHD đã đồng ý
   async function handleChuTichDuyet(sv, isApproved) {
-    if (sv.gvhdDuyetSauBv !== 'Yes') {
-      toast.show('GVHD phải đồng ý trước khi Chủ tịch duyệt!', 'warn');
-      return;
-    }
-    if (!window.confirm(`Xác nhận ${isApproved ? 'ĐỒNG Ý' : 'TỪ CHỐI'} bản chỉnh sửa?`)) return;
+    if (!sv.isChuTich) { toast.show('Bạn không có quyền Chủ tịch HĐ cho sinh viên này!', 'error'); return; }
+    if (sv.gvhdDuyetSauBv !== 'Yes') { toast.show('GVHD phải đồng ý trước khi Chủ tịch duyệt!', 'warn'); return; }
     setProcessing(sv.studentEmail);
     const status = isApproved ? 'Yes' : 'No';
     try {
@@ -3557,6 +3651,13 @@ function TabSauBaoVe({toast}) {
       {viewerFile && (
         <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} onClose={() => setViewerFile(null)} />
       )}
+      {approveTarget && (
+        <GVHDApproveModal
+          student={approveTarget}
+          onConfirm={handleGVHDDuyet}
+          onClose={() => setApproveTarget(null)}
+        />
+      )}
 
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
@@ -3575,7 +3676,7 @@ function TabSauBaoVe({toast}) {
         <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
           <span className="material-symbols-outlined text-7xl opacity-10">task_alt</span>
           <p className="text-base font-bold text-on-surface-variant">Chưa có sinh viên cần duyệt sau bảo vệ</p>
-          <p className="text-sm text-on-surface-variant/60 text-center max-w-xs">Sinh viên sẽ xuất hiện ở đây sau khi hội đồng đã hoàn thành bảo vệ</p>
+          <p className="text-sm text-on-surface-variant/60 text-center max-w-xs">Sinh viên hướng dẫn sẽ xuất hiện ở đây sau khi hội đồng đã hoàn thành bảo vệ</p>
         </div>
       ) : (
         <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden border border-outline-variant/10">
@@ -3599,6 +3700,7 @@ function TabSauBaoVe({toast}) {
                   const gvhdNo = sv.gvhdDuyetSauBv === 'No';
                   const ctOk   = sv.chuTichDuyetSauBv === 'Yes';
                   const ctNo   = sv.chuTichDuyetSauBv === 'No';
+                  const hasBaiChinhSua = !!sv.baiChinhSuaUrl;
 
                   let overallStatus;
                   if (ctOk) overallStatus = { label: 'Hoàn thành', color: 'bg-[#00593c] text-white', icon: 'verified' };
@@ -3618,7 +3720,7 @@ function TabSauBaoVe({toast}) {
                             <p className="text-xs text-on-surface-variant">{sv.maSo}</p>
                             <div className="flex gap-1 mt-1 flex-wrap">
                               {sv.isGVHD    && <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-primary text-white">GVHD</span>}
-                              {sv.isChuTich && <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container">Chủ tịch</span>}
+                              {sv.isChuTich && <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container">Chủ tịch HĐ</span>}
                             </div>
                             <p className="text-xs font-medium text-on-surface-variant mt-1 max-w-[220px] line-clamp-2">{sv.topic || '--'}</p>
                           </div>
@@ -3664,7 +3766,7 @@ function TabSauBaoVe({toast}) {
                         ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa có</span>)}
                       </td>
 
-                      {/* GVHD duyệt */}
+                      {/* ── CỘT GVHD DUYỆT (X) ── chỉ GVHD mới thao tác được */}
                       <td className="px-4 py-5 text-center align-middle">
                         {gvhdOk ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-[#00593c] px-3 py-1.5 rounded-full">
@@ -3676,25 +3778,24 @@ function TabSauBaoVe({toast}) {
                             <span className="material-symbols-outlined text-[13px]">cancel</span>
                             Không đồng ý
                           </span>
-                        ) : sv.isGVHD ? (
-                          <div className="flex flex-col items-center gap-1.5">
-                            <button onClick={() => handleGVHDDuyet(sv, true)} disabled={isProc}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-[#00593c] text-white text-[10px] font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
-                              {isProc ? <span className="material-symbols-outlined anim-spin text-[12px]">refresh</span> : <span className="material-symbols-outlined text-[12px]">check</span>}
-                              Đồng ý
-                            </button>
-                            <button onClick={() => handleGVHDDuyet(sv, false)} disabled={isProc}
-                              className="flex items-center gap-1 px-3 py-1.5 bg-error text-white text-[10px] font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
-                              <span className="material-symbols-outlined text-[12px]">close</span>
-                              Không
-                            </button>
-                          </div>
+                        ) : sv.isGVHD && hasBaiChinhSua ? (
+                          // GVHD và SV đã nộp bài → hiện nút mở modal
+                          <button onClick={() => setApproveTarget(sv)} disabled={isProc}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm">
+                            {isProc
+                              ? <span className="material-symbols-outlined anim-spin text-[12px]">refresh</span>
+                              : <span className="material-symbols-outlined text-[12px]">how_to_reg</span>}
+                            Xét duyệt
+                          </button>
+                        ) : sv.isGVHD && !hasBaiChinhSua ? (
+                          <span className="text-[10px] text-on-surface-variant italic">Chờ SV nộp bài</span>
                         ) : (
-                          <span className="text-[10px] text-on-surface-variant italic">Chờ GVHD</span>
+                          // Không phải GVHD → ô bị vô hiệu hóa (chỉ hiện trạng thái)
+                          <span className="text-[10px] text-on-surface-variant/40 italic">—</span>
                         )}
                       </td>
 
-                      {/* Chủ tịch HĐ duyệt */}
+                      {/* ── CỘT CTHD DUYỆT (Y) ── chỉ Chủ tịch HĐ mới thao tác, phải sau khi GVHD ok */}
                       <td className="px-4 py-5 text-center align-middle">
                         {ctOk ? (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-primary px-3 py-1.5 rounded-full">
@@ -3707,8 +3808,13 @@ function TabSauBaoVe({toast}) {
                             Từ chối
                           </span>
                         ) : !gvhdOk ? (
-                          <span className="text-[10px] text-on-surface-variant/60 italic">Chờ GVHD duyệt trước</span>
+                          // GVHD chưa duyệt → ô CTHD bị vô hiệu hóa với tooltip
+                          <span className="inline-flex items-center gap-1 text-[10px] text-on-surface-variant/40 italic px-2 py-1 rounded-lg bg-surface-container-high/50" title="GVHD cần duyệt trước">
+                            <span className="material-symbols-outlined text-[12px]">lock</span>
+                            Chờ GVHD
+                          </span>
                         ) : sv.isChuTich ? (
+                          // Chủ tịch HĐ và GVHD đã ok → hiện nút duyệt/từ chối
                           <div className="flex flex-col items-center gap-1.5">
                             <button onClick={() => handleChuTichDuyet(sv, true)} disabled={isProc}
                               className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm">
@@ -3722,7 +3828,8 @@ function TabSauBaoVe({toast}) {
                             </button>
                           </div>
                         ) : (
-                          <span className="text-[10px] text-on-surface-variant italic">Chờ CT duyệt</span>
+                          // Không phải CT HĐ → ô bị vô hiệu hóa
+                          <span className="text-[10px] text-on-surface-variant/40 italic">—</span>
                         )}
                       </td>
 
@@ -3740,7 +3847,7 @@ function TabSauBaoVe({toast}) {
             </table>
           </div>
           <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant/10">
-            <p className="text-xs text-on-surface-variant font-medium">Đang hiển thị {filtered.length} sinh viên</p>
+            <p className="text-xs text-on-surface-variant font-medium">Đang hiển thị {filtered.length} sinh viên hướng dẫn</p>
           </div>
         </div>
       )}
