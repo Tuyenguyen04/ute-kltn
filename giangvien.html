@@ -2530,13 +2530,14 @@ function TabHoiDong({toast}) {
         });
 
         const email = SESSION.email.toLowerCase().trim();
+        const gvName = SESSION.name.toLowerCase().trim();
         const hdList = hdRows
           .filter(r => (
-            (r[4]||'').toLowerCase().trim() === email || 
-            (r[5]||'').toLowerCase().includes(email)  || 
-            (r[6]||'').toLowerCase().includes(email)  || 
-            (r[7]||'').toLowerCase().includes(email)  || 
-            (r[8]||'').toLowerCase().includes(email)     
+            (r[4]||'').toLowerCase().trim() === email || // Cột Email Phản biện
+            (r[5]||'').toLowerCase().includes(gvName) || // Cột Tên Chủ tịch
+            (r[6]||'').toLowerCase().includes(gvName) || // Cột Tên TV1
+            (r[7]||'').toLowerCase().includes(gvName) || // Cột Tên TV2
+            (r[8]||'').toLowerCase().includes(gvName)    // Cột Tên Thư ký
           ))
           .map(r => {
             const maSo = r[1] || '';
@@ -2579,26 +2580,32 @@ phongBaoVe   : r[14] || '',
     s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
   );
 
-  function getRoleInfo(sv) {
+function getRoleInfo(sv) {
     const email = SESSION.email.toLowerCase().trim();
+    const gvName = SESSION.name.toLowerCase().trim(); // Lấy tên GV đang đăng nhập
+    
     let badges = [];
     let isCouncilMember = false;
     
+    // Nếu email khớp với Email Phản biện
     if ((sv.gvPhanBienEmail||'').toLowerCase().trim() === email) {
         badges.push({ label:'Phản biện', color:'bg-secondary-container text-on-secondary-container' });
     }
-    if ((sv.truongHD||'').toLowerCase().includes(email)) {
+    
+    // So sánh TÊN của GV với TÊN trong các chức danh Hội đồng
+    if ((sv.truongHD||'').toLowerCase().includes(gvName)) {
         badges.push({ label:'Chủ tịch', color:'bg-primary text-white' });
         isCouncilMember = true;
     }
-    if ((sv.thuKy||'').toLowerCase().includes(email)) {
+    if ((sv.thuKy||'').toLowerCase().includes(gvName)) {
         badges.push({ label:'Thư ký', color:'bg-tertiary-fixed text-on-tertiary-fixed' });
         isCouncilMember = true;
     }
-    if ((sv.thanhVien1||'').toLowerCase().includes(email) || (sv.thanhVien2||'').toLowerCase().includes(email)) {
+    if ((sv.thanhVien1||'').toLowerCase().includes(gvName) || (sv.thanhVien2||'').toLowerCase().includes(gvName)) {
         badges.push({ label:'Ủy viên', color:'bg-surface-container-highest text-on-surface-variant' });
         isCouncilMember = true;
     }
+    
     return { badges, isCouncilMember };
   }
 
