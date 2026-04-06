@@ -2785,17 +2785,66 @@ function TabThongKe({toast}) {
   async function loadData() {
     setLoading(true);
     try {
-      const res = await apiPost({ action: 'getStatistics' });
-      if (res.success) setData(res.data);
-      else toast.show('Lỗi tải dữ liệu thống kê', 'error');
-    } catch(e) { toast.show('Lỗi mạng', 'error'); }
+      // Đọc trực tiếp từ sheet để lấy đúng dữ liệu realtime
+      const [kltnRows, hdRows] = await Promise.all([
+        fetchSheetCSV(SHEET_KLTN_TAB),
+        fetchSheetCSV(SHEET_HOIDONG_TAB)
+      ]);
+
+      // Map HoiDongKLTN theo studentEmail
+      const hdMap = {};
+      hdRows.forEach(r => {
+        const sEmail = (r[0] || '').toLowerCase().trim();
+        hdMap[sEmail] = {
+          diemPB            : r[10] !== '' && !isNaN(parseFloat(String(r[10]).replace(',','.'))) ? parseFloat(String(r[10]).replace(',','.')) : '',
+          diemHD            : r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',','.'))) ? parseFloat(String(r[11]).replace(',','.')) : '',
+        };
+      });
+
+      // Lấy tất cả SV KLTN đã có GVHD duyệt đề tài (approved hoặc step >= 1)
+      const merged = kltnRows
+        .filter(r => r[11] === 'approved' || parseInt(r[14]) >= 1)
+        .map(r => {
+          const sEmail = (r[1] || '').toLowerCase().trim();
+          const hd = hdMap[sEmail] || {};
+          return {
+            name             : r[2] || '',
+            maSo             : r[3] || '',
+            term             : r[9] || '',
+            gvhd             : r[6] || '', // tên GVHD ở cột G
+            gradeGVHD        : r[12] !== '' && !isNaN(parseFloat(String(r[12]).replace(',','.'))) ? parseFloat(String(r[12]).replace(',','.')) : '',
+            diemPB           : hd.diemPB,
+            diemHD           : hd.diemHD,
+            // X(23) và Y(24) đọc từ DangKyKLTN
+            gvhdDuyetSauBv   : r[23] || '',  // X(23) = GVHD duyệt
+            chuTichDuyetSauBv: r[24] || '',  // Y(24) = CTHD duyệt
+          };
+        });
+
+      setData(merged);
+    } catch(e) { toast.show('Lỗi tải dữ liệu thống kê', 'error'); }
     setLoading(false);
   }
 
-  const filtered = data.filter(s => 
-    (s.name || '').toLowerCase().includes(search.toLowerCase()) || 
+  const filtered = data.filter(s =>
+    (s.name || '').toLowerCase().includes(search.toLowerCase()) ||
     (s.maSo || '').includes(search)
   );
+
+  // Helper render ô duyệt: Yes = tick xanh, No = X đỏ, '' = chưa xác nhận
+  function renderDuyetCell(val) {
+    if (val === 'Yes') return (
+      <span className="inline-flex items-center gap-1 text-[#00593c]">
+        <span className="material-symbols-outlined text-xl" style={{fontVariationSettings:"'FILL' 1"}}>check_circle</span>
+      </span>
+    );
+    if (val === 'No') return (
+      <span className="inline-flex items-center gap-1 text-error">
+        <span className="material-symbols-outlined text-xl" style={{fontVariationSettings:"'FILL' 1"}}>cancel</span>
+      </span>
+    );
+    return <span className="text-[10px] text-on-surface-variant/50 italic">Chưa xác nhận</span>;
+  }
 
   return (
     <div className="space-y-6 anim-fade">
@@ -2804,11 +2853,16 @@ function TabThongKe({toast}) {
           <h2 className="text-3xl font-black text-on-surface tracking-tight">Thống kê KLTN</h2>
           <p className="text-on-surface-variant mt-1 text-sm">Bảng điểm và trạng thái duyệt sửa chữa sau bảo vệ của toàn bộ sinh viên</p>
         </div>
-        <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
-            placeholder="Tìm tên hoặc MSSV..."/>
+        <div className="flex items-center gap-3">
+          <button onClick={loadData} className="p-2 hover:bg-surface-container rounded-full transition-colors" title="Làm mới">
+            <span className={`material-symbols-outlined text-on-surface-variant ${loading?'anim-spin':''}`}>refresh</span>
+          </button>
+          <div className="relative w-full md:w-80">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
+              placeholder="Tìm tên hoặc MSSV..."/>
+          </div>
         </div>
       </div>
 
@@ -2837,20 +2891,14 @@ function TabThongKe({toast}) {
                       <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.term || 'Kỳ này'}</p>
                     </td>
                     <td className="px-4 py-4 text-xs font-medium text-on-surface-variant">{sv.gvhd || '--'}</td>
-                    
                     <td className="px-4 py-4 text-center font-bold text-primary">{sv.gradeGVHD !== '' ? Number(sv.gradeGVHD).toFixed(1) : '--'}</td>
-                    <td className="px-4 py-4 text-center font-bold text-secondary">{sv.diemPB !== undefined && sv.diemPB !== '' ? Number(sv.diemPB).toFixed(1) : '--'}</td>
-                    <td className="px-4 py-4 text-center font-black text-tertiary-fixed-dim">{sv.diemHD !== undefined && sv.diemHD !== '' ? Number(sv.diemHD).toFixed(1) : '--'}</td>
-                    
+                    <td className="px-4 py-4 text-center font-bold text-secondary">{sv.diemPB !== '' && sv.diemPB !== undefined ? Number(sv.diemPB).toFixed(1) : '--'}</td>
+                    <td className="px-4 py-4 text-center font-black text-tertiary-fixed-dim">{sv.diemHD !== '' && sv.diemHD !== undefined ? Number(sv.diemHD).toFixed(1) : '--'}</td>
                     <td className="px-4 py-4 text-center border-l border-outline-variant/20">
-                      {sv.duyetGVHD === 'approved' ? <span className="material-symbols-outlined text-tertiary-fixed-dim">check_circle</span> : 
-                       sv.duyetGVHD === 'rejected' ? <span className="material-symbols-outlined text-error">cancel</span> : 
-                       <span className="text-[10px] text-on-surface-variant/50">Chưa xác nhận</span>}
+                      {renderDuyetCell(sv.gvhdDuyetSauBv)}
                     </td>
                     <td className="px-4 py-4 text-center">
-                      {sv.duyetCTHD === 'approved' ? <span className="material-symbols-outlined text-tertiary-fixed-dim">check_circle</span> : 
-                       sv.duyetCTHD === 'rejected' ? <span className="material-symbols-outlined text-error">cancel</span> : 
-                       <span className="text-[10px] text-on-surface-variant/50">Chưa xác nhận</span>}
+                      {renderDuyetCell(sv.chuTichDuyetSauBv)}
                     </td>
                   </tr>
                 ))}
