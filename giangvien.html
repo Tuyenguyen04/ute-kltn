@@ -2745,18 +2745,25 @@ function getRoleInfo(sv) {
                           <td className="px-4 py-5 align-middle">
                             <div className="flex flex-col items-center gap-3">
                               
-                              {/* Tác vụ chung: Chấm điểm HĐ */}
-                              {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
-                                <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
-                                  <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
-                                  <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm điểm HĐ</span>
-                                </div>
-                              ) : (
-                                <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-[11px] shadow-sm">
-                                  {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span> : <span className="material-symbols-outlined text-[14px]">edit_square</span>} Nhập điểm cá nhân
-                                </button>
-                              )}
+{/* Tác vụ chung: Chấm điểm HĐ kèm Icon Chat bên cạnh */}
+<div className="flex items-center justify-center gap-4">
+  {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
+    <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
+      <span className="text-2xl font-black text-primary">{Number(sv.diemHD).toFixed(1)}</span>
+      <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">✓ Đã lưu</span>
+    </div>
+  ) : (
+    <button onClick={() => setGradingHDTarget(sv)} disabled={hdProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-1.5 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-[11px] shadow-sm">
+      {hdProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[14px]">refresh</span> : <span className="material-symbols-outlined text-[14px]">edit_square</span>} Nhập điểm
+    </button>
+  )}
 
+  {/* Icon Nhận Xét (Bấm vào mở Pop-up cũ) */}
+  <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
+    <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+    {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
+  </button>
+</div>
                               {/* Tác vụ của Thư ký */}
                               {(sv.thuKy||'').toLowerCase().includes(SESSION.email.toLowerCase()) && (
                                 <div className="flex gap-2 w-full justify-center border-t border-outline-variant/20 pt-2 mt-1">
