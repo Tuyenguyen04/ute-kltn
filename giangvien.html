@@ -2574,7 +2574,9 @@ function TabHoiDong({toast}) {
       const res = await apiPost({ action: 'updateCouncilMinutes', studentEmail: sv.studentEmail, nhanXetHD: nhanXetHD, bienBanUrl: driveUrl });
       if (res.success) {
         toast.show('Đã cập nhật Biên bản thành công!', 'success');
-        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXetHD, bienBanUrl: driveUrl} : s));
+       setStudents(prev => prev.map(s => s.maSo === sv.maSo 
+          ? {...s, nhanXetHD, bienBanUrl: driveUrl, bienBanKLTNUrl: driveUrl} 
+          : s));
         setBienBanTarget(null);
       } else toast.show(res.message || 'Lỗi cập nhật', 'error');
     } catch(e) { toast.show(e.message || 'Lỗi kết nối', 'error'); }
@@ -2656,6 +2658,7 @@ function TabHoiDong({toast}) {
              kltnUrl: r[16] || '',
              daoVanUrl: r[17] || '',
              nhanXet: r[19] || ''
+             bienBanKLTNUrl: r[20] || '',
            };
         });
 
