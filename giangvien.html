@@ -1219,17 +1219,19 @@ function KLTNGradingModal({ student, onSave, onClose, processing }) {
 }
 // ── MODAL NHẬN XÉT & CÂU HỎI KLTN (CẬP NHẬT THEO FORM ẢNH 1) ─────────────────
 function FeedbackModal({ student, onSave, onClose, processing }) {
-  // Logic tách dữ liệu cũ (nếu có) để điền lại vào form khi mở lên
+ // Chỉ lấy phần của GV Phản biện
   let initYeuCau = '';
   let initCauHoi = '';
-  
-  if (student.nhanXet) {
-    if (student.nhanXet.includes('[CÂU HỎI]')) {
-      const parts = student.nhanXet.split('[CÂU HỎI]');
+  const pbMatch = (student.nhanXet || '').match(/\[GV PHẢN BIỆN\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[HỘI ĐỒNG\]|$)/);
+  const pbText = pbMatch ? pbMatch[1] : (student.nhanXet?.includes('[CÂU HỎI]') && !student.nhanXet.includes('[GV PHẢN BIỆN]') ? student.nhanXet : '');
+
+  if (pbText) {
+    if (pbText.includes('[CÂU HỎI]')) {
+      const parts = pbText.split('[CÂU HỎI]');
       initYeuCau = parts[0].replace('[YÊU CẦU CHỈNH SỬA]\n', '').trim();
       initCauHoi = parts[1] ? parts[1].trim() : '';
     } else {
-      initYeuCau = student.nhanXet; // Fallback nếu là nhận xét kiểu cũ
+      initYeuCau = pbText;
     }
   }
 
@@ -1237,11 +1239,22 @@ function FeedbackModal({ student, onSave, onClose, processing }) {
   const [cauHoi, setCauHoi] = React.useState(initCauHoi);
 
   const handleSave = () => {
-    // Gộp 2 trường lại thành 1 chuỗi để lưu vào 1 ô trên Google Sheet
-    const combinedText = `[YÊU CẦU CHỈNH SỬA]\n${yeuCau.trim()}\n\n[CÂU HỎI]\n${cauHoi.trim()}`;
-    onSave(combinedText);
-  };
+    const pbCombined = `[GV PHẢN BIỆN]\n[YÊU CẦU CHỈNH SỬA]\n${yeuCau.trim()}\n\n[CÂU HỎI]\n${cauHoi.trim()}`;
+    let full = student.nhanXet || '';
+    
+    // Dọn dẹp dữ liệu cũ bị sai format (nếu có)
+    if (!full.includes('[GV PHẢN BIỆN]') && full.includes('[CÂU HỎI]')) {
+       full = full.replace(/\[YÊU CẦU CHỈNH SỬA\][\s\S]*?\[CÂU HỎI\][\s\S]*?(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[HỘI ĐỒNG\]|$)/, '');
+    }
 
+    // Nối hoặc thay thế đúng khối của Phản Biện
+    if (full.includes('[GV PHẢN BIỆN]')) {
+       full = full.replace(/\[GV PHẢN BIỆN\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[HỘI ĐỒNG\]|$)/, pbCombined);
+    } else {
+       full = full ? `${full.trim()}\n\n${pbCombined}` : pbCombined;
+    }
+    onSave(full);
+  };
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
       <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[95vh]">
@@ -1328,7 +1341,24 @@ function FeedbackModal({ student, onSave, onClose, processing }) {
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
 // ── MODAL NHẬN XÉT CỦA GVHD (CHỈ DÀNH CHO TAB HƯỚNG DẪN KLTN) ─────────────────
 function GVHDFeedbackModal({ student, onSave, onClose, processing }) {
-  const [text, setText] = React.useState(student.nhanXet || '');
+const getOld = () => {
+    const m = (student.nhanXet || '').match(/\[GV HƯỚNG DẪN\]\n([\s\S]*?)(?=\n\s*\[GV PHẢN BIỆN\]|\n\s*\[HỘI ĐỒNG\]|$)/);
+    // Nếu chưa có format mới, nhưng ô trống hoặc chưa bị chiếm bởi GVPB thì giữ nguyên
+    return m ? m[1] : (student.nhanXet?.includes('[GV PHẢN BIỆN]') || student.nhanXet?.includes('[CÂU HỎI]') ? '' : student.nhanXet || '');
+  };
+  const [text, setText] = React.useState(getOld());
+
+  const handleSave = () => {
+    let full = student.nhanXet || '';
+    const newBlock = `[GV HƯỚNG DẪN]\n${text.trim()}`;
+    // Cập nhật lại chuỗi tổng
+    if (full.includes('[GV HƯỚNG DẪN]')) {
+       full = full.replace(/\[GV HƯỚNG DẪN\]\n([\s\S]*?)(?=\n\s*\[GV PHẢN BIỆN\]|\n\s*\[HỘI ĐỒNG\]|$)/, newBlock);
+    } else {
+       full = full ? `${newBlock}\n\n${full.trim()}` : newBlock; // GVHD thường đưa lên đầu
+    }
+    onSave(full);
+  };
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
@@ -2454,7 +2484,23 @@ function ScoreDetailModal({ student, onClose, onCalculateAndSave, processing }) 
 }
 // ── MODAL NHẬN XÉT CỦA HỘI ĐỒNG (DẠNG 1 Ô TEXT NHƯ GVHD) ───────────────────
 function HoiDongFeedbackModal({ student, onSave, onClose, processing }) {
-  const [text, setText] = React.useState(student.nhanXet || '');
+const getOld = () => {
+    const m = (student.nhanXet || '').match(/\[HỘI ĐỒNG\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[GV PHẢN BIỆN\]|$)/);
+    return m ? m[1] : '';
+  };
+  const [text, setText] = React.useState(getOld());
+
+  const handleSave = () => {
+    let full = student.nhanXet || '';
+    const newBlock = `[HỘI ĐỒNG]\n${text.trim()}`;
+    // Cập nhật lại chuỗi tổng
+    if (full.includes('[HỘI ĐỒNG]')) {
+       full = full.replace(/\[HỘI ĐỒNG\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[GV PHẢN BIỆN\]|$)/, newBlock);
+    } else {
+       full = full ? `${full.trim()}\n\n${newBlock}` : newBlock;
+    }
+    onSave(full);
+  };
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
@@ -2490,7 +2536,7 @@ function HoiDongFeedbackModal({ student, onSave, onClose, processing }) {
           <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
             Hủy
           </button>
-          <button onClick={() => onSave(text)} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
+          <button onClick={handleSave} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
             {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
             Lưu nhận xét
           </button>
