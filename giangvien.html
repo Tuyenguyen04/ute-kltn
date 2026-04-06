@@ -2462,6 +2462,15 @@ function ScoreDetailModal({ student, onClose, onCalculateAndSave, processing }) 
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Phản biện</span><span className="font-black text-secondary">{student.diemPB ?? '--'}</span></div>
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Chủ tịch Hội đồng</span><span className="font-black text-tertiary">{student.diemCT ?? '--'}</span></div>
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Ủy viên Hội đồng</span><span className="font-black text-on-surface">{student.diemTV ?? '--'}</span></div>
+          {(student.bienBanKLTNUrl || student.bienBanUrl) && (
+  <div className="flex justify-between items-center p-3 bg-secondary-container/20 rounded-xl">
+    <span className="text-sm font-semibold text-on-surface-variant">Biên bản Hội đồng</span>
+    <a href={student.bienBanKLTNUrl || student.bienBanUrl} target="_blank" rel="noreferrer"
+      className="flex items-center gap-1 text-xs font-bold text-primary hover:underline">
+      <span className="material-symbols-outlined text-[14px]">open_in_new</span> Xem file
+    </a>
+  </div>
+)}
         </div>
         
         <div className="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center px-3 mb-6">
@@ -2868,12 +2877,12 @@ function getRoleInfo(sv) {
                                   <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span>
                                 </button>
                               )}
-              {sv.bienBanUrl ? (
-                                <button onClick={() => setViewerFile({ url: sv.bienBanUrl, studentName: sv.studentName, fileName: 'Biên Bản Hội Đồng' })} title="Xem Biên bản HĐ" className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary-container hover:bg-secondary transition-colors text-on-secondary-container hover:text-white">
-                                  <span className="material-symbols-outlined fill-icon text-[20px]">assignment</span>
-                                </button>
-                              ) : (
-                                /* NẾU LÀ THƯ KÝ -> HIỂN THỊ ICON NỘP FILE */
+              {(sv.bienBanKLTNUrl || sv.bienBanUrl) ? (
+  <button onClick={() => setViewerFile({ url: sv.bienBanKLTNUrl || sv.bienBanUrl, studentName: sv.studentName, fileName: 'Biên Bản Hội Đồng' })} title="Xem Biên bản HĐ" className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary-container hover:bg-secondary transition-colors text-on-secondary-container hover:text-white">
+    <span className="material-symbols-outlined fill-icon text-[20px]">assignment</span>
+  </button>
+) : (
+  /* NẾU LÀ THƯ KÝ -> HIỂN THỊ ICON NỘP FILE */
                                 (sv.thuKy || '').toLowerCase().includes(SESSION.name.toLowerCase().trim()) ? (
                                   <button onClick={() => setBienBanTarget(sv)} title="Nộp / Lập Biên bản HĐ" className="inline-flex flex-col items-center gap-0.5 group mx-auto">
                                     <span className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-secondary text-secondary hover:bg-secondary-container/30 transition-colors cursor-pointer">
