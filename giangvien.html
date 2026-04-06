@@ -2430,6 +2430,53 @@ function ScoreDetailModal({ student, onClose }) {
     </div>
   );
 }
+// ── MODAL NHẬN XÉT CỦA HỘI ĐỒNG (DẠNG 1 Ô TEXT NHƯ GVHD) ───────────────────
+function HoiDongFeedbackModal({ student, onSave, onClose, processing }) {
+  const [text, setText] = React.useState(student.nhanXet || '');
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-xl rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[90vh]">
+        <div className="px-6 py-5 border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-low rounded-t-[2rem]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">chat_bubble</span>
+            </div>
+            <div>
+              <h2 className="font-headline font-extrabold text-lg text-on-surface leading-tight">Nhận xét của Hội đồng</h2>
+              <p className="text-xs text-on-surface-variant">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-surface-container transition-colors">
+            <span className="material-symbols-outlined text-on-surface-variant">close</span>
+          </button>
+        </div>
+        
+        <div className="p-6 overflow-y-auto bg-surface-container-lowest">
+          <label className="text-sm font-bold text-on-surface block mb-3">
+            Đánh giá / Nhận xét quá trình làm KLTN của sinh viên:
+          </label>
+          <textarea
+            value={text} onChange={e => setText(e.target.value)}
+            rows={6} autoFocus
+            placeholder="Nhập nhận xét của Hội đồng..."
+            className="w-full bg-white border border-outline-variant/50 rounded-xl p-4 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm resize-none shadow-inner"
+          />
+        </div>
+
+        <div className="p-5 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-low rounded-b-[2rem]">
+          <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
+            Hủy
+          </button>
+          <button onClick={() => onSave(text)} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
+            {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
+            Lưu nhận xét
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 function TabHoiDong({toast}) {
   const [students, setStudents] = React.useState([]);
   const [loading,  setLoading]  = React.useState(true);
@@ -2626,8 +2673,8 @@ function getRoleInfo(sv) {
     <div className="space-y-6 anim-fade">
       {viewerFile && <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} isPlagiarism={viewerFile.isPlagiarism} isXNTT={viewerFile.isXNTT} onClose={() => setViewerFile(null)} />}
       
-      {feedbackTarget && (
-        <FeedbackModal student={feedbackTarget} processing={hdProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)} />
+{feedbackTarget && (
+        <HoiDongFeedbackModal student={feedbackTarget} processing={hdProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)} />
       )}
       
 {gradingHDTarget && (
