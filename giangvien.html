@@ -3675,13 +3675,16 @@ function TabSauBaoVe({toast}) {
         const kltnMap = {};
         kltnRows.forEach(r => {
           const sEmail = (r[1] || '').toLowerCase().trim();
-          kltnMap[sEmail] = {
+          const sMaSo  = (r[3] || '').trim();
+          const kData = {
             bienBanUrl          : r[20] || '',  // Cột U — Biên bản HĐ
             bienBanGiaiTrinhUrl : r[21] || '',  // Cột V — Biên bản giải trình
             baiChinhSuaUrl      : r[22] || '',  // Cột W — KLTN sau chỉnh sửa
             gvhdDuyetSauBv      : r[23] || '',  // Cột X — GVHD duyệt
             chuTichDuyetSauBv   : r[24] || '',  // Cột Y — CTHD duyệt
           };
+          if (sEmail) kltnMap[sEmail] = kData;
+          if (sMaSo)  kltnMap[sMaSo]  = kData;  // key phụ bằng maSo để tra cứu chéo
         });
         // ── Lọc từ DangKyKLTN: SV mà GV là GVHD HOẶC Chủ tịch HĐ ──
         // Hiện ngay khi GV liên quan, không cần chờ SV upload file
@@ -3698,8 +3701,9 @@ function TabSauBaoVe({toast}) {
           })
           .map(r => {
             const sEmail       = (r[1] || '').toLowerCase().trim();
+            const sMaSo        = (r[3] || '').trim();
             const hd           = hdMap[sEmail] || {};
-            const kl           = kltnMap[sEmail] || {};
+            const kl           = kltnMap[sEmail] || kltnMap[sMaSo] || {};
             const truongHDName = hd.truongHD || '';
             const isGVHD       = (r[7] || '').toLowerCase().trim() === email;
             const isChuTich    = truongHDName.toLowerCase().includes(gvName);
@@ -3826,7 +3830,7 @@ function TabSauBaoVe({toast}) {
                   const gvhdNo = sv.gvhdDuyetSauBv === 'No';
                   const ctOk   = sv.chuTichDuyetSauBv === 'Yes';
                   const ctNo   = sv.chuTichDuyetSauBv === 'No';
-                  const hasBaiChinhSua = !!sv.baiChinhSuaUrl;
+                  const hasBaiChinhSua = !!sv.baiChinhSuaUrl || !!sv.bienBanGiaiTrinhUrl;
 
                   let overallStatus;
                   if (ctOk) overallStatus = { label: 'Hoàn thành', color: 'bg-[#00593c] text-white', icon: 'verified' };
