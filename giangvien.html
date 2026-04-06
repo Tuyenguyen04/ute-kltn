@@ -2616,10 +2616,10 @@ const email = SESSION.email.toLowerCase().trim();
               diemCT       : (r[18] !== '') ? parseFloat(String(r[18]).replace(',', '.')) : null,
               diemTK       : (r[19] !== '') ? parseFloat(String(r[19]).replace(',', '.')) : null,
               diemTV       : (r[20] !== '') ? parseFloat(String(r[20]).replace(',', '.')) : null,
-              gvhdDuyetSauBv: r[21] || '',
-              chuTichDuyetSauBv: r[22] || '',
-              baiChinhSuaUrl: r[23] || '',
-              bienBanGiaiTrinhUrl: r[24] || '',
+              bienBanGiaiTrinhUrl: r[21] || '',  // Cột V — Biên bản giải trình
+              baiChinhSuaUrl: r[22] || '',        // Cột W — KLTN sau chỉnh sửa
+              gvhdDuyetSauBv: r[23] || '',        // Cột X — GVHD duyệt
+              chuTichDuyetSauBv: r[24] || '',     // Cột Y — CTHD duyệt
               ...kData
             };
           });
@@ -2823,7 +2823,7 @@ function getRoleInfo(sv) {
                               )}
 
                               {/* Tác vụ của Chủ tịch */}
-                              {(sv.truongHD||'').toLowerCase().includes(SESSION.email.toLowerCase()) && (
+                              {(sv.truongHD||'').toLowerCase().includes(SESSION.name.toLowerCase().trim()) && (
                                 <div className="flex flex-col items-center w-full border-t border-outline-variant/20 pt-2 mt-1">
                                   {sv.gvhdDuyetSauBv !== 'Yes' ? (
                                     <span className="text-[10px] text-on-surface-variant italic">Chờ GVHD duyệt chỉnh sửa...</span>
@@ -3591,8 +3591,7 @@ function TabSauBaoVe({toast}) {
               studentName         : r[2] || '',
               topic               : r[5] || '',
               isGVHD              : true,
-              const gvFullName = SESSION.name.toLowerCase().trim();
-              isChuTich: truongHDName.toLowerCase().trim() === gvFullName,
+              isChuTich           : truongHDName.toLowerCase().includes(gvName),
               truongHD            : truongHDName,
               // Tất cả đọc từ DangKyKLTN qua kltnMap
               bienBanUrl          : kl.bienBanUrl || '',           // Cột U
