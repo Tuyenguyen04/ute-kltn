@@ -1932,6 +1932,7 @@ function TabHoiDong({toast}) {
 
   function getRoleLabel(sv) {
     const email = SESSION.email.toLowerCase().trim();
+    const name  = SESSION.name.toLowerCase().trim();
     if ((sv.gvPhanBienEmail||'').toLowerCase().trim() === email) return { label:'Phản biện', color:'bg-secondary-container text-on-secondary-container' };
     if ((sv.truongHD||'').toLowerCase().includes(email))         return { label:'Trưởng HĐ', color:'bg-primary text-white' };
     if ((sv.thuKy||'').toLowerCase().includes(email))            return { label:'Thư ký',    color:'bg-tertiary-fixed text-on-tertiary-fixed' };
