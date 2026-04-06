@@ -3034,20 +3034,14 @@ function KLTNRevisionPage({dashData,onSuccess,toast}){
         {}
       );
 
-      // Bước 3: Ghi vào sheet SauHoiDong qua GAS
+// Bước 3: Ghi vào DangKyKLTN cột V và W qua action mới
       setProgressLabel('Đang lưu thông tin...');
       setProgress(92);
       const res = await _gasPost({
-        action     : 'sauHDCreate',
-        hoTen      : SESSION.name,
-        emailSV    : SESSION.email,
-        urlGiaiTrinh,
-        urlFinal,
-        emailGVHD  : instr?.email||'',
-        gvhdStatus : '',
-        emailCTHD  : '',
-        cthdStatus : '',
-        diem       : '',
+        action               : 'svSubmitPostDefense',
+        studentEmail         : SESSION.email,
+        bienBanGiaiTrinhUrl  : urlGiaiTrinh,  // Cột V DangKyKLTN
+        baiChinhSuaUrl       : urlFinal,       // Cột W DangKyKLTN
       });
       setProgress(100);
 
