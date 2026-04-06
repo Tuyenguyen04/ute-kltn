@@ -2816,8 +2816,10 @@ function TabThongKe({toast}) {
             diemPB           : hd.diemPB,
             diemHD           : hd.diemHD,
             // X(23) và Y(24) đọc từ DangKyKLTN
-            gvhdDuyetSauBv   : r[23] || '',  // X(23) = GVHD duyệt
-            chuTichDuyetSauBv: r[24] || '',  // Y(24) = CTHD duyệt
+            gvhdDuyetSauBv      : r[23] || '',  // Cột X
+            chuTichDuyetSauBv   : r[24] || '',  // Cột Y
+            bienBanGiaiTrinhUrl : r[21] || '',  // Cột V — Biên bản giải trình ← THÊM
+            baiChinhSuaUrl      : r[22] || '',  // Cột W — KLTN sau chỉnh sửa ← THÊM
           };
         });
 
