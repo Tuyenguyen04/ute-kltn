@@ -2529,15 +2529,17 @@ function TabHoiDong({toast}) {
            };
         });
 
-        const email = SESSION.email.toLowerCase().trim();
+const email = SESSION.email.toLowerCase().trim();
         const gvName = SESSION.name.toLowerCase().trim();
+        
         const hdList = hdRows
           .filter(r => (
-            (r[4]||'').toLowerCase().trim() === email || // Cột Email Phản biện
-            (r[5]||'').toLowerCase().includes(gvName) || // Cột Tên Chủ tịch
-            (r[6]||'').toLowerCase().includes(gvName) || // Cột Tên TV1
-            (r[7]||'').toLowerCase().includes(gvName) || // Cột Tên TV2
-            (r[8]||'').toLowerCase().includes(gvName)    // Cột Tên Thư ký
+            (r[4]||'').toLowerCase().trim() === email || 
+            (r[5]||'').toLowerCase().includes(gvName) || 
+            (r[6]||'').toLowerCase().includes(gvName) || 
+            (r[7]||'').toLowerCase().includes(gvName) || 
+            (r[8]||'').toLowerCase().includes(gvName) || // Cột Ủy viên 3
+            (r[9]||'').toLowerCase().includes(gvName)    // Cột Thư ký (THÊM DÒNG NÀY ĐỂ NHẬN DIỆN THƯ KÝ)
           ))
           .map(r => {
             const maSo = r[1] || '';
@@ -2551,22 +2553,23 @@ function TabHoiDong({toast}) {
               truongHD     : r[5] || '',
               thanhVien1   : r[6] || '',
               thanhVien2   : r[7] || '',
-              thuKy        : r[8] || '',
-              ngayBaoVe    : r[12] || '', 
-              gioBaoVe     : r[13] || '',
-phongBaoVe   : r[14] || '',
-              diemHD       : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',', '.')))) ? parseFloat(String(r[11]).replace(',', '.')) : null,
+              thanhVien3   : r[8] || '', // Ủy viên 3
+              thuKy        : r[9] || '', // ĐÃ SỬA THÀNH r[9] (THƯ KÝ CHUẨN)
               
-              // Các cột mới bổ sung cho tính năng Hội đồng
+              // Sẵn tiện sửa luôn cho đúng thứ tự Phòng, Ngày, Giờ theo Code.gs v3.3
+              phongBaoVe   : r[12] || '', 
+              ngayBaoVe    : r[13] || '', 
+              gioBaoVe     : r[14] || '',
+              
+              diemHD       : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',', '.')))) ? parseFloat(String(r[11]).replace(',', '.')) : null,
               nhanXetPB    : r[15] || kData.nhanXet || '', 
               nhanXetHD    : r[16] || '',
               bienBanUrl   : r[17] || '',
               diemCT       : (r[18] !== '') ? parseFloat(String(r[18]).replace(',', '.')) : null,
               diemTK       : (r[19] !== '') ? parseFloat(String(r[19]).replace(',', '.')) : null,
               diemTV       : (r[20] !== '') ? parseFloat(String(r[20]).replace(',', '.')) : null,
-              gvhdDuyetSauBv: r[21] || '', // Trạng thái GVHD duyệt (Yes/No)
-              chuTichDuyetSauBv: r[22] || '', // Trạng thái Chủ tịch duyệt (Yes/No)
-
+              gvhdDuyetSauBv: r[21] || '',
+              chuTichDuyetSauBv: r[22] || '',
               ...kData
             };
           });
@@ -3100,7 +3103,15 @@ function TabPhanCongHoiDong({toast}) {
       let hdMap = {};
       try {
         const hdRows = await fetchSheetCSV(SHEET_HOIDONG_TAB);
-        hdRows.forEach(r => { hdMap[r[0]] = { truongHD: r[5], thanhVien1: r[6], thanhVien2: r[7], thuKy: r[8] }; });
+hdRows.forEach(r => { 
+          hdMap[r[0]] = { 
+            truongHD: r[5], 
+            thanhVien1: r[6], 
+            thanhVien2: r[7], 
+            thanhVien3: r[8], 
+            thuKy: r[9] // Sửa thành r[9]
+          }; 
+        });
       } catch(e) {}
 
       const formattedData = kltnList.map(sv => ({
