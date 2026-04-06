@@ -258,10 +258,11 @@ function AvatarMenu(){
 // ── SIDEBAR ───────────────────────────────────────────────────────────────────
 function Sidebar({tab, setTab, logout, role}){
   const baseNav = [
-    {id:'dashboard',  icon:'dashboard',        label:'Thông tin chung'},
-    {id:'sinhvien',   icon:'group',             label:'Sinh viên hướng dẫn'},
-    {id:'phanbien',   icon:'rate_review',       label:'Sinh viên phản biện'},
-    {id:'hoidong',    icon:'gavel',             label:'Hội đồng'},
+    {id:'dashboard',   icon:'dashboard',        label:'Thông tin chung'},
+    {id:'sinhvien',    icon:'group',            label:'Sinh viên hướng dẫn'},
+    {id:'phanbien',    icon:'rate_review',      label:'Sinh viên phản biện'},
+    {id:'hoidong',     icon:'gavel',            label:'Hội đồng'},
+    {id:'sau_bao_ve',  icon:'task_alt',         label:'Sau bảo vệ'},
   ];
   
   // 3 Menu dành riêng cho Trưởng bộ môn
@@ -2570,6 +2571,8 @@ const email = SESSION.email.toLowerCase().trim();
               diemTV       : (r[20] !== '') ? parseFloat(String(r[20]).replace(',', '.')) : null,
               gvhdDuyetSauBv: r[21] || '',
               chuTichDuyetSauBv: r[22] || '',
+              baiChinhSuaUrl: r[23] || '',
+              bienBanGiaiTrinhUrl: r[24] || '',
               ...kData
             };
           });
@@ -3381,7 +3384,322 @@ hdRows.forEach(r => {
     </div>
   );
 }
-// ── TAB 7: THỐNG KÊ (TBM) ────────────────────────────────────────────────────
+// ── TAB: SAU BẢO VỆ ──────────────────────────────────────────────────────────
+function TabSauBaoVe({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [loading,  setLoading]  = React.useState(true);
+  const [search,   setSearch]   = React.useState('');
+  const [processing, setProcessing] = React.useState(null);
+  const [viewerFile, setViewerFile] = React.useState(null);
+
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const [hdRows, kltnRows] = await Promise.all([
+          fetchSheetCSV(SHEET_HOIDONG_TAB),
+          fetchSheetCSV(SHEET_KLTN_TAB)
+        ]);
+
+        const kltnMap = {};
+        kltnRows.forEach(r => {
+          kltnMap[r[3]] = { topic: r[5] || '', kltnUrl: r[16] || '' };
+        });
+
+        const email = SESSION.email.toLowerCase().trim();
+        const gvName = SESSION.name.toLowerCase().trim();
+
+        const list = hdRows
+          .filter(r => {
+            // Chỉ hiện SV đã có điểm HĐ (đã bảo vệ xong) hoặc có biên bản
+            const coKetQua = r[11] !== '' || r[17] !== '';
+            if (!coKetQua) return false;
+            // Hiện nếu là GVHD (email col r[4]... không — GVHD ở DangKyKLTN)
+            // Hoặc là Chủ tịch HĐ (r[5] chứa tên)
+            return (r[4]||'').toLowerCase().trim() === email  // PB email — không phải GVHD
+              || (r[5]||'').toLowerCase().includes(gvName)    // Chủ tịch
+              || (r[6]||'').toLowerCase().includes(gvName)    // TV1
+              || (r[7]||'').toLowerCase().includes(gvName)    // TV2
+              || (r[8]||'').toLowerCase().includes(gvName)    // TV3
+              || (r[9]||'').toLowerCase().includes(gvName);   // Thư ký
+          })
+          .map(r => {
+            const maSo = r[1] || '';
+            const kData = kltnMap[maSo] || {};
+            return {
+              studentEmail      : r[0] || '',
+              maSo              : maSo,
+              studentName       : r[2] || '',
+              truongHD          : r[5] || '',
+              diemHD            : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',','.')))) ? parseFloat(String(r[11]).replace(',','.')) : null,
+              bienBanUrl        : r[17] || '',
+              gvhdDuyetSauBv    : r[21] || '',
+              chuTichDuyetSauBv : r[22] || '',
+              baiChinhSuaUrl    : r[23] || '',
+              bienBanGiaiTrinhUrl: r[24] || '',
+              topic             : kData.topic || '',
+              kltnUrl           : kData.kltnUrl || '',
+              gvhdEmail         : r[4] || '', // dùng tạm — thực ra GVHD lưu ở KLTN
+            };
+          });
+
+        // Thêm: lấy GVHD từ DangKyKLTN theo maSo
+        const kltnGvhdMap = {};
+        kltnRows.forEach(r => { kltnGvhdMap[r[3]] = r[7] || ''; }); // r[7] = email GVHD
+
+        const enriched = list.map(sv => ({
+          ...sv,
+          isGVHD    : (kltnGvhdMap[sv.maSo] || '').toLowerCase().trim() === email,
+          isChuTich : (sv.truongHD || '').toLowerCase().includes(gvName),
+        }));
+
+        setStudents(enriched);
+      } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
+
+  // GVHD duyệt chỉnh sửa
+  async function handleGVHDDuyet(sv, isApproved) {
+    if (!window.confirm(`Xác nhận ${isApproved ? 'ĐỒNG Ý' : 'KHÔNG ĐỒNG Ý'} bản chỉnh sửa của sinh viên?`)) return;
+    setProcessing(sv.studentEmail);
+    const status = isApproved ? 'Yes' : 'No';
+    try {
+      const res = await apiPost({ action: 'gvhdApprovePostDefense', studentEmail: sv.studentEmail, gvhdDuyetSauBv: status });
+      if (res.success) {
+        toast.show(`GVHD đã ${isApproved ? 'đồng ý' : 'từ chối'} bản chỉnh sửa!`, isApproved ? 'success' : 'warn');
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, gvhdDuyetSauBv: status} : s));
+      } else toast.show(res.message || 'Lỗi cập nhật', 'error');
+    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+    setProcessing(null);
+  }
+
+  // Chủ tịch HĐ duyệt chỉnh sửa
+  async function handleChuTichDuyet(sv, isApproved) {
+    if (sv.gvhdDuyetSauBv !== 'Yes') {
+      toast.show('GVHD phải đồng ý trước khi Chủ tịch duyệt!', 'warn');
+      return;
+    }
+    if (!window.confirm(`Xác nhận ${isApproved ? 'ĐỒNG Ý' : 'TỪ CHỐI'} bản chỉnh sửa?`)) return;
+    setProcessing(sv.studentEmail);
+    const status = isApproved ? 'Yes' : 'No';
+    try {
+      const res = await apiPost({ action: 'presidentApprovePostDefense', studentEmail: sv.studentEmail, chuTichDuyetSauBv: status });
+      if (res.success) {
+        toast.show(`Chủ tịch đã ${isApproved ? 'duyệt' : 'từ chối'} bản chỉnh sửa!`, isApproved ? 'success' : 'warn');
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, chuTichDuyetSauBv: status} : s));
+      } else toast.show(res.message || 'Lỗi cập nhật', 'error');
+    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+    setProcessing(null);
+  }
+
+  const filtered = students.filter(s =>
+    s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
+  );
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
+      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
+      <p className="text-sm font-medium">Đang tải dữ liệu sau bảo vệ...</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6 anim-fade">
+      {viewerFile && (
+        <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} onClose={() => setViewerFile(null)} />
+      )}
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-on-surface tracking-tight">Sau Bảo Vệ</h2>
+          <p className="text-on-surface-variant mt-1 text-sm">Xem xét và duyệt bản chỉnh sửa sau khi hội đồng bảo vệ</p>
+        </div>
+        <div className="relative w-full md:w-80">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
+            placeholder="Tìm tên hoặc MSSV..."/>
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
+          <span className="material-symbols-outlined text-7xl opacity-10">task_alt</span>
+          <p className="text-base font-bold text-on-surface-variant">Chưa có sinh viên cần duyệt sau bảo vệ</p>
+          <p className="text-sm text-on-surface-variant/60 text-center max-w-xs">Sinh viên sẽ xuất hiện ở đây sau khi hội đồng đã hoàn thành bảo vệ</p>
+        </div>
+      ) : (
+        <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden border border-outline-variant/10">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse" style={{minWidth:'1000px'}}>
+              <thead>
+                <tr className="bg-surface-container-low text-on-surface-variant text-[11px] font-black uppercase tracking-widest">
+                  <th className="px-6 py-4">Sinh viên & Đề tài</th>
+                  <th className="px-4 py-4 text-center">Biên bản HĐ</th>
+                  <th className="px-4 py-4 text-center">Bài chỉnh sửa SV</th>
+                  <th className="px-4 py-4 text-center">Biên bản giải trình</th>
+                  <th className="px-4 py-4 text-center">GVHD duyệt</th>
+                  <th className="px-4 py-4 text-center">Chủ tịch HĐ duyệt</th>
+                  <th className="px-4 py-4 text-center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/10">
+                {filtered.map(sv => {
+                  const isProc = processing === sv.studentEmail;
+                  const gvhdOk = sv.gvhdDuyetSauBv === 'Yes';
+                  const gvhdNo = sv.gvhdDuyetSauBv === 'No';
+                  const ctOk   = sv.chuTichDuyetSauBv === 'Yes';
+                  const ctNo   = sv.chuTichDuyetSauBv === 'No';
+
+                  let overallStatus;
+                  if (ctOk) overallStatus = { label: 'Hoàn thành', color: 'bg-[#00593c] text-white', icon: 'verified' };
+                  else if (ctNo) overallStatus = { label: 'CT Từ chối', color: 'bg-error text-white', icon: 'cancel' };
+                  else if (gvhdNo) overallStatus = { label: 'GVHD Từ chối', color: 'bg-error-container text-on-error-container', icon: 'cancel' };
+                  else if (gvhdOk) overallStatus = { label: 'Chờ CT duyệt', color: 'bg-secondary-container text-on-secondary-container', icon: 'hourglass_top' };
+                  else overallStatus = { label: 'Chờ GVHD duyệt', color: 'bg-surface-container-high text-on-surface-variant', icon: 'pending' };
+
+                  return (
+                    <tr key={sv.maSo} className="hover:bg-surface-container-low/40 transition-colors align-middle">
+                      {/* Sinh viên */}
+                      <td className="px-6 py-5">
+                        <div className="flex gap-3 items-start">
+                          <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0 mt-0.5"/>
+                          <div>
+                            <p className="font-bold text-sm text-on-surface">{sv.studentName}</p>
+                            <p className="text-xs text-on-surface-variant">{sv.maSo}</p>
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                              {sv.isGVHD    && <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-primary text-white">GVHD</span>}
+                              {sv.isChuTich && <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container">Chủ tịch</span>}
+                            </div>
+                            <p className="text-xs font-medium text-on-surface-variant mt-1 max-w-[220px] line-clamp-2">{sv.topic || '--'}</p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Biên bản HĐ */}
+                      <td className="px-4 py-5 text-center align-middle">
+                        {sv.bienBanUrl ? (
+                          <button onClick={() => setViewerFile({ url: sv.bienBanUrl, studentName: sv.studentName, fileName: 'Biên Bản Hội Đồng' })}
+                            className="inline-flex flex-col items-center gap-0.5 group">
+                            <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary-container group-hover:bg-secondary transition-colors">
+                              <span className="material-symbols-outlined fill-icon text-[20px] text-on-secondary-container group-hover:text-white">assignment</span>
+                            </span>
+                            <span className="text-[9px] font-bold text-on-secondary-container">Xem</span>
+                          </button>
+                        ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa có</span>)}
+                      </td>
+
+                      {/* Bài chỉnh sửa SV */}
+                      <td className="px-4 py-5 text-center align-middle">
+                        {sv.baiChinhSuaUrl ? (
+                          <button onClick={() => setViewerFile({ url: sv.baiChinhSuaUrl, studentName: sv.studentName, fileName: 'Bài Chỉnh Sửa Sau Bảo Vệ' })}
+                            className="inline-flex flex-col items-center gap-0.5 group">
+                            <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors">
+                              <span className="material-symbols-outlined fill-icon text-[20px] text-primary">edit_document</span>
+                            </span>
+                            <span className="text-[9px] font-bold text-primary">Xem</span>
+                          </button>
+                        ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
+                      </td>
+
+                      {/* Biên bản giải trình */}
+                      <td className="px-4 py-5 text-center align-middle">
+                        {sv.bienBanGiaiTrinhUrl ? (
+                          <button onClick={() => setViewerFile({ url: sv.bienBanGiaiTrinhUrl, studentName: sv.studentName, fileName: 'Biên Bản Giải Trình Chỉnh Sửa' })}
+                            className="inline-flex flex-col items-center gap-0.5 group">
+                            <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors">
+                              <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">description</span>
+                            </span>
+                            <span className="text-[9px] font-bold text-tertiary">Xem</span>
+                          </button>
+                        ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa có</span>)}
+                      </td>
+
+                      {/* GVHD duyệt */}
+                      <td className="px-4 py-5 text-center align-middle">
+                        {gvhdOk ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-[#00593c] px-3 py-1.5 rounded-full">
+                            <span className="material-symbols-outlined text-[13px]" style={{fontVariationSettings:"'FILL' 1"}}>check_circle</span>
+                            Đã đồng ý
+                          </span>
+                        ) : gvhdNo ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-error px-3 py-1.5 rounded-full">
+                            <span className="material-symbols-outlined text-[13px]">cancel</span>
+                            Không đồng ý
+                          </span>
+                        ) : sv.isGVHD ? (
+                          <div className="flex flex-col items-center gap-1.5">
+                            <button onClick={() => handleGVHDDuyet(sv, true)} disabled={isProc}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-[#00593c] text-white text-[10px] font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
+                              {isProc ? <span className="material-symbols-outlined anim-spin text-[12px]">refresh</span> : <span className="material-symbols-outlined text-[12px]">check</span>}
+                              Đồng ý
+                            </button>
+                            <button onClick={() => handleGVHDDuyet(sv, false)} disabled={isProc}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-error text-white text-[10px] font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
+                              <span className="material-symbols-outlined text-[12px]">close</span>
+                              Không
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-on-surface-variant italic">Chờ GVHD</span>
+                        )}
+                      </td>
+
+                      {/* Chủ tịch HĐ duyệt */}
+                      <td className="px-4 py-5 text-center align-middle">
+                        {ctOk ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-primary px-3 py-1.5 rounded-full">
+                            <span className="material-symbols-outlined text-[13px]" style={{fontVariationSettings:"'FILL' 1"}}>verified</span>
+                            Đã duyệt
+                          </span>
+                        ) : ctNo ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-error px-3 py-1.5 rounded-full">
+                            <span className="material-symbols-outlined text-[13px]">cancel</span>
+                            Từ chối
+                          </span>
+                        ) : !gvhdOk ? (
+                          <span className="text-[10px] text-on-surface-variant/60 italic">Chờ GVHD duyệt trước</span>
+                        ) : sv.isChuTich ? (
+                          <div className="flex flex-col items-center gap-1.5">
+                            <button onClick={() => handleChuTichDuyet(sv, true)} disabled={isProc}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm">
+                              {isProc ? <span className="material-symbols-outlined anim-spin text-[12px]">refresh</span> : <span className="material-symbols-outlined text-[12px]">check</span>}
+                              Duyệt
+                            </button>
+                            <button onClick={() => handleChuTichDuyet(sv, false)} disabled={isProc}
+                              className="flex items-center gap-1 px-3 py-1.5 bg-error text-white text-[10px] font-bold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
+                              <span className="material-symbols-outlined text-[12px]">close</span>
+                              Từ chối
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] text-on-surface-variant italic">Chờ CT duyệt</span>
+                        )}
+                      </td>
+
+                      {/* Trạng thái tổng */}
+                      <td className="px-4 py-5 text-center align-middle">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-3 py-1.5 rounded-full ${overallStatus.color}`}>
+                          <span className="material-symbols-outlined text-[13px]">{overallStatus.icon}</span>
+                          {overallStatus.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-6 py-4 bg-surface-container-low border-t border-outline-variant/10">
+            <p className="text-xs text-on-surface-variant font-medium">Đang hiển thị {filtered.length} sinh viên</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TabThongKe({toast}) {
   return (
     <div className="space-y-6 anim-fade">
@@ -3428,6 +3746,7 @@ function App() {
     {id:'sinhvien',  icon:'group',        l:'Hướng dẫn'},
     {id:'phanbien',  icon:'rate_review',  l:'Phản biện'},
     {id:'hoidong',   icon:'gavel',        l:'Hội đồng'},
+    {id:'sau_bao_ve',icon:'task_alt',     l:'Sau BV'},
   ];
   const tbmNavMobile = [
     {id:'phancong_pb', icon:'assignment_ind',  l:'PC.PB'},
@@ -3451,6 +3770,7 @@ function App() {
           {tab === 'sinhvien'    && <TabSinhVienHuongDan toast={toast}/>}
           {tab === 'phanbien'    && <TabPhanBien toast={toast}/>}
           {tab === 'hoidong'     && <TabHoiDong toast={toast}/>}
+          {tab === 'sau_bao_ve'  && <TabSauBaoVe toast={toast}/>}
           
           {SESSION.role === 'truongbomon' && tab === 'phancong_pb' && <TabPhanCongPhanBien toast={toast}/>}
           {SESSION.role === 'truongbomon' && tab === 'phancong_hd' && <TabPhanCongHoiDong toast={toast}/>}
