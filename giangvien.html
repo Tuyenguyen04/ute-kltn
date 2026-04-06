@@ -1651,13 +1651,15 @@ function TabSinhVienHuongDan({toast}) {
                     const id = sv.maSo;
                     const pct = kltnInput[id]?.daoVanPct !== undefined ? kltnInput[id].daoVanPct : sv.daoVanPct;
 
-                    const handleUploadDaoVan = async (e) => {
+const handleUploadDaoVan = async (e) => {
                       const file = e.target.files[0];
                       if (!file) return;
                       setUploadingDaoVan(prev => ({...prev, [id]: true}));
                       try {
                         const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KetQuaDaoVan_KLTN' });
-                        if (res.success) {
+                        if (res.success && res.driveUrl) {
+                          // Bổ sung lệnh này để GHI CHẮC CHẮN URL vào sheet
+                          await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, daoVanUrl: res.driveUrl });
                           toast.show('Tải lên file đạo văn thành công!', 'success');
                           setKltnActive(prev => prev.map(s => s.maSo === id ? {...s, daoVanUrl: res.driveUrl} : s));
                         } else toast.show(res.message, 'error');
@@ -1672,7 +1674,9 @@ function TabSinhVienHuongDan({toast}) {
                       setUploadingKLTN(prev => ({...prev, [id]: true}));
                       try {
                         const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KhoaLuanKLTN_UTE' });
-                        if (res.success) {
+                        if (res.success && res.driveUrl) {
+                          // Bổ sung lệnh này để GHI CHẮC CHẮN URL KLTN vào sheet
+                          await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, kltnUrl: res.driveUrl });
                           toast.show('Tải lên Bản KLTN thành công!', 'success');
                           setKltnActive(prev => prev.map(s => s.maSo === id ? {...s, kltnUrl: res.driveUrl, step: Math.max(s.step, 1)} : s));
                         } else toast.show(res.message, 'error');
@@ -2000,48 +2004,38 @@ function PBGradingModal({ student, onSave, onClose, processing }) {
     </div>
   );
 }
-  function TabPhanBien({toast}) {
+function TabPhanBien({toast}) {
   const [students, setStudents] = React.useState([]);
   const [loading,  setLoading]  = React.useState(true);
   const [search,   setSearch]   = React.useState('');
   const [pbGrades, setPbGrades] = React.useState({});
   const [saving,   setSaving]   = React.useState({});
-// Các state thêm vào cho UI giống KLTN
   const [viewerFile, setViewerFile] = React.useState(null);
-  const [uploadingDaoVan, setUploadingDaoVan] = React.useState({});
-  const [pbInput, setPbInput] = React.useState({}); 
   const [feedbackTarget, setFeedbackTarget] = React.useState(null);
   const [pbProcessing, setPbProcessing] = React.useState(null);
-const [gradingPBTarget, setGradingPBTarget] = React.useState(null);
+  const [gradingPBTarget, setGradingPBTarget] = React.useState(null);
 
-  // Hàm xử lý lưu điểm từ Modal
   async function handleSavePbFromModal(totalGrade, nhanXetStr) {
     const sv = gradingPBTarget;
-    setPbProcessing(sv.studentEmail); // Hiện loading xoay xoay
+    setPbProcessing(sv.studentEmail); 
     try {
-      // 1. Lệnh này sẽ GHI ĐIỂM lên sheet HoiDongKLTN (Cột Điểm PB)
       const res = await apiPost({ action:'saveGrade', type:'pb', studentEmail: sv.studentEmail, grade: totalGrade });
-      
-      // 2. Lệnh này sẽ GHI KẾT LUẬN vào sheet DangKyKLTN (Cột Nhận xét)
       if (nhanXetStr) {
         await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: nhanXetStr });
       }
-
       if (res.success) {
         toast.show('Đã cập nhật điểm lên Google Sheet thành công!', 'success');
-        
-        // Cập nhật giao diện: Ô điểm lập tức biến thành số điểm và hiện badge "Đã chấm"
         setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemPB: totalGrade, nhanXet: nhanXetStr} : s));
-        setGradingPBTarget(null); // Đóng Modal
+        setGradingPBTarget(null);
       } else {
         toast.show(res.message || 'Lưu điểm thất bại!', 'error');
       }
     } catch(e) { 
       toast.show('Lỗi kết nối tới Google Sheet.', 'error'); 
     }
-    setPbProcessing(null); // Tắt loading
+    setPbProcessing(null);
   }
-  // Hàm lưu nhận xét
+
   async function handleSaveFeedback(text) {
     const sv = feedbackTarget;
     setPbProcessing(sv.studentEmail);
@@ -2055,30 +2049,28 @@ const [gradingPBTarget, setGradingPBTarget] = React.useState(null);
     } catch(e) { toast.show('Lỗi kết nối mạng.', 'error'); }
     setPbProcessing(null);
   }
-React.useEffect(() => {
+
+  React.useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        // Tải danh sách hội đồng VÀ danh sách KLTN để map dữ liệu
         const [hdRows, kltnRows] = await Promise.all([
           fetchSheetCSV(SHEET_HOIDONG_TAB),
           fetchSheetCSV(SHEET_KLTN_TAB)
         ]);
         
-        // Map data KLTN (cột Đề tài, KLTN, Đạo văn, Nhận xét)
         const kltnMap = {};
         kltnRows.forEach(r => {
-           kltnMap[r[3]] = { // r[3] là MSSV
+           kltnMap[r[3]] = { 
              topic: r[5] || '',
              kltnUrl: r[16] || '',
              daoVanUrl: r[17] || '',
-             daoVanPct: r[18] || '',
              nhanXet: r[19] || ''
            };
         });
 
         const email = SESSION.email.toLowerCase().trim();
-const pbList = hdRows
+        const pbList = hdRows
           .filter(r => (r[4]||'').toLowerCase().trim() === email)
           .map(r => {
             const maSo = r[1] || '';
@@ -2095,40 +2087,19 @@ const pbList = hdRows
               topic        : kData.topic,
               kltnUrl      : kData.kltnUrl,
               daoVanUrl    : kData.daoVanUrl,
-              daoVanPct    : kData.daoVanPct,
               nhanXet      : kData.nhanXet,
-              
-diemPB       : (r[10] !== '' && r[10] !== undefined && !isNaN(parseFloat(String(r[10]).replace(',', '.')))) ? parseFloat(String(r[10]).replace(',', '.')) : null
+              diemPB       : (r[10] !== '' && r[10] !== undefined && !isNaN(parseFloat(String(r[10]).replace(',', '.')))) ? parseFloat(String(r[10]).replace(',', '.')) : null
             };
           });
         setStudents(pbList);
-        const init = {};
-        pbList.forEach(sv => { init[sv.maSo] = ''; });
-        setPbGrades(init);
       } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
       setLoading(false);
     })();
   }, []);
+
   const filtered = students.filter(s =>
     s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
   );
-
-  async function handleSavePbGrade(maSo, studentEmail) {
-    const g = pbGrades[maSo];
-    if (!g) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
-    const num = parseFloat(g);
-    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
-    setSaving(prev => ({ ...prev, [maSo]: true }));
-    try {
-      const res = await apiPost({ action:'saveGrade', type:'pb', studentEmail, grade: num });
-      if (res.success) {
-        toast.show(`Đã lưu điểm phản biện ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
-      } else {
-        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
-      }
-    } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
-    setSaving(prev => ({ ...prev, [maSo]: false }));
-  }
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
@@ -2139,24 +2110,15 @@ diemPB       : (r[10] !== '' && r[10] !== undefined && !isNaN(parseFloat(String(
 
   return (
     <div className="space-y-6 anim-fade">
-    {viewerFile && <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} isPlagiarism={viewerFile.isPlagiarism} isXNTT={viewerFile.isXNTT} onClose={() => setViewerFile(null)} />}
+      {viewerFile && <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} isPlagiarism={viewerFile.isPlagiarism} isXNTT={viewerFile.isXNTT} onClose={() => setViewerFile(null)} />}
       
       {feedbackTarget && (
-        <FeedbackModal
-          student={feedbackTarget}
-          processing={pbProcessing === feedbackTarget.studentEmail}
-          onSave={handleSaveFeedback}
-          onClose={() => setFeedbackTarget(null)}
-        />
+        <FeedbackModal student={feedbackTarget} processing={pbProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)} />
       )}
       {gradingPBTarget && (
-        <PBGradingModal 
-          student={gradingPBTarget} 
-          processing={pbProcessing === gradingPBTarget.studentEmail} 
-          onSave={handleSavePbFromModal} 
-          onClose={() => setGradingPBTarget(null)} 
-        />
+        <PBGradingModal student={gradingPBTarget} processing={pbProcessing === gradingPBTarget.studentEmail} onSave={handleSavePbFromModal} onClose={() => setGradingPBTarget(null)} />
       )}
+      
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-on-surface tracking-tight">Danh sách Phản biện</h2>
@@ -2164,9 +2126,7 @@ diemPB       : (r[10] !== '' && r[10] !== undefined && !isNaN(parseFloat(String(
         </div>
         <div className="relative w-full md:w-80">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
-            placeholder="Tìm tên hoặc MSSV..."/>
+          <input value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none" placeholder="Tìm tên hoặc MSSV..."/>
         </div>
       </div>
 
@@ -2174,15 +2134,12 @@ diemPB       : (r[10] !== '' && r[10] !== undefined && !isNaN(parseFloat(String(
         <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
           <span className="material-symbols-outlined text-7xl opacity-10">rate_review</span>
           <p className="text-base font-bold text-on-surface-variant">Chưa có sinh viên phản biện nào</p>
-          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">
-            Khi admin điền email GV vào cột "Email GV phản biện" trong sheet HoiDongKLTN, danh sách sẽ tự hiện ở đây.
-          </p>
         </div>
       ) : (
         <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse" style={{minWidth:'800px'}}>
-<thead>
+              <thead>
                 <tr className="bg-surface-container-low text-on-surface-variant text-[11px] font-black uppercase tracking-widest">
                   <th className="px-6 py-4">Sinh viên</th>
                   <th className="px-4 py-4">Đề tài</th>
@@ -2194,140 +2151,76 @@ diemPB       : (r[10] !== '' && r[10] !== undefined && !isNaN(parseFloat(String(
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/10">
-                {filtered.length === 0 ? (
-                  <tr><td colSpan="7" className="px-6 py-12 text-center text-sm text-on-surface-variant">Không tìm thấy</td></tr>
-                ) : filtered.map(sv => {
-                  const id = sv.maSo;
-                  const pct = pbInput[id]?.daoVanPct !== undefined ? pbInput[id].daoVanPct : sv.daoVanPct;
-
-                  const handleUploadDaoVan = async (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    setUploadingDaoVan(prev => ({...prev, [id]: true}));
-                    try {
-                      const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KetQuaDaoVan_KLTN' });
-                      if (res.success) {
-                        toast.show('Tải lên file đạo văn thành công!', 'success');
-                        setStudents(prev => prev.map(s => s.maSo === id ? {...s, daoVanUrl: res.driveUrl} : s));
-                      } else toast.show(res.message, 'error');
-                    } catch(err) { toast.show('Lỗi upload!', 'error'); }
-                    setUploadingDaoVan(prev => ({...prev, [id]: false}));
-                  };
-
-                  const handleSavePct = async () => {
-                    if (!pbInput[id] || pbInput[id].daoVanPct === undefined) return;
-                    setPbProcessing(sv.studentEmail);
-                    try {
-                      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, daoVanPct: pbInput[id].daoVanPct });
-                      if (res.success) {
-                        toast.show('Đã lưu % đạo văn!', 'success');
-                        setStudents(prev => prev.map(s => s.maSo === id ? {...s, daoVanPct: pbInput[id].daoVanPct} : s));
-                      } else toast.show(res.message, 'error');
-                    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
-                    setPbProcessing(null);
-                  };
-
-                  return (
-                    <tr key={sv.maSo} className="hover:bg-surface-container-low/30 transition-colors align-middle">
-                      {/* 1. Sinh viên */}
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
-                          <div>
-                            <p className="font-bold text-sm text-on-surface">{sv.studentName}</p>
-                            <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.studentEmail}</p>
-                          </div>
+                {filtered.map(sv => (
+                  <tr key={sv.maSo} className="hover:bg-surface-container-low/30 transition-colors align-middle">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-3">
+                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
+                        <div>
+                          <p className="font-bold text-sm text-on-surface">{sv.studentName}</p>
+                          <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.studentEmail}</p>
                         </div>
-                      </td>
+                      </div>
+                    </td>
 
-                      {/* 2. Đề tài */}
-                      <td className="px-4 py-5 max-w-[180px]">
-                        <p className="text-sm font-medium line-clamp-3">{sv.topic || '--'}</p>
-                      </td>
+                    <td className="px-4 py-5 max-w-[180px]">
+                      <p className="text-sm font-medium line-clamp-3">{sv.topic || '--'}</p>
+                    </td>
 
-                      {/* 3. Thành phần HĐ */}
-                      <td className="px-4 py-5">
-                        <div className="space-y-1 text-xs">
-                          {sv.truongHD    && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
-                          {sv.thanhVien1  && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
-                          {sv.thanhVien2  && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
-                          {sv.thuKy       && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
-                        </div>
-                      </td>
+                    <td className="px-4 py-5">
+                      <div className="space-y-1 text-xs">
+                        {sv.truongHD    && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
+                        {sv.thanhVien1  && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
+                        {sv.thanhVien2  && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
+                        {sv.thuKy       && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
+                      </div>
+                    </td>
 
-                      {/* 4. Bản KLTN */}
-                      <td className="px-4 py-5 text-center">
-                        {sv.kltnUrl ? (
-                           <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })} className="inline-flex flex-col items-center gap-0.5 group">
-                             <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">menu_book</span></span>
-                             <span className="text-[9px] font-bold text-primary">Xem</span>
-                           </button>
-                        ) : (
-                           <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
-                        )}
-                      </td>
+                    <td className="px-4 py-5 text-center">
+                      {sv.kltnUrl ? (
+                         <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })} className="inline-flex flex-col items-center gap-0.5 group">
+                           <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">menu_book</span></span>
+                           <span className="text-[9px] font-bold text-primary">Xem</span>
+                         </button>
+                      ) : (
+                         <span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>
+                      )}
+                    </td>
 
-                      {/* 5. Check Đạo văn */}
-                      <td className="px-4 py-5 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {sv.daoVanUrl ? (
-                            <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></button>
-                          ) : (
-                            <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
-                              {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
-                              <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
-                            </label>
-                          )}
-                          {(() => {
-                             let pctColor = 'bg-surface-container-low border-outline-variant/40 text-on-surface';
-                             const numPct = parseFloat(pct);
-                             if (!isNaN(numPct)) {
-                                if (numPct <= 20) pctColor = 'bg-emerald-50 border-emerald-500/50 text-emerald-700';
-                                else if (numPct <= 30) pctColor = 'bg-orange-50 border-orange-500/50 text-orange-700';
-                                else pctColor = 'bg-red-50 border-red-500/50 text-red-700';
-                             }
-                             return (
-                               <div className="flex flex-col gap-1 items-center">
-                                 <div className={`flex items-center border rounded-lg overflow-hidden w-[65px] h-[40px] transition-colors ${pctColor}`}>
-                                    <input type="number" min="0" max="100" placeholder="%" value={pct} onChange={e => setPbInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))} className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
-                                    <span className="text-[10px] font-bold opacity-60 pr-2">%</span>
-                                 </div>
-                                 {pbInput[id]?.daoVanPct !== undefined && pbInput[id].daoVanPct !== sv.daoVanPct && (
-                                   <button onClick={handleSavePct} className="text-[9px] bg-primary text-white px-2 py-0.5 rounded shadow-sm">Lưu %</button>
-                                 )}
-                               </div>
-                             );
-                          })()}
-                        </div>
-                      </td>
-{/* 6. Điểm phản biện */}
-                      <td className="px-4 py-5 text-center">
-                        {sv.diemPB !== null && !isNaN(sv.diemPB) ? (
-                          <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingPBTarget(sv)} title="Nhấn vào để chấm lại">
-                            <span className="text-2xl font-black text-primary">{Number(sv.diemPB).toFixed(1)}</span>
-                            <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
-                          </div>
-                        ) : (
-                          <button onClick={() => setGradingPBTarget(sv)} disabled={pbProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm mx-auto">
-                            {pbProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> : <span className="material-symbols-outlined text-[16px]">edit_square</span>} Chấm
-                          </button>
-                        )}
-                      </td>
-                      {/* 7. Nhận xét */}
-                      <td className="px-2 py-5 text-center">
-                        <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
-                          <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
-                          {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
+                    <td className="px-4 py-5 text-center">
+                      {sv.daoVanUrl ? (
+                        <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="inline-flex flex-col items-center gap-0.5 group mx-auto">
+                          <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></span>
+                          <span className="text-[9px] font-bold text-tertiary">Xem kết quả</span>
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
+                      ) : (
+                        <span className="text-[9px] text-on-surface-variant/40">Chưa có file</span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-5 text-center">
+                      {sv.diemPB !== null && !isNaN(sv.diemPB) ? (
+                        <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingPBTarget(sv)} title="Nhấn vào để chấm lại">
+                          <span className="text-2xl font-black text-primary">{Number(sv.diemPB).toFixed(1)}</span>
+                          <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded-full">Đã chấm</span>
+                        </div>
+                      ) : (
+                        <button onClick={() => setGradingPBTarget(sv)} disabled={pbProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded-xl hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm mx-auto">
+                          {pbProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> : <span className="material-symbols-outlined text-[16px]">edit_square</span>} Chấm
+                        </button>
+                      )}
+                    </td>
+
+                    <td className="px-2 py-5 text-center">
+                      <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
+                        <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
+                        {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-white"></span>}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
-          </div>
-          <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10">
-            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {students.length} sinh viên phản biện</p>
           </div>
         </div>
       )}
@@ -2444,13 +2337,10 @@ function TabHoiDong({toast}) {
   const [search,   setSearch]   = React.useState('');
 
   const [viewerFile, setViewerFile] = React.useState(null);
-  const [uploadingDaoVan, setUploadingDaoVan] = React.useState({});
-  const [hdInput, setHdInput] = React.useState({}); 
   const [feedbackTarget, setFeedbackTarget] = React.useState(null);
   const [hdProcessing, setHdProcessing] = React.useState(null);
   const [gradingHDTarget, setGradingHDTarget] = React.useState(null);
 
-  // Lưu điểm HD từ modal
   async function handleSaveHdFromModal(totalGrade, nhanXetStr) {
     const sv = gradingHDTarget;
     setHdProcessing(sv.studentEmail); 
@@ -2467,7 +2357,6 @@ function TabHoiDong({toast}) {
     setHdProcessing(null);
   }
 
-  // Lưu nhận xét
   async function handleSaveFeedback(text) {
     const sv = feedbackTarget;
     setHdProcessing(sv.studentEmail);
@@ -2491,14 +2380,12 @@ function TabHoiDong({toast}) {
           fetchSheetCSV(SHEET_KLTN_TAB)
         ]);
         
-        // Lấy data KLTN
         const kltnMap = {};
         kltnRows.forEach(r => {
-           kltnMap[r[3]] = { // r[3] MSSV
+           kltnMap[r[3]] = { 
              topic: r[5] || '',
              kltnUrl: r[16] || '',
              daoVanUrl: r[17] || '',
-             daoVanPct: r[18] || '',
              nhanXet: r[19] || ''
            };
         });
@@ -2506,11 +2393,11 @@ function TabHoiDong({toast}) {
         const email = SESSION.email.toLowerCase().trim();
         const hdList = hdRows
           .filter(r => (
-            (r[4]||'').toLowerCase().trim() === email || // Phản biện
-            (r[5]||'').toLowerCase().includes(email)  || // Chủ tịch
-            (r[6]||'').toLowerCase().includes(email)  || // TV1
-            (r[7]||'').toLowerCase().includes(email)  || // TV2
-            (r[8]||'').toLowerCase().includes(email)     // Thư ký
+            (r[4]||'').toLowerCase().trim() === email || 
+            (r[5]||'').toLowerCase().includes(email)  || 
+            (r[6]||'').toLowerCase().includes(email)  || 
+            (r[7]||'').toLowerCase().includes(email)  || 
+            (r[8]||'').toLowerCase().includes(email)     
           ))
           .map(r => {
             const maSo = r[1] || '';
@@ -2525,7 +2412,7 @@ function TabHoiDong({toast}) {
               thanhVien1   : r[6] || '',
               thanhVien2   : r[7] || '',
               thuKy        : r[8] || '',
-              ngayBaoVe    : r[12] || '', // Giả sử cột 12-13-14 chứa Lịch
+              ngayBaoVe    : r[12] || '', 
               gioBaoVe     : r[13] || '',
               phongBaoVe   : r[14] || '',
               diemHD       : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',', '.')))) ? parseFloat(String(r[11]).replace(',', '.')) : null,
@@ -2542,7 +2429,6 @@ function TabHoiDong({toast}) {
     s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search)
   );
 
-  // Xác định quyền của giảng viên trên SV này
   function getRoleInfo(sv) {
     const email = SESSION.email.toLowerCase().trim();
     let badges = [];
@@ -2592,9 +2478,7 @@ function TabHoiDong({toast}) {
         </div>
         <div className="relative w-full md:w-80">
           <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none"
-            placeholder="Tìm tên hoặc MSSV..."/>
+          <input value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 text-sm outline-none" placeholder="Tìm tên hoặc MSSV..."/>
         </div>
       </div>
 
@@ -2602,7 +2486,6 @@ function TabHoiDong({toast}) {
         <div className="flex flex-col items-center justify-center py-32 gap-5 bg-surface-container-lowest rounded-3xl shadow-sm">
           <span className="material-symbols-outlined text-7xl opacity-10">gavel</span>
           <p className="text-base font-bold text-on-surface-variant">Chưa có sinh viên bảo vệ</p>
-          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">Khi admin xếp lịch hội đồng, danh sách sẽ hiện ở đây.</p>
         </div>
       ) : (
         <div className="bg-surface-container-lowest rounded-3xl shadow-sm overflow-hidden border border-outline-variant/10">
@@ -2620,41 +2503,10 @@ function TabHoiDong({toast}) {
               </thead>
               <tbody className="divide-y divide-outline-variant/10">
                 {filtered.map(sv => {
-                  const id = sv.maSo;
-                  const pct = hdInput[id]?.daoVanPct !== undefined ? hdInput[id].daoVanPct : sv.daoVanPct;
                   const { badges, isCouncilMember } = getRoleInfo(sv);
-
-                  const handleUploadDaoVan = async (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    setUploadingDaoVan(prev => ({...prev, [id]: true}));
-                    try {
-                      const res = await apiPostFile({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, _file: file, folderName: 'KetQuaDaoVan_KLTN' });
-                      if (res.success) {
-                        toast.show('Tải lên thành công!', 'success');
-                        setStudents(prev => prev.map(s => s.maSo === id ? {...s, daoVanUrl: res.driveUrl} : s));
-                      } else toast.show(res.message, 'error');
-                    } catch(err) { toast.show('Lỗi upload!', 'error'); }
-                    setUploadingDaoVan(prev => ({...prev, [id]: false}));
-                  };
-
-                  const handleSavePct = async () => {
-                    if (!hdInput[id] || hdInput[id].daoVanPct === undefined) return;
-                    setHdProcessing(sv.studentEmail);
-                    try {
-                      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, daoVanPct: hdInput[id].daoVanPct });
-                      if (res.success) {
-                        toast.show('Đã lưu % đạo văn!', 'success');
-                        setStudents(prev => prev.map(s => s.maSo === id ? {...s, daoVanPct: hdInput[id].daoVanPct} : s));
-                      } else toast.show(res.message, 'error');
-                    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
-                    setHdProcessing(null);
-                  };
 
                   return (
                     <tr key={sv.maSo} className={`hover:bg-surface-container-low/30 transition-colors align-top ${!isCouncilMember ? 'bg-surface-container-lowest opacity-90' : ''}`}>
-                      
-                      {/* 1. Sinh viên & Đề tài */}
                       <td className="px-6 py-5">
                         <div className="flex gap-3 mb-2">
                           <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0 mt-0.5"/>
@@ -2669,18 +2521,14 @@ function TabHoiDong({toast}) {
                         <p className="text-sm font-medium line-clamp-2 mt-2" title={sv.topic}>{sv.topic || '--'}</p>
                       </td>
 
-                      {/* 2. Hội đồng & Lịch bảo vệ */}
                       <td className="px-4 py-5">
                         <div className="space-y-1 text-xs">
-                          {/* Khối hiển thị Lịch */}
                           {(sv.ngayBaoVe || sv.gioBaoVe || sv.phongBaoVe) && (
                             <div className="mb-2 p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 inline-block">
                               <p className="font-bold text-primary flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">event</span> {sv.ngayBaoVe || 'Chưa xếp lịch'}</p>
                               <p className="text-on-surface-variant flex items-center gap-1.5 mt-0.5"><span className="material-symbols-outlined text-[14px]">schedule</span> {sv.gioBaoVe || '--'} <span className="mx-1">•</span> <span className="material-symbols-outlined text-[14px]">meeting_room</span> Phòng: {sv.phongBaoVe || '--'}</p>
                             </div>
                           )}
-                          
-                          {/* Danh sách thành viên HĐ */}
                           {sv.truongHD    && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
                           {sv.thanhVien1  && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
                           {sv.thanhVien2  && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
@@ -2689,7 +2537,6 @@ function TabHoiDong({toast}) {
                         </div>
                       </td>
 
-                      {/* CÁC CỘT SAU CHỈ MỞ CHO THÀNH VIÊN HỘI ĐỒNG (KHÔNG PHẢI CHỈ CÓ PB) */}
                       {!isCouncilMember ? (
                         <td colSpan="4" className="px-4 py-5 text-center align-middle bg-surface-container-low/30 relative">
                            <div className="flex flex-col items-center justify-center text-outline-variant gap-2 opacity-60 absolute inset-0">
@@ -2699,7 +2546,6 @@ function TabHoiDong({toast}) {
                         </td>
                       ) : (
                         <>
-                          {/* 3. Bản KLTN */}
                           <td className="px-4 py-5 text-center align-middle">
                             {sv.kltnUrl ? (
                                <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })} className="inline-flex flex-col items-center gap-0.5 group">
@@ -2709,30 +2555,18 @@ function TabHoiDong({toast}) {
                             ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
                           </td>
 
-                          {/* 4. Đạo văn */}
+                          {/* Đạo văn (Chỉ xem) */}
                           <td className="px-4 py-5 text-center align-middle">
-                            <div className="flex items-center justify-center gap-2">
-                              {sv.daoVanUrl ? (
-                                <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></button>
-                              ) : (
-                                <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
-                                  {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
-                                  <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
-                                </label>
-                              )}
-                              <div className="flex flex-col gap-1 items-center">
-                                <div className={`flex items-center border rounded-lg overflow-hidden w-[65px] h-[40px] transition-colors bg-surface-container-low border-outline-variant/40 text-on-surface`}>
-                                   <input type="number" min="0" max="100" placeholder="%" value={pct} onChange={e => setHdInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))} className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
-                                   <span className="text-[10px] font-bold opacity-60 pr-2">%</span>
-                                </div>
-                                {hdInput[id]?.daoVanPct !== undefined && hdInput[id].daoVanPct !== sv.daoVanPct && (
-                                  <button onClick={handleSavePct} className="text-[9px] bg-primary text-white px-2 py-0.5 rounded shadow-sm">Lưu %</button>
-                                )}
-                              </div>
-                            </div>
+                            {sv.daoVanUrl ? (
+                              <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="inline-flex flex-col items-center gap-0.5 group mx-auto">
+                                <span className="w-10 h-10 flex items-center justify-center rounded-xl bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></span>
+                                <span className="text-[9px] font-bold text-tertiary">Xem kết quả</span>
+                              </button>
+                            ) : (
+                              <span className="text-[9px] text-on-surface-variant/40">Chưa có file</span>
+                            )}
                           </td>
 
-                          {/* 5. Điểm Hội đồng */}
                           <td className="px-4 py-5 text-center align-middle">
                             {sv.diemHD !== null && !isNaN(sv.diemHD) ? (
                               <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => setGradingHDTarget(sv)} title="Nhấn vào để chấm lại">
@@ -2746,7 +2580,6 @@ function TabHoiDong({toast}) {
                             )}
                           </td>
 
-                          {/* 6. Nhận xét */}
                           <td className="px-2 py-5 text-center align-middle">
                             <button onClick={() => setFeedbackTarget(sv)} title="Nhận xét Hội đồng" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
                               <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
@@ -2760,9 +2593,6 @@ function TabHoiDong({toast}) {
                 })}
               </tbody>
             </table>
-          </div>
-          <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10">
-            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {students.length} sinh viên</p>
           </div>
         </div>
       )}
