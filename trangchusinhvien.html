@@ -2172,7 +2172,7 @@ function SubmitReportModal({dashData,onClose,onSuccess,toast}){
       // Bước 2: Upload Giấy XNTT
       setProgressLabel('Đang upload Giấy xác nhận...');
       const resXNTT=await apiPostFile({
-        action:'savePlagiarism',
+        action:'saveXNTT',
         email:SESSION.email,
         name:SESSION.name,
         maSo:SESSION.maSo,
@@ -2987,6 +2987,9 @@ function KLTNRevisionPage({dashData,onSuccess,toast}){
   const instr = kltn?.instructor||dashData?.instructor||null;
   const topic = kltn?.topic||'';
 
+  // Guard: chỉ được nộp 1 lần
+  const alreadySubmitted = !!(kltn?.bienBanGiaiTrinhUrl || kltn?.baiChinhSuaUrl);
+
   const [fileGiaiTrinh,setFileGiaiTrinh] = useState(null);
   const [fileFinal,setFileFinal]         = useState(null);
   const [note,setNote]                   = useState('');
@@ -2995,6 +2998,20 @@ function KLTNRevisionPage({dashData,onSuccess,toast}){
   const [progressLabel,setProgressLabel] = useState('');
   const [done,setDone]                   = useState(false);
   const [doneUrls,setDoneUrls]           = useState({giaiTrinh:'',final:''});
+
+  if(alreadySubmitted) return(
+    <div className="anim-fade max-w-lg mx-auto text-center py-20">
+      <div className="w-24 h-24 bg-tertiary-fixed rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
+        <span className="material-symbols-outlined fill-icon text-5xl text-on-tertiary-fixed">task_alt</span>
+      </div>
+      <h3 className="text-2xl font-headline font-black text-on-surface mb-3">Đã nộp thành công</h3>
+      <p className="text-on-surface-variant text-sm mb-6">Bạn đã nộp KLTN sau chỉnh sửa. Chỉ được nộp <strong>một lần</strong>. Vui lòng liên hệ GVHD nếu cần cập nhật.</p>
+      <button onClick={onSuccess}
+        className="w-full py-4 bg-primary text-white font-bold rounded-2xl hover:bg-primary-container transition-all shadow-lg shadow-primary/20">
+        Về trang chủ
+      </button>
+    </div>
+  );
 
   function fmtSize(b){return b>1024*1024?(b/1024/1024).toFixed(1)+' MB':(b/1024).toFixed(0)+' KB';}
 
@@ -3251,6 +3268,11 @@ function App(){
       window.location.href = 'giangvien.html';
       return;
     }
+    // Trưởng bộ môn → truongbomon.html
+    if (safeRole === 'truongbomon') {
+      window.location.href = 'truongbomon.html';
+      return;
+    }
   }, []);
 
   // 2. FIX LỖI RELOAD BỊ ĐỔI GIAO DIỆN (Mất tab đang xem)
@@ -3320,7 +3342,9 @@ function App(){
       // (thiếu ở code gốc → SV không biết cần làm gì sau khi GV duyệt)
       const kd = data?.kltn;
       if(kd?.registered){
-        const ks = kd.status, kp = parseInt(kd.step)||0;
+        const ks = kd.status;
+        const _kps = kd.step;
+        const kp = (_kps===''||_kps===null||_kps===undefined) ? 0 : (isNaN(parseInt(_kps)) ? 0 : parseInt(_kps));
         // Bước 0: GV duyệt đề tài KLTN → SV cần nộp KLTN
         if(kp===0&&ks==='approved'
            &&!notes.some(n=>n.message.includes('Nộp KLTN')))
