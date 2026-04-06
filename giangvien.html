@@ -3567,18 +3567,20 @@ function TabSauBaoVe({toast}) {
             chuTichDuyetSauBv   : r[24] || '',  // Cột Y — CTHD duyệt
           };
         });
-        // ── Lọc từ DangKyKLTN: SV mà GV đang đăng nhập là GVHD ──
-        // Cột H(7)=emailGVHD, W(22)=baiChinhSuaUrl, X(23)=gvhdDuyetSauBv, Y(24)=chuTichDuyetSauBv
+        // ── Lọc từ DangKyKLTN: SV mà GV là GVHD HOẶC Chủ tịch HĐ ──
+        // Cột H(7)=emailGVHD, U(20)=bienBanHD, V(21)=bienBanGiaiTrinh, W(22)=baiChinhSua, X(23)=gvhdDuyet, Y(24)=chuTichDuyet
         const list = kltnRows
           .filter(r => {
-            const gvhdEmail = (r[7] || '').toLowerCase().trim();
-            if (gvhdEmail !== email) return false;
-            const step   = parseInt(r[14]) || 0;
-            const sEmail = (r[1] || '').toLowerCase().trim();
-            const hd     = hdMap[sEmail];
-            // Hiện SV đã vào giai đoạn sau bảo vệ: step>=2 hoặc đã có biên bản / bài chỉnh sửa
+            const gvhdEmail    = (r[7] || '').toLowerCase().trim();
+            const isGVHD       = gvhdEmail === email;
+            const sEmail       = (r[1] || '').toLowerCase().trim();
+            const truongHDName = (hdMap[sEmail]?.truongHD || '').toLowerCase();
+            const isChuTich    = truongHDName.includes(gvName);
+            // Bỏ qua nếu GV không liên quan đến SV này
+            if (!isGVHD && !isChuTich) return false;
+            const step = parseInt(r[14]) || 0;
+            // Hiện khi đã vào giai đoạn sau bảo vệ: step>=2 hoặc đã có bất kỳ file/trạng thái sau bảo vệ
             return step >= 2 || !!(r[20] || r[21] || r[22]);
-            // r[20]=biên bản HĐ, r[21]=giải trình, r[22]=KLTN sửa → bất kỳ cái nào có là hiện
           })
           .map(r => {
             const sEmail = (r[1] || '').toLowerCase().trim();
