@@ -3550,12 +3550,23 @@ function TabSauBaoVe({toast}) {
         hdRows.forEach(r => {
           const sEmail = (r[0] || '').toLowerCase().trim();
           hdMap[sEmail] = {
-            truongHD : r[5] || '',  // F = Chủ tịch HĐ (tên)
+            truongHD : r[5] || '',
             diemHD   : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',','.')))) ? parseFloat(String(r[11]).replace(',','.')) : null,
-            bienBanUrl: r[20] || '', // U(20) = Biên bản hội đồng
           };
         });
 
+        // ĐÃ SỬA: Biên bản HĐ đọc từ DangKyKLTN cột U (r[20]) thay vì HoiDongKLTN
+        const kltnMap = {};
+        kltnRows.forEach(r => {
+          const sEmail = (r[1] || '').toLowerCase().trim();
+          kltnMap[sEmail] = {
+            bienBanUrl          : r[20] || '',  // Cột U — Biên bản HĐ
+            bienBanGiaiTrinhUrl : r[21] || '',  // Cột V — Biên bản giải trình
+            baiChinhSuaUrl      : r[22] || '',  // Cột W — KLTN sau chỉnh sửa
+            gvhdDuyetSauBv      : r[23] || '',  // Cột X — GVHD duyệt
+            chuTichDuyetSauBv   : r[24] || '',  // Cột Y — CTHD duyệt
+          };
+        });
         // ── Lọc từ DangKyKLTN: SV mà GV đang đăng nhập là GVHD ──
         // Cột H(7)=emailGVHD, W(22)=baiChinhSuaUrl, X(23)=gvhdDuyetSauBv, Y(24)=chuTichDuyetSauBv
         const list = kltnRows
