@@ -2097,7 +2097,7 @@ const kltnMap = {};
              kltnUrl: r[16] || '',
              daoVanUrl: r[17] || '',
              nhanXet: r[19] || '',
-             diemGVHD: r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null
+             diemGVHD: r[12] !== '' && r[12] !== undefined ? parseFloat(String(r[12]).replace(',', '.')) : null
            };
         });
 
@@ -2865,12 +2865,23 @@ function getRoleInfo(sv) {
                                   <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span>
                                 </button>
                               )}
-                              {sv.bienBanUrl && (
+              {sv.bienBanUrl ? (
                                 <button onClick={() => setViewerFile({ url: sv.bienBanUrl, studentName: sv.studentName, fileName: 'Biên Bản Hội Đồng' })} title="Xem Biên bản HĐ" className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary-container hover:bg-secondary transition-colors text-on-secondary-container hover:text-white">
                                   <span className="material-symbols-outlined fill-icon text-[20px]">assignment</span>
                                 </button>
+                              ) : (
+                                /* NẾU LÀ THƯ KÝ -> HIỂN THỊ ICON NỘP FILE */
+                                (sv.thuKy || '').toLowerCase().includes(SESSION.name.toLowerCase().trim()) ? (
+                                  <button onClick={() => setBienBanTarget(sv)} title="Nộp / Lập Biên bản HĐ" className="inline-flex flex-col items-center gap-0.5 group mx-auto">
+                                    <span className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-secondary text-secondary hover:bg-secondary-container/30 transition-colors cursor-pointer">
+                                      <span className="material-symbols-outlined text-[20px]">upload_file</span>
+                                    </span>
+                                    <span className="text-[9px] text-secondary font-bold mt-1">Nộp BB</span>
+                                  </button>
+                                ) : (
+                                  !sv.daoVanUrl && <span className="text-[9px] text-on-surface-variant/40">Chưa có file</span>
+                                )
                               )}
-                              {!sv.daoVanUrl && !sv.bienBanUrl && <span className="text-[9px] text-on-surface-variant/40">Chưa có file</span>}
                             </div>
                           </td>
 
