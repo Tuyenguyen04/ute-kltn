@@ -53,7 +53,7 @@ borderRadius:{"DEFAULT":"0.25rem","lg":"0.5rem","xl":"0.75rem","full":"9999px"}}
 const {useState,useEffect,useCallback,useRef} = React;
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const API_URL = 'https://script.google.com/macros/s/AKfycbyWtaGSLyGxea7E8lEtHzaeJ0yZQF8rYhi5_q5cdh-0hwGx7v16UUvPnXAE14RtCnu6/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbygYhwAk3YYfs73tmOFD9_zFqCCFoU9kCnJP2gcjNEUl8ysZQzrYty0R1FenAotpTMV/exec';
 
 // Đọc session giảng viên từ localStorage (được set bởi login.html)
 const SESSION = {
@@ -1219,19 +1219,17 @@ function KLTNGradingModal({ student, onSave, onClose, processing }) {
 }
 // ── MODAL NHẬN XÉT & CÂU HỎI KLTN (CẬP NHẬT THEO FORM ẢNH 1) ─────────────────
 function FeedbackModal({ student, onSave, onClose, processing }) {
- // Chỉ lấy phần của GV Phản biện
+  // Logic tách dữ liệu cũ (nếu có) để điền lại vào form khi mở lên
   let initYeuCau = '';
   let initCauHoi = '';
-  const pbMatch = (student.nhanXet || '').match(/\[GV PHẢN BIỆN\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[HỘI ĐỒNG\]|$)/);
-  const pbText = pbMatch ? pbMatch[1] : (student.nhanXet?.includes('[CÂU HỎI]') && !student.nhanXet.includes('[GV PHẢN BIỆN]') ? student.nhanXet : '');
-
-  if (pbText) {
-    if (pbText.includes('[CÂU HỎI]')) {
-      const parts = pbText.split('[CÂU HỎI]');
+  
+  if (student.nhanXet) {
+    if (student.nhanXet.includes('[CÂU HỎI]')) {
+      const parts = student.nhanXet.split('[CÂU HỎI]');
       initYeuCau = parts[0].replace('[YÊU CẦU CHỈNH SỬA]\n', '').trim();
       initCauHoi = parts[1] ? parts[1].trim() : '';
     } else {
-      initYeuCau = pbText;
+      initYeuCau = student.nhanXet; // Fallback nếu là nhận xét kiểu cũ
     }
   }
 
@@ -1239,22 +1237,11 @@ function FeedbackModal({ student, onSave, onClose, processing }) {
   const [cauHoi, setCauHoi] = React.useState(initCauHoi);
 
   const handleSave = () => {
-    const pbCombined = `[GV PHẢN BIỆN]\n[YÊU CẦU CHỈNH SỬA]\n${yeuCau.trim()}\n\n[CÂU HỎI]\n${cauHoi.trim()}`;
-    let full = student.nhanXet || '';
-    
-    // Dọn dẹp dữ liệu cũ bị sai format (nếu có)
-    if (!full.includes('[GV PHẢN BIỆN]') && full.includes('[CÂU HỎI]')) {
-       full = full.replace(/\[YÊU CẦU CHỈNH SỬA\][\s\S]*?\[CÂU HỎI\][\s\S]*?(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[HỘI ĐỒNG\]|$)/, '');
-    }
-
-    // Nối hoặc thay thế đúng khối của Phản Biện
-    if (full.includes('[GV PHẢN BIỆN]')) {
-       full = full.replace(/\[GV PHẢN BIỆN\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[HỘI ĐỒNG\]|$)/, pbCombined);
-    } else {
-       full = full ? `${full.trim()}\n\n${pbCombined}` : pbCombined;
-    }
-    onSave(full);
+    // Gộp 2 trường lại thành 1 chuỗi để lưu vào 1 ô trên Google Sheet
+    const combinedText = `[YÊU CẦU CHỈNH SỬA]\n${yeuCau.trim()}\n\n[CÂU HỎI]\n${cauHoi.trim()}`;
+    onSave(combinedText);
   };
+
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
       <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl anim-slide flex flex-col max-h-[95vh]">
@@ -1341,24 +1328,7 @@ function FeedbackModal({ student, onSave, onClose, processing }) {
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
 // ── MODAL NHẬN XÉT CỦA GVHD (CHỈ DÀNH CHO TAB HƯỚNG DẪN KLTN) ─────────────────
 function GVHDFeedbackModal({ student, onSave, onClose, processing }) {
-const getOld = () => {
-    const m = (student.nhanXet || '').match(/\[GV HƯỚNG DẪN\]\n([\s\S]*?)(?=\n\s*\[GV PHẢN BIỆN\]|\n\s*\[HỘI ĐỒNG\]|$)/);
-    // Nếu chưa có format mới, nhưng ô trống hoặc chưa bị chiếm bởi GVPB thì giữ nguyên
-    return m ? m[1] : (student.nhanXet?.includes('[GV PHẢN BIỆN]') || student.nhanXet?.includes('[CÂU HỎI]') ? '' : student.nhanXet || '');
-  };
-  const [text, setText] = React.useState(getOld());
-
-  const handleSave = () => {
-    let full = student.nhanXet || '';
-    const newBlock = `[GV HƯỚNG DẪN]\n${text.trim()}`;
-    // Cập nhật lại chuỗi tổng
-    if (full.includes('[GV HƯỚNG DẪN]')) {
-       full = full.replace(/\[GV HƯỚNG DẪN\]\n([\s\S]*?)(?=\n\s*\[GV PHẢN BIỆN\]|\n\s*\[HỘI ĐỒNG\]|$)/, newBlock);
-    } else {
-       full = full ? `${newBlock}\n\n${full.trim()}` : newBlock; // GVHD thường đưa lên đầu
-    }
-    onSave(full);
-  };
+  const [text, setText] = React.useState(student.nhanXet || '');
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
@@ -2097,7 +2067,7 @@ const kltnMap = {};
              kltnUrl: r[16] || '',
              daoVanUrl: r[17] || '',
              nhanXet: r[19] || '',
-             diemGVHD: r[12] !== '' && r[12] !== undefined ? parseFloat(String(r[12]).replace(',', '.')) : null
+             diemGVHD: r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null
            };
         });
 
@@ -2462,15 +2432,6 @@ function ScoreDetailModal({ student, onClose, onCalculateAndSave, processing }) 
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Phản biện</span><span className="font-black text-secondary">{student.diemPB ?? '--'}</span></div>
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Chủ tịch Hội đồng</span><span className="font-black text-tertiary">{student.diemCT ?? '--'}</span></div>
           <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Ủy viên Hội đồng</span><span className="font-black text-on-surface">{student.diemTV ?? '--'}</span></div>
-          {(student.bienBanKLTNUrl || student.bienBanUrl) && (
-  <div className="flex justify-between items-center p-3 bg-secondary-container/20 rounded-xl">
-    <span className="text-sm font-semibold text-on-surface-variant">Biên bản Hội đồng</span>
-    <a href={student.bienBanKLTNUrl || student.bienBanUrl} target="_blank" rel="noreferrer"
-      className="flex items-center gap-1 text-xs font-bold text-primary hover:underline">
-      <span className="material-symbols-outlined text-[14px]">open_in_new</span> Xem file
-    </a>
-  </div>
-)}
         </div>
         
         <div className="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center px-3 mb-6">
@@ -2493,23 +2454,7 @@ function ScoreDetailModal({ student, onClose, onCalculateAndSave, processing }) 
 }
 // ── MODAL NHẬN XÉT CỦA HỘI ĐỒNG (DẠNG 1 Ô TEXT NHƯ GVHD) ───────────────────
 function HoiDongFeedbackModal({ student, onSave, onClose, processing }) {
-const getOld = () => {
-    const m = (student.nhanXet || '').match(/\[HỘI ĐỒNG\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[GV PHẢN BIỆN\]|$)/);
-    return m ? m[1] : '';
-  };
-  const [text, setText] = React.useState(getOld());
-
-  const handleSave = () => {
-    let full = student.nhanXet || '';
-    const newBlock = `[HỘI ĐỒNG]\n${text.trim()}`;
-    // Cập nhật lại chuỗi tổng
-    if (full.includes('[HỘI ĐỒNG]')) {
-       full = full.replace(/\[HỘI ĐỒNG\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[GV PHẢN BIỆN\]|$)/, newBlock);
-    } else {
-       full = full ? `${full.trim()}\n\n${newBlock}` : newBlock;
-    }
-    onSave(full);
-  };
+  const [text, setText] = React.useState(student.nhanXet || '');
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm">
@@ -2545,7 +2490,7 @@ const getOld = () => {
           <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
             Hủy
           </button>
-          <button onClick={handleSave} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
+          <button onClick={() => onSave(text)} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
             {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
             Lưu nhận xét
           </button>
@@ -2583,9 +2528,7 @@ function TabHoiDong({toast}) {
       const res = await apiPost({ action: 'updateCouncilMinutes', studentEmail: sv.studentEmail, nhanXetHD: nhanXetHD, bienBanUrl: driveUrl });
       if (res.success) {
         toast.show('Đã cập nhật Biên bản thành công!', 'success');
-       setStudents(prev => prev.map(s => s.maSo === sv.maSo 
-          ? {...s, nhanXetHD, bienBanUrl: driveUrl, bienBanKLTNUrl: driveUrl} 
-          : s));
+        setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXetHD, bienBanUrl: driveUrl} : s));
         setBienBanTarget(null);
       } else toast.show(res.message || 'Lỗi cập nhật', 'error');
     } catch(e) { toast.show(e.message || 'Lỗi kết nối', 'error'); }
@@ -2666,8 +2609,7 @@ function TabHoiDong({toast}) {
              topic: r[5] || '',
              kltnUrl: r[16] || '',
              daoVanUrl: r[17] || '',
-             nhanXet: r[19] || '',
-             bienBanKLTNUrl: r[20] || '',
+             nhanXet: r[19] || ''
            };
         });
 
@@ -2877,23 +2819,12 @@ function getRoleInfo(sv) {
                                   <span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span>
                                 </button>
                               )}
-              {(sv.bienBanKLTNUrl || sv.bienBanUrl) ? (
-  <button onClick={() => setViewerFile({ url: sv.bienBanKLTNUrl || sv.bienBanUrl, studentName: sv.studentName, fileName: 'Biên Bản Hội Đồng' })} title="Xem Biên bản HĐ" className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary-container hover:bg-secondary transition-colors text-on-secondary-container hover:text-white">
-    <span className="material-symbols-outlined fill-icon text-[20px]">assignment</span>
-  </button>
-) : (
-  /* NẾU LÀ THƯ KÝ -> HIỂN THỊ ICON NỘP FILE */
-                                (sv.thuKy || '').toLowerCase().includes(SESSION.name.toLowerCase().trim()) ? (
-                                  <button onClick={() => setBienBanTarget(sv)} title="Nộp / Lập Biên bản HĐ" className="inline-flex flex-col items-center gap-0.5 group mx-auto">
-                                    <span className="w-10 h-10 flex items-center justify-center rounded-xl border border-dashed border-secondary text-secondary hover:bg-secondary-container/30 transition-colors cursor-pointer">
-                                      <span className="material-symbols-outlined text-[20px]">upload_file</span>
-                                    </span>
-                                    <span className="text-[9px] text-secondary font-bold mt-1">Nộp BB</span>
-                                  </button>
-                                ) : (
-                                  !sv.daoVanUrl && <span className="text-[9px] text-on-surface-variant/40">Chưa có file</span>
-                                )
+                              {sv.bienBanUrl && (
+                                <button onClick={() => setViewerFile({ url: sv.bienBanUrl, studentName: sv.studentName, fileName: 'Biên Bản Hội Đồng' })} title="Xem Biên bản HĐ" className="w-10 h-10 flex items-center justify-center rounded-xl bg-secondary-container hover:bg-secondary transition-colors text-on-secondary-container hover:text-white">
+                                  <span className="material-symbols-outlined fill-icon text-[20px]">assignment</span>
+                                </button>
                               )}
+                              {!sv.daoVanUrl && !sv.bienBanUrl && <span className="text-[9px] text-on-surface-variant/40">Chưa có file</span>}
                             </div>
                           </td>
 
@@ -3675,16 +3606,13 @@ function TabSauBaoVe({toast}) {
         const kltnMap = {};
         kltnRows.forEach(r => {
           const sEmail = (r[1] || '').toLowerCase().trim();
-          const sMaSo  = (r[3] || '').trim();
-          const kData = {
+          kltnMap[sEmail] = {
             bienBanUrl          : r[20] || '',  // Cột U — Biên bản HĐ
             bienBanGiaiTrinhUrl : r[21] || '',  // Cột V — Biên bản giải trình
             baiChinhSuaUrl      : r[22] || '',  // Cột W — KLTN sau chỉnh sửa
             gvhdDuyetSauBv      : r[23] || '',  // Cột X — GVHD duyệt
             chuTichDuyetSauBv   : r[24] || '',  // Cột Y — CTHD duyệt
           };
-          if (sEmail) kltnMap[sEmail] = kData;
-          if (sMaSo)  kltnMap[sMaSo]  = kData;  // key phụ bằng maSo để tra cứu chéo
         });
         // ── Lọc từ DangKyKLTN: SV mà GV là GVHD HOẶC Chủ tịch HĐ ──
         // Hiện ngay khi GV liên quan, không cần chờ SV upload file
@@ -3701,9 +3629,8 @@ function TabSauBaoVe({toast}) {
           })
           .map(r => {
             const sEmail       = (r[1] || '').toLowerCase().trim();
-            const sMaSo        = (r[3] || '').trim();
             const hd           = hdMap[sEmail] || {};
-            const kl           = kltnMap[sEmail] || kltnMap[sMaSo] || {};
+            const kl           = kltnMap[sEmail] || {};
             const truongHDName = hd.truongHD || '';
             const isGVHD       = (r[7] || '').toLowerCase().trim() === email;
             const isChuTich    = truongHDName.toLowerCase().includes(gvName);
@@ -3830,7 +3757,7 @@ function TabSauBaoVe({toast}) {
                   const gvhdNo = sv.gvhdDuyetSauBv === 'No';
                   const ctOk   = sv.chuTichDuyetSauBv === 'Yes';
                   const ctNo   = sv.chuTichDuyetSauBv === 'No';
-                  const hasBaiChinhSua = !!sv.baiChinhSuaUrl || !!sv.bienBanGiaiTrinhUrl;
+                  const hasBaiChinhSua = !!sv.baiChinhSuaUrl;
 
                   let overallStatus;
                   if (ctOk) overallStatus = { label: 'Hoàn thành', color: 'bg-[#00593c] text-white', icon: 'verified' };
