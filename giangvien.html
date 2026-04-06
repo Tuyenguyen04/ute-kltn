@@ -3591,7 +3591,8 @@ function TabSauBaoVe({toast}) {
               studentName         : r[2] || '',
               topic               : r[5] || '',
               isGVHD              : true,
-              isChuTich           : truongHDName.toLowerCase().includes(gvName),
+              const gvFullName = SESSION.name.toLowerCase().trim();
+              isChuTich: truongHDName.toLowerCase().trim() === gvFullName,
               truongHD            : truongHDName,
               // Tất cả đọc từ DangKyKLTN qua kltnMap
               bienBanUrl          : kl.bienBanUrl || '',           // Cột U
