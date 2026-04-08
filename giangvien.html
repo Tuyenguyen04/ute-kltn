@@ -1338,11 +1338,10 @@ function KLTNGradingModal({ student, onSave, onClose, processing }) {
   );
 }
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
-// ── MODAL NHẬN XÉT CỦA GVHD (CHỈ DÀNH CHO TAB HƯỚNG DẪN KLTN) ─────────────────
+// ── MODAL NHẬN XÉT CỦA GVHD ─────────────────
 function GVHDFeedbackModal({ student, onSave, onClose, processing }) {
-const getOld = () => {
+  const getOld = () => {
     const m = (student.nhanXet || '').match(/\[GV HƯỚNG DẪN\]\n([\s\S]*?)(?=\n\s*\[GV PHẢN BIỆN\]|\n\s*\[HỘI ĐỒNG\]|$)/);
-    // Nếu chưa có format mới, nhưng ô trống hoặc chưa bị chiếm bởi GVPB thì giữ nguyên
     return m ? m[1] : (student.nhanXet?.includes('[GV PHẢN BIỆN]') || student.nhanXet?.includes('[CÂU HỎI]') ? '' : student.nhanXet || '');
   };
   const [text, setText] = React.useState(getOld());
@@ -1350,11 +1349,10 @@ const getOld = () => {
   const handleSave = () => {
     let full = student.nhanXet || '';
     const newBlock = `[GV HƯỚNG DẪN]\n${text.trim()}`;
-    // Cập nhật lại chuỗi tổng
     if (full.includes('[GV HƯỚNG DẪN]')) {
        full = full.replace(/\[GV HƯỚNG DẪN\]\n([\s\S]*?)(?=\n\s*\[GV PHẢN BIỆN\]|\n\s*\[HỘI ĐỒNG\]|$)/, newBlock);
     } else {
-       full = full ? `${newBlock}\n\n${full.trim()}` : newBlock; // GVHD thường đưa lên đầu
+       full = full ? `${newBlock}\n\n${full.trim()}` : newBlock;
     }
     onSave(full);
   };
@@ -1381,18 +1379,11 @@ const getOld = () => {
           <label className="text-sm font-bold text-on-surface block mb-3">
             Đánh giá / Nhận xét quá trình làm KLTN của sinh viên:
           </label>
-          <textarea
-            value={text} onChange={e => setText(e.target.value)}
-            rows={6} autoFocus
-            placeholder="VD: Sinh viên có thái độ tốt, nộp bài đúng hạn, hoàn thành xuất sắc các mục tiêu đề ra..."
-            className="w-full bg-white border border-outline-variant/50 rounded-xl p-4 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm resize-none shadow-inner"
-          />
+          <textarea value={text} onChange={e => setText(e.target.value)} rows={6} autoFocus placeholder="VD: Sinh viên có thái độ tốt, nộp bài đúng hạn..." className="w-full bg-white border border-outline-variant/50 rounded-xl p-4 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm resize-none shadow-inner" />
         </div>
 
         <div className="p-5 border-t border-outline-variant/10 flex justify-end gap-3 bg-surface-container-low rounded-b-[2rem]">
-<button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">
-            Hủy
-          </button>
+          <button onClick={onClose} disabled={processing} className="px-6 py-2.5 rounded-xl font-bold text-on-surface-variant hover:bg-surface-container transition-colors text-sm">Hủy</button>
           <button onClick={handleSave} disabled={processing} className="px-6 py-2.5 rounded-xl bg-primary text-white font-bold hover:opacity-90 transition-colors flex items-center gap-2 text-sm shadow-md">
             {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
             Lưu nhận xét
