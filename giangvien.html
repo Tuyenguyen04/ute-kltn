@@ -2586,11 +2586,15 @@ function TabHoiDong({toast}) {
     setHdProcessing(null);
   }
 
-  async function handleSaveHdFromModal(totalGrade, nhanXetStr) {
+async function handleSaveHdFromModal(totalGrade, nhanXetStr) {
     const sv = gradingHDTarget;
     setHdProcessing(sv.studentEmail); 
     try {
-      const res = await apiPost({ action:'saveGrade', type:'hd', studentEmail: sv.studentEmail, grade: totalGrade });
+      // Xác định quyền để lưu đúng cột
+      let roleType = 'tv'; // Mặc định là Ủy viên
+      if ((sv.truongHD || '').toLowerCase().includes(SESSION.name.toLowerCase().trim())) roleType = 'ct';
+
+      const res = await apiPost({ action:'saveGrade', type: roleType, studentEmail: sv.studentEmail, grade: totalGrade });
       if (res.success) {
         toast.show('Đã cập nhật điểm Hội đồng thành công!', 'success');
         setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemHD: totalGrade} : s));
@@ -2646,6 +2650,7 @@ function TabHoiDong({toast}) {
              kltnUrl: r[16] || '',
              daoVanUrl: r[17] || '',
              nhanXet: r[19] || ''
+             diemGVHD: r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null 
            };
         });
 
@@ -2682,6 +2687,8 @@ const email = SESSION.email.toLowerCase().trim();
               gioBaoVe     : r[14] || '',
               
               diemHD       : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',', '.')))) ? parseFloat(String(r[11]).replace(',', '.')) : null,
+              diemPB       : (r[10] !== '') ? parseFloat(String(r[10]).replace(',', '.')) : null,
+              diemGVHD     : kData.diemGVHD, 
               nhanXetPB    : r[15] || kData.nhanXet || '', 
               nhanXetHD    : r[16] || '',
               bienBanUrl   : r[17] || '',
@@ -2895,7 +2902,7 @@ function getRoleInfo(sv) {
                                 </button>
                               </div>
 {/* Tác vụ của Thư ký */}
-                              {(sv.thuKy || '').toLowerCase().includes(SESSION.email.toLowerCase()) && (
+                              {(sv.thuKy || '').toLowerCase().includes(SESSION.name.toLowerCase().trim()) && (
                                 <div className="flex gap-2 w-full justify-center border-t border-outline-variant/20 pt-2 mt-1">
                                   <button onClick={() => setBienBanTarget(sv)} className="px-2 py-1 bg-surface-container text-on-surface text-[10px] font-bold rounded-lg hover:bg-surface-container-high transition-colors flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[13px]">edit_document</span> Lập Biên bản
