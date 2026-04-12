@@ -470,21 +470,18 @@ function TabThongTinChung({toast, addGVNotification}) {
   const [loading,      setLoading]      = React.useState(true);
   const [processingId, setProcessingId] = React.useState(null);
   const [rejectTarget, setRejectTarget] = React.useState(null);
-  const [editTopicTarget, setEditTopicTarget] = React.useState(null); // Thêm state cho Chỉnh sửa
+  const [editTopicTarget, setEditTopicTarget] = React.useState(null);
 
   React.useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     setLoading(true);
     try {
-      // Tải đồng thời dữ liệu BCTT và KLTN
       const [bcttData, kltnData] = await Promise.all([
         fetchDangKyByGV(SESSION.email),
         fetchKLTNByGV(SESSION.email)
       ]);
-      
       const bcttPending = bcttData.pendingList.map(r => ({...r, type: 'bctt'}));
-      // Gộp Đăng ký BCTT và Đăng ký Đề tài KLTN vào chung 1 mảng
       setPendingList([...bcttPending, ...kltnData.pendingTopic]);
       setApprovedList(bcttData.approvedList);
     } catch(e) {
@@ -497,7 +494,6 @@ function TabThongTinChung({toast, addGVNotification}) {
     setProcessingId(req.studentEmail);
     try {
       let res;
-      // Phân nhánh API tùy theo KLTN hay BCTT
       if (req.type === 'kltn') {
         res = await apiPost({ action: 'approveKLTNTopic', studentEmail: req.studentEmail });
       } else {
@@ -510,9 +506,7 @@ function TabThongTinChung({toast, addGVNotification}) {
         if (req.type === 'bctt') {
           setApprovedList(prev => [{ ...req, status: 'approved' }, ...prev]);
         }
-      } else {
-        toast.show(res.message || 'Duyệt thất bại.', 'error');
-      }
+      } else { toast.show(res.message || 'Duyệt thất bại.', 'error'); }
     } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setProcessingId(null);
   }
@@ -530,9 +524,7 @@ function TabThongTinChung({toast, addGVNotification}) {
       if (res.success) {
         toast.show(`Đã từ chối đề tài của ${req.studentName}.`, 'warn');
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
-      } else {
-        toast.show(res.message || 'Từ chối thất bại.', 'error');
-      }
+      } else { toast.show(res.message || 'Từ chối thất bại.', 'error'); }
     } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
     setProcessingId(null);
     setRejectTarget(null);
@@ -541,27 +533,20 @@ function TabThongTinChung({toast, addGVNotification}) {
   async function handleEditTopic(req, newTopic) {
     setProcessingId(req.studentEmail);
     try {
-      const res = await apiPost({
-        action: 'updateTopic',
-        type: req.type, // Tự động nhận diện 'bctt' hay 'kltn'
-        studentEmail: req.studentEmail,
-        newTopic: newTopic
-      });
+      const res = await apiPost({ action: 'updateTopic', type: req.type, studentEmail: req.studentEmail, newTopic: newTopic });
       if (res.success) {
         toast.show('Đã cập nhật tên đề tài thành công!', 'success');
         setPendingList(prev => prev.map(r => r.studentEmail === req.studentEmail ? { ...r, topic: newTopic } : r));
-      } else {
-        toast.show(res.message || 'Cập nhật thất bại.', 'error');
-      }
+      } else { toast.show(res.message || 'Cập nhật thất bại.', 'error'); }
     } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
     setProcessingId(null);
     setEditTopicTarget(null);
   }
 
   const stats = [
-    { label:'Sinh viên hướng dẫn', value: approvedList.length.toString(), icon:'school', color:'bg-primary text-on-primary', sub:'Đang hướng dẫn' },
-    { label:'Chờ duyệt', value: pendingList.length.toString(), icon:'pending_actions', color:'bg-secondary-fixed text-on-secondary-fixed', sub:'Cần xử lý' },
-    { label:'Buổi Hội đồng', value: '--', icon:'groups', color:'bg-tertiary-fixed text-on-tertiary-fixed', sub:'Xem tab Hội đồng' },
+    { label:'SV Hướng dẫn', value: approvedList.length.toString(), icon:'school', borderColor:'border-t-primary' },
+    { label:'Chờ duyệt', value: pendingList.length.toString(), icon:'pending_actions', borderColor:'border-t-secondary' },
+    { label:'Buổi Hội đồng', value: '--', icon:'groups', borderColor:'border-t-success' },
   ];
 
   return (
@@ -569,41 +554,48 @@ function TabThongTinChung({toast, addGVNotification}) {
       {rejectTarget && <RejectModal request={rejectTarget} onConfirm={handleReject} onClose={() => setRejectTarget(null)}/>}
       {editTopicTarget && <EditOutlineModal request={editTopicTarget} onConfirm={handleEditTopic} onClose={() => setEditTopicTarget(null)}/>}
 
+      <div className="mb-6 pb-4 border-b border-border-color flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-primary uppercase">Tổng quan hệ thống</h2>
+          <p className="text-text-muted mt-1 text-sm">Bảng điều khiển thông tin giảng viên và các yêu cầu chờ xử lý</p>
+        </div>
+      </div>
+
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 p-6 bg-white border border-border-color rounded shadow-card flex flex-col md:flex-row gap-6 items-center">
-          <div className="w-24 h-24 bg-white border border-border-color rounded shadow-card bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-black text-4xl shadow-lg flex-shrink-0">
+          <div className="w-24 h-24 rounded bg-primary flex items-center justify-center text-white font-bold text-4xl border border-primary-hover flex-shrink-0">
             {SESSION.name.trim().split(' ').filter(Boolean).slice(-1)[0]?.[0]?.toUpperCase() || 'G'}
           </div>
           <div className="flex-1 text-center md:text-left">
-            <div className="flex flex-col md:flex-row md:items-end gap-2 mb-1">
-              <h2 className="text-2xl font-black text-primary tracking-tight">{SESSION.name}</h2>
-              <span className="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed text-xs font-bold rounded mb-1 inline-block w-fit mx-auto md:mx-0">Giảng viên</span>
+            <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
+              <h2 className="text-xl font-bold text-text-main">{SESSION.name}</h2>
+              <span className="px-2 py-1 border border-primary text-primary text-xs font-semibold rounded bg-primary-light">Mã GV: {SESSION.maGV}</span>
             </div>
-            <p className="text-on-surface-variant font-medium mb-4 flex items-center justify-center md:justify-start gap-2 text-sm">
-              <span className="material-symbols-outlined text-sm">school</span>
-              {SESSION.nganh || 'Khoa học máy tính'} • {SESSION.maGV}
+            <p className="text-text-muted font-medium mb-4 flex items-center justify-center md:justify-start gap-2 text-sm">
+              <span className="material-symbols-outlined text-[18px]">school</span>
+              {SESSION.nganh || 'Khoa học máy tính'}
             </p>
             <div className="flex flex-wrap justify-center md:justify-start gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded">
-                <span className="material-symbols-outlined text-primary text-base">calendar_today</span>
-                <span className="font-bold text-sm">HK2 - 2024-2025</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-border-color rounded text-sm">
+                <span className="material-symbols-outlined text-primary text-[18px]">calendar_today</span>
+                <span className="font-semibold">HK2 - 2024-2025</span>
               </div>
-              <div className="flex items-center gap-2 px-4 py-2 bg-surface-container-low rounded">
-                <span className="material-symbols-outlined text-primary text-base">mail</span>
-                <span className="font-medium text-sm truncate max-w-[180px]">{SESSION.email}</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-border-color rounded text-sm">
+                <span className="material-symbols-outlined text-primary text-[18px]">mail</span>
+                <span className="font-medium truncate max-w-[200px]">{SESSION.email}</span>
               </div>
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-3">
+        
+        <div className="grid grid-cols-1 gap-4">
           {stats.map((s, i) => (
-            <div key={i} className={`p-5 bg-white border border-border-color rounded shadow-card flex justify-between items-center relative overflow-hidden group shadow-sm ${s.color}`}>
-              <div className="relative z-10">
-                <p className="text-xs font-bold uppercase tracking-widest opacity-70 mb-1">{s.label}</p>
-                <h3 className="text-3xl font-black">{loading ? '...' : s.value}</h3>
-                <p className="text-[10px] opacity-60 mt-0.5">{s.sub}</p>
+            <div key={i} className={`p-4 bg-white border border-border-color rounded shadow-card border-t-4 flex justify-between items-center ${s.borderColor}`}>
+              <div>
+                <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">{s.label}</p>
+                <h3 className="text-2xl font-bold text-text-main mt-1">{loading ? '...' : s.value}</h3>
               </div>
-              <span className="material-symbols-outlined text-5xl opacity-20 absolute -right-2 -bottom-2 group-hover:scale-110 transition-transform">{s.icon}</span>
+              <span className="material-symbols-outlined text-4xl text-gray-200">{s.icon}</span>
             </div>
           ))}
         </div>
@@ -612,86 +604,76 @@ function TabThongTinChung({toast, addGVNotification}) {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
           <section>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-on-surface flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary">pending_actions</span>
-                Yêu cầu chờ duyệt
+            <div className="flex items-center justify-between mb-4 border-b border-border-color pb-2">
+              <h3 className="text-lg font-bold text-primary uppercase flex items-center gap-2">
+                <span className="material-symbols-outlined">pending_actions</span> Yêu cầu chờ duyệt
                 {!loading && pendingList.length > 0 && (
-                  <span className="bg-error text-white text-[10px] font-black px-2 py-0.5 rounded">{pendingList.length}</span>
+                  <span className="bg-secondary text-white text-[11px] font-bold px-2 py-0.5 rounded">{pendingList.length}</span>
                 )}
               </h3>
-              <button onClick={loadData} className="p-2 hover:bg-surface-container rounded transition-colors" title="Làm mới">
-                <span className={`material-symbols-outlined text-on-surface-variant text-base ${loading?'anim-spin':''}`}>refresh</span>
+              <button onClick={loadData} className="px-3 py-1 border border-border-color rounded text-sm hover:bg-gray-50 flex items-center gap-1 transition-colors">
+                <span className={`material-symbols-outlined text-[16px] ${loading?'anim-spin':''}`}>refresh</span>
               </button>
             </div>
 
             {loading ? (
-              <div className="flex items-center justify-center py-16 gap-3 text-on-surface-variant">
-                <span className="material-symbols-outlined anim-spin text-2xl text-primary">refresh</span>
-                <span className="text-sm font-medium">Đang tải từ Google Sheet...</span>
-              </div>
+              <Spinner text="Đang tải từ hệ thống..."/>
             ) : pendingList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 bg-surface-container-lowest bg-white border border-border-color rounded shadow-card border border-outline-variant/15">
-                <span className="material-symbols-outlined text-5xl opacity-15">inbox</span>
-                <p className="text-sm font-medium text-on-surface-variant">Không có yêu cầu nào đang chờ duyệt</p>
+              <div className="flex flex-col items-center justify-center py-12 bg-white border border-border-color rounded shadow-card">
+                <span className="material-symbols-outlined text-4xl text-gray-300 mb-2">inbox</span>
+                <p className="text-sm font-medium text-text-muted">Không có yêu cầu nào đang chờ duyệt</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {pendingList.map((r, i) => {
-                  // Đổi màu sắc nút & thẻ dựa vào BCTT hay KLTN
                   const isKltn = r.type === 'kltn';
-                  const badgeClass = isKltn ? 'bg-tertiary-fixed text-on-tertiary-fixed' : 'bg-secondary-container/20 text-on-secondary-container';
-                  const btnColorClass = isKltn ? 'bg-[#00593c] text-white' : 'bg-primary text-white';
+                  const borderType = isKltn ? 'border-l-4 border-l-success' : 'border-l-4 border-l-primary';
+                  const badgeClass = isKltn ? 'bg-green-100 text-green-800 border-green-200' : 'bg-blue-100 text-blue-800 border-blue-200';
 
                   return (
-                    <div key={i} className={`bg-surface-container-lowest p-5 bg-white border border-border-color rounded shadow-card shadow-sm border-l-4 hover:shadow-md transition-shadow ${isKltn ? 'border-[#00593c]' : 'border-secondary'}`}>
+                    <div key={i} className={`bg-white p-5 rounded shadow-card border border-border-color ${borderType}`}>
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1 min-w-0 pr-3">
-                          <h4 className="font-bold text-on-surface text-sm mb-0.5 line-clamp-1">📄 {r.topic}</h4>
-                          <p className="text-xs text-on-surface-variant">
-                            <span className="font-semibold">{r.studentName}</span> • MSSV: {r.maSo}
+                          <h4 className="font-bold text-text-main text-sm mb-1 line-clamp-1">{r.topic}</h4>
+                          <p className="text-sm text-text-muted">
+                            <span className="font-semibold text-text-main">{r.studentName}</span> • MSSV: {r.maSo}
                           </p>
                         </div>
-                        <span className={`text-[10px] px-2.5 py-1 rounded font-bold flex-shrink-0 ${badgeClass}`}>
+                        <span className={`text-xs px-2 py-1 rounded border font-semibold flex-shrink-0 ${badgeClass}`}>
                           {isKltn ? 'KLTN' : 'BCTT'}
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded mb-4">
+                      <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 border border-border-color rounded mb-4">
                         <div>
-                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Học kỳ</p>
-                          <p className="text-xs font-semibold text-on-surface mt-0.5">{r.term || '--'}</p>
+                          <p className="text-xs font-semibold text-text-muted">Học kỳ</p>
+                          <p className="text-sm font-medium text-text-main mt-0.5">{r.term || '--'}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">{isKltn ? 'Ngành' : 'Đơn vị TT'}</p>
-                          <p className="text-xs font-semibold text-on-surface mt-0.5">{isKltn ? r.nganh : r.company || '--'}</p>
+                          <p className="text-xs font-semibold text-text-muted">{isKltn ? 'Ngành' : 'Đơn vị TT'}</p>
+                          <p className="text-sm font-medium text-text-main mt-0.5">{isKltn ? r.nganh : r.company || '--'}</p>
                         </div>
                         {r.note && (
                           <div className="col-span-2">
-                            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ghi chú SV</p>
-                            <p className="text-xs text-on-surface-variant mt-0.5 italic">"{r.note}"</p>
+                            <p className="text-xs font-semibold text-text-muted">Ghi chú SV</p>
+                            <p className="text-sm text-text-muted mt-0.5 italic">"{r.note}"</p>
                           </div>
                         )}
                       </div>
                       
-                      {/* BỘ 3 NÚT CHỨC NĂNG */}
                       <div className="flex gap-2">
                         <button onClick={() => handleApprove(r)} disabled={processingId === r.studentEmail}
-                          className={`flex-1 py-2.5 rounded text-xs font-bold hover:opacity-90 disabled:opacity-50 flex justify-center items-center gap-1.5 shadow-sm ${btnColorClass}`}>
-                          {processingId === r.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">check_circle</span>}
+                          className="flex-1 py-2 rounded bg-success text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 flex justify-center items-center gap-1.5 transition-colors">
+                          {processingId === r.studentEmail ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">check_circle</span>}
                           Duyệt đề tài
                         </button>
-
                         <button onClick={() => setEditTopicTarget(r)} disabled={processingId === r.studentEmail}
-                          className="flex-1 py-2.5 rounded bg-primary-fixed text-on-primary-fixed-variant text-xs font-bold hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
-                          <span className="material-symbols-outlined text-sm">edit_document</span>
-                          Chỉnh sửa
+                          className="flex-1 py-2 rounded border border-border-color bg-white text-text-main text-sm font-semibold hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors">
+                          <span className="material-symbols-outlined text-[18px]">edit_document</span> Sửa tên ĐT
                         </button>
-
                         <button onClick={() => setRejectTarget(r)} disabled={processingId === r.studentEmail}
-                          className="flex-1 py-2.5 rounded bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex justify-center items-center gap-1.5 shadow-sm">
-                          <span className="material-symbols-outlined text-sm">cancel</span>
-                          Từ chối
+                          className="flex-1 py-2 rounded bg-secondary text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50 flex justify-center items-center gap-1.5 transition-colors">
+                          <span className="material-symbols-outlined text-[18px]">cancel</span> Từ chối
                         </button>
                       </div>
                     </div>
@@ -702,41 +684,43 @@ function TabThongTinChung({toast, addGVNotification}) {
           </section>
 
           <section>
-            <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-              <span className="material-symbols-outlined text-primary">group</span>
-              Sinh viên BCTT đang hướng dẫn
-            </h3>
-            {/* Giữ nguyên phần danh sách approvedList */}
+            <div className="flex items-center justify-between mb-4 border-b border-border-color pb-2">
+              <h3 className="text-lg font-bold text-primary uppercase flex items-center gap-2">
+                <span className="material-symbols-outlined">group</span> Sinh viên BCTT đang hướng dẫn
+              </h3>
+            </div>
             {!loading && approvedList.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-14 gap-3 bg-surface-container-lowest bg-white border border-border-color rounded shadow-card border border-outline-variant/15">
-                <span className="material-symbols-outlined text-5xl opacity-15">school</span>
-                <p className="text-sm font-medium text-on-surface-variant">Chưa có sinh viên nào được duyệt</p>
+               <div className="flex flex-col items-center justify-center py-12 bg-white border border-border-color rounded shadow-card">
+                <span className="material-symbols-outlined text-4xl text-gray-300 mb-2">school</span>
+                <p className="text-sm font-medium text-text-muted">Chưa có sinh viên nào được duyệt</p>
               </div>
             ) : (
-              <div className="bg-surface-container-lowest bg-white border border-border-color rounded shadow-card shadow-sm overflow-hidden">
+              <div className="bg-white border border-border-color rounded shadow-card overflow-hidden">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead className="bg-surface-container-low">
+                  <table className="academic-table">
+                    <thead>
                       <tr>
-                        {['Sinh viên','Đề tài','Đơn vị TT','Học kỳ','Điểm'].map(h => (
-                          <th key={h} className="px-5 py-3 text-xs font-bold text-on-surface-variant uppercase tracking-wider">{h}</th>
-                        ))}
+                        <th>Sinh viên</th>
+                        <th>Đề tài</th>
+                        <th>Đơn vị TT</th>
+                        <th style={{textAlign:'center'}}>Học kỳ</th>
+                        <th style={{textAlign:'center'}}>Điểm</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-outline-variant/10">
+                    <tbody>
                       {loading ? (
-                        <tr><td colSpan="5" className="px-5 py-8 text-center text-sm text-on-surface-variant">Đang tải...</td></tr>
+                        <tr><td colSpan="5" className="text-center py-6 text-text-muted">Đang tải...</td></tr>
                       ) : approvedList.map((sv, i) => (
-                        <tr key={i} className="hover:bg-surface-container-low/50 transition-colors">
-                          <td className="px-5 py-3">
-                            <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
-                            <p className="text-[10px] text-on-surface-variant">{sv.maSo}</p>
+                        <tr key={i}>
+                          <td>
+                            <p className="font-semibold text-text-main">{sv.studentName}</p>
+                            <p className="text-xs text-text-muted">{sv.maSo}</p>
                           </td>
-                          <td className="px-5 py-3 max-w-[200px]"><p className="text-sm text-on-surface line-clamp-2">{sv.topic}</p></td>
-                          <td className="px-5 py-3 text-sm text-on-surface-variant">{sv.company || '--'}</td>
-                          <td className="px-5 py-3 text-xs text-on-surface-variant">{sv.term || '--'}</td>
-                          <td className="px-5 py-3">
-                            {sv.grade != null ? <span className="font-black text-primary">{sv.grade.toFixed(1)}</span> : <span className="text-xs text-on-surface-variant/50 italic">Chưa có</span>}
+                          <td style={{maxWidth:'200px'}}><p className="text-sm text-text-main line-clamp-2">{sv.topic}</p></td>
+                          <td className="text-sm text-text-muted">{sv.company || '--'}</td>
+                          <td className="text-center text-sm text-text-muted">{sv.term || '--'}</td>
+                          <td className="text-center">
+                            {sv.grade != null ? <span className="font-bold text-primary text-base">{sv.grade.toFixed(1)}</span> : <span className="text-xs text-text-muted italic">Chưa có</span>}
                           </td>
                         </tr>
                       ))}
@@ -749,13 +733,13 @@ function TabThongTinChung({toast, addGVNotification}) {
         </div>
 
         <div>
-          <section className="bg-surface-container p-6 bg-white border border-border-color rounded shadow-card">
-            <h3 className="text-base font-bold text-on-surface mb-4 flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">history</span> Hoạt động gần đây
+          <section className="bg-white border border-border-color rounded shadow-card p-6">
+            <h3 className="text-base font-bold text-primary uppercase mb-4 flex items-center gap-2 border-b border-border-color pb-2">
+              <span className="material-symbols-outlined">history</span> Hoạt động gần đây
             </h3>
-            <div className="flex flex-col items-center justify-center py-10 gap-3 text-on-surface-variant">
-              <span className="material-symbols-outlined text-4xl opacity-15">inbox</span>
-              <p className="text-xs font-medium text-center opacity-60">Hoạt động sẽ được ghi lại<br/>sau khi duyệt / từ chối đề tài</p>
+            <div className="flex flex-col items-center justify-center py-8 gap-2 text-text-muted">
+              <span className="material-symbols-outlined text-3xl text-gray-300">inbox</span>
+              <p className="text-xs font-medium text-center">Hệ thống đang cập nhật tính năng log</p>
             </div>
           </section>
         </div>
@@ -1056,14 +1040,14 @@ function TabSinhVienHuongDan({toast}) {
   const [kltnPending,  setKltnPending]  = React.useState([]);
   const [kltnInput, setKltnInput] = React.useState({});
   const [uploadingDaoVan, setUploadingDaoVan] = React.useState({});
-  const [uploadingKLTN, setUploadingKLTN] = React.useState({}); // MỚI: State cho upload KLTN
+  const [uploadingKLTN, setUploadingKLTN] = React.useState({});
   const [kltnActive,   setKltnActive]   = React.useState([]);
   const [kltnLoading,  setKltnLoading]  = React.useState(true);
   const [kltnProcessing, setKltnProcessing] = React.useState(null);
   const [rejectOutlineTarget, setRejectOutlineTarget] = React.useState(null);
   const [editOutlineTarget, setEditOutlineTarget] = React.useState(null);
   const [gradingKLTNTarget, setGradingKLTNTarget] = React.useState(null); 
-  const [feedbackTarget, setFeedbackTarget] = React.useState(null); // MỚI: State cho Modal Chat
+  const [feedbackTarget, setFeedbackTarget] = React.useState(null);
 
   async function handleEditOutlineTopic(sv, newTopic) {
     setKltnProcessing(sv.studentEmail);
@@ -1072,9 +1056,7 @@ function TabSinhVienHuongDan({toast}) {
       if (res.success) {
         toast.show(`Đã cập nhật tên đề tài thành công!`, 'success');
         setKltnPending(prev => prev.map(r => r.studentEmail === sv.studentEmail ? { ...r, topic: newTopic } : r));
-      } else {
-        toast.show(res.message || 'Cập nhật thất bại. Thử lại.', 'error');
-      }
+      } else { toast.show(res.message || 'Cập nhật thất bại. Thử lại.', 'error'); }
     } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setKltnProcessing(null);
     setEditOutlineTarget(null);
@@ -1082,22 +1064,18 @@ function TabSinhVienHuongDan({toast}) {
 
   React.useEffect(() => {
     (async () => {
-      setLoading(true);
-      setKltnLoading(true);
+      setLoading(true); setKltnLoading(true);
       try {
         const [{ approvedList }, { pendingTopic, activeList }] = await Promise.all([
-          fetchDangKyByGV(SESSION.email),
-          fetchKLTNByGV(SESSION.email),
+          fetchDangKyByGV(SESSION.email), fetchKLTNByGV(SESSION.email),
         ]);
         setStudents(approvedList);
         const init = {};
         approvedList.forEach(sv => { init[sv.maSo] = sv.grade != null ? String(sv.grade) : ''; });
         setGrades(init);
-        setKltnPending(pendingTopic); 
-        setKltnActive(activeList);
+        setKltnPending(pendingTopic); setKltnActive(activeList);
       } catch(e) { toast.show('Không tải được danh sách sinh viên.', 'error'); }
-      setLoading(false);
-      setKltnLoading(false);
+      setLoading(false); setKltnLoading(false);
     })();
   }, []);
 
@@ -1119,7 +1097,6 @@ function TabSinhVienHuongDan({toast}) {
     setKltnProcessing(null);
   }
 
-  // MỚI: Hàm lưu nhận xét Chat
   async function handleSaveFeedback(text) {
     const sv = feedbackTarget;
     setKltnProcessing(sv.studentEmail);
@@ -1178,96 +1155,46 @@ function TabSinhVienHuongDan({toast}) {
     setSaving(prev => ({ ...prev, [maSo]: false }));
   }
 
-  const stats = [
-    { label:'Tổng SV', value: students.length, icon:'groups' },
-    { label:'Đã có điểm', value: students.filter(s => s.grade != null).length, icon:'check_circle' },
-    { label:'Chưa có điểm', value: students.filter(s => s.grade == null).length, icon:'pending_actions' },
-  ];
-
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
-      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
-      <p className="text-sm font-medium">Đang tải danh sách sinh viên...</p>
-    </div>
-  );
+  if (loading) return <Spinner text="Đang tải danh sách sinh viên..."/>;
 
   return (
     <div className="space-y-6 anim-fade">
-
       {rejectOutlineTarget && <RejectOutlineModal request={rejectOutlineTarget} onConfirm={handleRejectOutline} onClose={() => setRejectOutlineTarget(null)} />}
       {editOutlineTarget && <EditOutlineModal request={editOutlineTarget} onConfirm={handleEditOutlineTopic} onClose={() => setEditOutlineTarget(null)} />}
       {viewerFile && <FileViewerModal url={viewerFile.url} studentName={viewerFile.studentName} fileName={viewerFile.fileName} isPlagiarism={viewerFile.isPlagiarism} isXNTT={viewerFile.isXNTT} onClose={() => setViewerFile(null)} />}
-      
       {gradingKLTNTarget && <KLTNGradingModal student={gradingKLTNTarget} processing={kltnProcessing === gradingKLTNTarget.studentEmail} onSave={handleSaveKLTNFromModal} onClose={() => setGradingKLTNTarget(null)} />}
-      
-      {/* MỚI: Gọi Feedback Modal */}
-      {feedbackTarget && (
-        <FeedbackModal
-          student={feedbackTarget}
-          processing={kltnProcessing === feedbackTarget.studentEmail}
-          onSave={handleSaveFeedback}
-          onClose={() => setFeedbackTarget(null)}
-        />
-      )}
+      {feedbackTarget && <FeedbackModal student={feedbackTarget} processing={kltnProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)} />}
 
       <div className="mb-6 pb-4 border-b border-border-color flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-primary uppercase">Sinh viên hướng dẫn</h2>
-          <p className="text-text-muted mt-1 text-sm">Quản lý BCTT và KLTN của sinh viên bạn đang hướng dẫn</p>
+          <p className="text-text-muted mt-1 text-sm">Quản lý Đề tài, Tiến độ KLTN và BCTT của sinh viên do bạn phụ trách</p>
         </div>
         <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
           <input value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded focus:ring-2 focus:ring-surface-tint focus:bg-surface-container-lowest transition-all text-sm outline-none"
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
             placeholder="Tìm tên hoặc MSSV..."/>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {stats.map((s, i) => (
-          <div key={i} className="bg-surface-container-lowest p-5 bg-white border border-border-color rounded shadow-card shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-on-surface-variant text-sm font-medium">{s.label}</p>
-              <h3 className="text-2xl font-bold mt-1">{s.value}</h3>
-            </div>
-            <div className="bg-primary-fixed p-3 rounded">
-              <span className="material-symbols-outlined text-primary">{s.icon}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {kltnPending.length > 0 && (
         <section>
-          <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-            <span className="material-symbols-outlined text-secondary">pending_actions</span>
-            KLTN chờ duyệt đề tài
-            <span className="bg-error text-white text-[10px] font-black px-2 py-0.5 rounded">{kltnPending.length}</span>
+          <h3 className="text-lg font-bold text-primary uppercase flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined">pending_actions</span> KLTN chờ duyệt đề tài
+            <span className="bg-secondary text-white text-[11px] font-bold px-2 py-0.5 rounded">{kltnPending.length}</span>
           </h3>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {kltnPending.map((sv, i) => (
-              <div key={i} className="bg-surface-container-lowest p-5 bg-white border border-border-color rounded shadow-card shadow-sm border-l-4 hover:shadow-md transition-shadow" style={{borderColor:'#00593c'}}>
+              <div key={i} className="bg-white border border-border-color rounded shadow-card p-5 border-l-4 border-l-success">
                 <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0 pr-3">
-                    <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
-                    <div className="min-w-0">
-                      <h4 className="font-bold text-on-surface text-sm leading-snug line-clamp-1">{sv.topic}</h4>
-                      <p className="text-xs text-on-surface-variant mt-0.5">
-                        <span className="font-semibold">{sv.studentName}</span> • MSSV: {sv.maSo}
-                      </p>
-                    </div>
+                  <div className="flex-1 min-w-0 pr-3">
+                    <h4 className="font-bold text-text-main text-sm leading-snug line-clamp-1">{sv.topic}</h4>
+                    <p className="text-sm text-text-muted mt-1">
+                      <span className="font-semibold text-text-main">{sv.studentName}</span> • MSSV: {sv.maSo}
+                    </p>
                   </div>
-                  <span className="text-[10px] px-2.5 py-1 rounded font-bold bg-tertiary-fixed text-on-tertiary-fixed flex-shrink-0">KLTN</span>
-                </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 bg-surface-container-low rounded mb-4 text-xs">
-                  <div>
-                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Ngành</p>
-                    <p className="font-semibold text-on-surface mt-0.5">{sv.nganh || '--'}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Học kỳ</p>
-                    <p className="font-semibold text-on-surface mt-0.5">{sv.term || '--'}</p>
-                  </div>
+                  <span className="text-xs px-2 py-1 rounded border font-semibold bg-green-100 text-green-800 border-green-200">KLTN</span>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1284,13 +1211,12 @@ function TabSinhVienHuongDan({toast}) {
                       setKltnProcessing(null);
                     }}
                     disabled={kltnProcessing === sv.studentEmail}
-                    className="flex-1 py-2.5 rounded text-white text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm"
-                    style={{background:'#00593c'}}>
-                    {kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">check_circle</span>}
-                    Duyệt đề tài
+                    className="flex-1 py-1.5 rounded bg-success text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors">
+                    {kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> : <span className="material-symbols-outlined text-[16px]">check_circle</span>} Duyệt
                   </button>
-                  <button onClick={() => setRejectOutlineTarget(sv)} disabled={kltnProcessing === sv.studentEmail} className="flex-1 py-2.5 rounded bg-surface-container text-on-surface-variant text-xs font-bold hover:bg-error-container hover:text-on-error-container transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5 shadow-sm">
-                    <span className="material-symbols-outlined text-sm">cancel</span> Từ chối
+                  <button onClick={() => setRejectOutlineTarget(sv)} disabled={kltnProcessing === sv.studentEmail} 
+                    className="flex-1 py-1.5 rounded border border-border-color bg-gray-50 text-text-main text-sm font-semibold hover:bg-gray-100 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors">
+                    Từ chối
                   </button>
                 </div>
               </div>
@@ -1301,24 +1227,23 @@ function TabSinhVienHuongDan({toast}) {
 
       {kltnActive.length > 0 && (
         <section>
-          <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-            <span className="material-symbols-outlined" style={{color:'#00593c'}}>school</span>
-            Khóa luận tốt nghiệp (KLTN)
+          <h3 className="text-lg font-bold text-primary uppercase flex items-center gap-2 mb-4 border-b border-border-color pb-2">
+            <span className="material-symbols-outlined">school</span> Khóa luận tốt nghiệp (KLTN)
           </h3>
-          <div className="bg-surface-container-lowest bg-white border border-border-color rounded shadow-card shadow-sm overflow-hidden border border-outline-variant/15">
+          <div className="bg-white border border-border-color rounded shadow-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="academic-table">
                 <thead>
-                  <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
-                    <th className="px-6 py-4">Sinh viên</th>
-                    <th className="px-4 py-4">Đề tài</th>
-                    <th className="px-4 py-4 text-center">Bản KLTN</th>
-                    <th className="px-4 py-4 text-center">Check Đạo văn</th>
-                    <th className="px-4 py-4 text-center">Điểm số</th>
-                    <th className="px-2 py-4"></th>
+                  <tr>
+                    <th>Sinh viên</th>
+                    <th style={{maxWidth: '300px'}}>Đề tài</th>
+                    <th style={{textAlign:'center'}}>Bản KLTN</th>
+                    <th style={{textAlign:'center'}}>Check Đạo văn</th>
+                    <th style={{textAlign:'center'}}>Điểm số</th>
+                    <th style={{textAlign:'center'}}>Nhận xét</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-surface-container">
+                <tbody>
                   {kltnActive.map((sv, i) => {
                     const id = sv.maSo;
                     const pct = kltnInput[id]?.daoVanPct !== undefined ? kltnInput[id].daoVanPct : sv.daoVanPct;
@@ -1337,7 +1262,6 @@ function TabSinhVienHuongDan({toast}) {
                       setUploadingDaoVan(prev => ({...prev, [id]: false}));
                     };
 
-                    // MỚI: Upload KLTN
                     const handleUploadKLTN = async (e) => {
                       const file = e.target.files[0];
                       if (!file) return;
@@ -1353,87 +1277,61 @@ function TabSinhVienHuongDan({toast}) {
                     };
 
                     return (
-                      <tr key={i} className="hover:bg-surface-container-low transition-colors align-middle">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
-                            <div>
-                              <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
-                              <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
-                            </div>
-                          </div>
+                      <tr key={i}>
+                        <td>
+                          <p className="font-semibold text-text-main">{sv.studentName}</p>
+                          <p className="text-xs text-text-muted">MSSV: {sv.maSo}</p>
                         </td>
-
-                        <td className="px-4 py-4 max-w-[200px]">
+                        <td style={{maxWidth: '300px'}}>
                           <p className="text-sm font-medium line-clamp-2">{sv.topic}</p>
                         </td>
-
-                        <td className="px-4 py-4 text-center">
+                        <td className="text-center">
                           {sv.kltnUrl ? (
-                             <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })} className="inline-flex flex-col items-center gap-0.5 group">
-                               <span className="w-10 h-10 flex items-center justify-center rounded bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">menu_book</span></span>
-                               <span className="text-[9px] font-bold text-primary">Xem Bản KLTN</span>
+                             <button onClick={() => setViewerFile({ url: sv.kltnUrl, studentName: sv.studentName, fileName: 'Khóa Luận Tốt Nghiệp' })} 
+                              className="px-2 py-1 bg-primary-light text-primary border border-blue-200 rounded text-xs font-semibold hover:bg-blue-100 flex items-center gap-1 mx-auto">
+                               <span className="material-symbols-outlined text-[16px]">visibility</span> Xem File
                              </button>
                           ) : (
-                             <div className="inline-flex flex-col items-center gap-0.5">
-                                <label title="GV Upload hộ Bản KLTN" className="w-10 h-10 flex items-center justify-center rounded border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
-                                  {uploadingKLTN[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
-                                  <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadKLTN} disabled={uploadingKLTN[id]}/>
-                                </label>
-                                <span className="text-[9px] text-on-surface-variant/50">Tải lên</span>
-                             </div>
+                             <label title="Tải lên Bản KLTN" className="px-2 py-1 bg-gray-50 border border-gray-300 rounded text-xs font-semibold text-text-muted hover:bg-gray-100 cursor-pointer flex items-center gap-1 mx-auto w-fit">
+                               {uploadingKLTN[id] ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span> : <span className="material-symbols-outlined text-[16px]">upload_file</span>} Tải lên
+                               <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadKLTN} disabled={uploadingKLTN[id]}/>
+                             </label>
                           )}
                         </td>
-
-                        <td className="px-4 py-4 text-center">
+                        <td className="text-center">
                           <div className="flex items-center justify-center gap-2">
                             {sv.daoVanUrl ? (
-                              <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} className="w-10 h-10 flex items-center justify-center rounded bg-tertiary-fixed hover:bg-tertiary-fixed-dim transition-colors flex-shrink-0"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">policy</span></button>
+                              <button onClick={() => setViewerFile({ url: sv.daoVanUrl, studentName: sv.studentName, fileName: 'Kết Quả Đạo Văn', isPlagiarism: true })} 
+                                className="px-2 py-1 bg-green-50 text-success border border-green-200 rounded text-xs font-semibold hover:bg-green-100 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[16px]">policy</span> Xem KQ
+                              </button>
                             ) : (
-                              <label title="Tải lên kết quả check đạo văn" className="w-10 h-10 flex items-center justify-center rounded border border-dashed border-primary hover:bg-primary-fixed/50 transition-colors cursor-pointer flex-shrink-0">
-                                {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[20px] text-primary anim-spin">refresh</span> : <span className="material-symbols-outlined text-[20px] text-primary">upload</span>}
+                              <label title="Tải lên kết quả check đạo văn" className="p-1 border border-gray-300 rounded text-text-muted hover:bg-gray-100 cursor-pointer">
+                                {uploadingDaoVan[id] ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span> : <span className="material-symbols-outlined text-[16px]">upload</span>}
                                 <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleUploadDaoVan} disabled={uploadingDaoVan[id]}/>
                               </label>
                             )}
-                            {(() => {
-                               let pctColor = 'bg-surface-container-low border-outline-variant/40 text-on-surface';
-                               const numPct = parseFloat(pct);
-                               if (!isNaN(numPct)) {
-                                  if (numPct <= 20) pctColor = 'bg-emerald-50 border-emerald-500/50 text-emerald-700';
-                                  else if (numPct <= 30) pctColor = 'bg-orange-50 border-orange-500/50 text-orange-700';
-                                  else pctColor = 'bg-red-50 border-red-500/50 text-red-700';
-                               }
-                               return (
-                                 <div className={`flex items-center border rounded-lg overflow-hidden w-[65px] h-[40px] transition-colors ${pctColor}`}>
-                                    <input type="number" min="0" max="100" placeholder="%" value={pct} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))} className="w-full h-full text-[13px] font-black text-center pl-1 border-none outline-none bg-transparent" />
-                                    <span className="text-[10px] font-bold opacity-60 pr-2">%</span>
-                                 </div>
-                               );
-                            })()}
+                            <div className="flex items-center border border-gray-300 rounded overflow-hidden w-[60px] h-[28px]">
+                              <input type="number" min="0" max="100" placeholder="%" value={pct} onChange={e => setKltnInput(prev => ({...prev, [id]: {...prev[id], daoVanPct: e.target.value}}))} className="w-full h-full text-xs font-bold text-center pl-1 border-none outline-none" />
+                            </div>
                           </div>
                         </td>
-
-                        <td className="px-4 py-4 text-center">
+                        <td className="text-center">
                           {sv.grade != null ? (
-                            <div className="flex flex-col items-center gap-1">
-                              <span className="text-2xl font-black text-primary">{Number(sv.grade).toFixed(1)}</span>
-                              <span className="text-[9px] font-bold text-tertiary bg-tertiary-fixed px-2 py-0.5 rounded">Đã chấm</span>
-                            </div>
+                            <span className="text-lg font-bold text-primary">{Number(sv.grade).toFixed(1)}</span>
                           ) : (
-                            <button onClick={() => setGradingKLTNTarget(sv)} disabled={kltnProcessing === sv.studentEmail} className="flex items-center gap-1.5 px-3 py-2 bg-primary-fixed text-on-primary-fixed-variant rounded hover:bg-primary-fixed-dim transition-colors disabled:opacity-50 font-bold text-xs shadow-sm">
-                              {kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-[16px]">refresh</span> : <span className="material-symbols-outlined text-[16px]">edit_square</span>} Chấm
+                            <button onClick={() => setGradingKLTNTarget(sv)} disabled={kltnProcessing === sv.studentEmail} 
+                              className="px-3 py-1 bg-primary text-white rounded text-xs font-semibold hover:bg-primary-hover disabled:opacity-50">
+                              Chấm
                             </button>
                           )}
                         </td>
-
-                        {/* MỚI: Bật tính năng Chat (Nhận xét) */}
-                        <td className="px-2 py-4 text-center">
-                          <button onClick={() => setFeedbackTarget(sv)} title="Ghi nhận xét / Yêu cầu chỉnh sửa" className="p-2 text-outline hover:text-primary hover:bg-primary-fixed rounded-lg transition-all relative">
-                            <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
-                            {sv.nhanXet && <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded border-2 border-white"></span>}
+                        <td className="text-center relative">
+                          <button onClick={() => setFeedbackTarget(sv)} className="p-1.5 border border-gray-300 rounded text-text-muted hover:bg-gray-100 transition-colors relative">
+                            <span className="material-symbols-outlined text-[18px]">chat</span>
+                            {sv.nhanXet && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-secondary rounded-full border border-white"></span>}
                           </button>
                         </td>
-
                       </tr>
                     );
                   })}
@@ -1445,80 +1343,71 @@ function TabSinhVienHuongDan({toast}) {
       )}
 
       {/* BCTT */}
-      <div>
-        <h3 className="text-lg font-bold text-on-surface flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-primary">assignment</span> Báo cáo thực tập (BCTT)
+      <section>
+        <h3 className="text-lg font-bold text-primary uppercase flex items-center gap-2 mb-4 border-b border-border-color pb-2 mt-8">
+          <span className="material-symbols-outlined">assignment</span> Báo cáo thực tập (BCTT)
         </h3>
-      </div>
 
-      {students.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4 bg-white border border-border-color rounded shadow-card">
-          <span className="material-symbols-outlined text-6xl opacity-15">school</span>
-          <p className="text-sm font-medium text-on-surface-variant">Chưa có sinh viên nào được duyệt đề tài</p>
-        </div>
-      ) : (
-        <div className="bg-surface-container-lowest bg-white border border-border-color rounded shadow-card shadow-sm overflow-hidden border border-outline-variant/15">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-surface-container-low text-on-surface-variant text-xs font-semibold uppercase tracking-wider">
-                  {['Sinh viên','Đề tài','Đơn vị TT','File BC','Giấy XNTT','Điểm số'].map((h, i) => (
-                    <th key={i} className={`px-4 py-4 ${i>=3 ? 'text-center' : ''}`}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-surface-container">
-                {filtered.map(sv => (
-                  <tr key={sv.maSo} className="hover:bg-surface-container-low transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
-                        <div>
-                          <p className="font-bold text-on-surface text-sm">{sv.studentName}</p>
-                          <p className="text-xs text-on-surface-variant">MSSV: {sv.maSo}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 max-w-[200px]"><p className="text-sm font-medium line-clamp-2">{sv.topic}</p></td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">{sv.company || '--'}</td>
-
-                    <td className="px-4 py-4 text-center">
-                      {sv.reportSubmitted && sv.reportDriveUrl ? (
-                        <button onClick={() => setViewerFile({ url: sv.reportDriveUrl, studentName: sv.studentName })} className="inline-flex flex-col items-center gap-0.5 group">
-                          <span className="w-10 h-10 flex items-center justify-center rounded bg-primary-fixed group-hover:bg-primary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-primary">description</span></span>
-                          <span className="text-[9px] font-bold text-primary">Xem</span>
-                        </button>
-                      ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
-                    </td>
-
-                    <td className="px-4 py-4 text-center">
-                      {sv.xnttDriveUrl ? (
-                        <button onClick={() => setViewerFile({ url: sv.xnttDriveUrl, studentName: sv.studentName, fileName: 'Giấy Xác Nhận Thực Tập', isXNTT: true })} className="inline-flex flex-col items-center gap-0.5 group">
-                          <span className="w-10 h-10 flex items-center justify-center rounded bg-tertiary-fixed group-hover:bg-tertiary-fixed-dim transition-colors"><span className="material-symbols-outlined fill-icon text-[20px] text-tertiary">verified</span></span>
-                          <span className="text-[9px] font-bold text-tertiary">Xem</span>
-                        </button>
-                      ) : (<span className="text-[9px] text-on-surface-variant/40">Chưa nộp</span>)}
-                    </td>
-                    
-                    <td className="px-4 py-4">
-                      {sv.grade != null && sv.status === 'graded' ? (
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-2xl font-black text-primary">{sv.grade.toFixed(1)}</span>
-                        </div>
-                      ) : sv.reportSubmitted ? (
-                        <div className="flex flex-col gap-1.5 w-[110px]">
-                          <input type="number" min="0" max="10" step="0.1" value={grades[sv.maSo] ?? ''} onChange={e => setGrades(prev => ({...prev, [sv.maSo]: e.target.value}))} className="w-full text-sm font-bold text-center bg-surface-container-low border border-outline-variant/40 rounded px-2 py-2 outline-none" />
-                          <button onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)} disabled={saving[sv.maSo]} className="w-full py-1.5 bg-primary text-white text-[10px] font-bold rounded">{saving[sv.maSo] ? 'Đang lưu...' : 'Lưu điểm'}</button>
-                        </div>
-                      ) : (<span className="text-[10px] text-on-surface-variant/40 italic">Chờ nộp BC</span>)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {students.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 bg-white border border-border-color rounded shadow-card">
+            <span className="material-symbols-outlined text-4xl text-gray-300 mb-2">school</span>
+            <p className="text-sm font-medium text-text-muted">Chưa có sinh viên nào được duyệt đề tài</p>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="bg-white border border-border-color rounded shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="academic-table">
+                <thead>
+                  <tr>
+                    <th>Sinh viên</th>
+                    <th style={{maxWidth: '250px'}}>Đề tài</th>
+                    <th>Đơn vị TT</th>
+                    <th style={{textAlign:'center'}}>File BC</th>
+                    <th style={{textAlign:'center'}}>Giấy XNTT</th>
+                    <th style={{textAlign:'center'}}>Điểm số</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(sv => (
+                    <tr key={sv.maSo}>
+                      <td>
+                        <p className="font-semibold text-text-main">{sv.studentName}</p>
+                        <p className="text-xs text-text-muted">MSSV: {sv.maSo}</p>
+                      </td>
+                      <td style={{maxWidth: '250px'}}><p className="text-sm font-medium line-clamp-2">{sv.topic}</p></td>
+                      <td className="text-sm text-text-muted">{sv.company || '--'}</td>
+                      <td className="text-center">
+                        {sv.reportSubmitted && sv.reportDriveUrl ? (
+                          <button onClick={() => setViewerFile({ url: sv.reportDriveUrl, studentName: sv.studentName })} className="px-2 py-1 border border-gray-300 rounded text-xs font-semibold text-text-main hover:bg-gray-100 flex items-center gap-1 mx-auto">
+                            <span className="material-symbols-outlined text-[16px]">visibility</span> Xem
+                          </button>
+                        ) : (<span className="text-xs text-text-muted italic">Chưa nộp</span>)}
+                      </td>
+                      <td className="text-center">
+                        {sv.xnttDriveUrl ? (
+                          <button onClick={() => setViewerFile({ url: sv.xnttDriveUrl, studentName: sv.studentName, fileName: 'Giấy Xác Nhận Thực Tập', isXNTT: true })} className="px-2 py-1 border border-gray-300 rounded text-xs font-semibold text-text-main hover:bg-gray-100 flex items-center gap-1 mx-auto">
+                            <span className="material-symbols-outlined text-[16px]">verified</span> Xem
+                          </button>
+                        ) : (<span className="text-xs text-text-muted italic">Chưa nộp</span>)}
+                      </td>
+                      <td className="text-center">
+                        {sv.grade != null && sv.status === 'graded' ? (
+                          <span className="text-lg font-bold text-primary">{sv.grade.toFixed(1)}</span>
+                        ) : sv.reportSubmitted ? (
+                          <div className="flex items-center gap-2 justify-center">
+                            <input type="number" min="0" max="10" step="0.1" value={grades[sv.maSo] ?? ''} onChange={e => setGrades(prev => ({...prev, [sv.maSo]: e.target.value}))} className="w-16 border border-gray-300 rounded py-1 px-2 text-center text-sm font-bold focus:border-primary outline-none" />
+                            <button onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)} disabled={saving[sv.maSo]} className="px-2 py-1 bg-primary text-white text-xs font-semibold rounded hover:bg-primary-hover">{saving[sv.maSo] ? '...' : 'Lưu'}</button>
+                          </div>
+                        ) : (<span className="text-xs text-text-muted italic">Chờ nộp BC</span>)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
@@ -1546,8 +1435,8 @@ function TabPhanBien({toast}) {
             truongHD     : r[5] || '',
             thanhVien1   : r[6] || '',
             thanhVien2   : r[7] || '',
-            thanhVien3   : r[8] || '', // Thêm dòng này
-            thuKy        : r[9] || '', // Đổi 8 thành 9
+            thanhVien3   : r[8] || '', 
+            thuKy        : r[9] || '', 
           }));
         setStudents(pbList);
         const init = {};
@@ -1572,96 +1461,81 @@ function TabPhanBien({toast}) {
       const res = await apiPost({ action:'saveGrade', type:'pb', studentEmail, grade: num });
       if (res.success) {
         toast.show(`Đã lưu điểm phản biện ${num.toFixed(1)} cho MSSV ${maSo}`, 'success');
-      } else {
-        toast.show(res.message || 'Lưu điểm thất bại!', 'error');
-      }
+      } else { toast.show(res.message || 'Lưu điểm thất bại!', 'error'); }
     } catch(e) { toast.show('Lỗi kết nối. Thử lại sau.', 'error'); }
     setSaving(prev => ({ ...prev, [maSo]: false }));
   }
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center py-32 gap-4 text-on-surface-variant">
-      <span className="material-symbols-outlined anim-spin text-4xl text-primary">refresh</span>
-      <p className="text-sm font-medium">Đang tải từ sheet HoiDongKLTN...</p>
-    </div>
-  );
+  if (loading) return <Spinner text="Đang tải dữ liệu Hội đồng Phản biện..."/>;
 
   return (
-    <div className="space-y-6 anim-fade">
+    <div className="anim-fade">
       <div className="mb-6 pb-4 border-b border-border-color flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-primary uppercase">Danh sách Phản biện</h2>
-          <p className="text-text-muted mt-1 text-sm">Sinh viên bạn được phân công phản biện (từ sheet HoiDongKLTN)</p>
+          <p className="text-text-muted mt-1 text-sm">Sinh viên do bạn phụ trách Phản biện độc lập</p>
         </div>
         <div className="relative w-full md:w-80">
-          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
           <input value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded focus:ring-2 focus:ring-primary/20 text-sm outline-none"
+            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
             placeholder="Tìm tên hoặc MSSV..."/>
         </div>
       </div>
 
       {students.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 gap-5 bg-white border border-border-color rounded shadow-card">
-          <span className="material-symbols-outlined text-7xl opacity-10">rate_review</span>
-          <p className="text-base font-bold text-on-surface-variant">Chưa có sinh viên phản biện nào</p>
-          <p className="text-sm text-on-surface-variant/60 text-center max-w-sm">
-            Khi admin điền email GV vào cột "Email GV phản biện" trong sheet HoiDongKLTN, danh sách sẽ tự hiện ở đây.
-          </p>
+        <div className="flex flex-col items-center justify-center py-16 bg-white border border-border-color rounded shadow-card">
+          <span className="material-symbols-outlined text-5xl text-gray-300 mb-3">rate_review</span>
+          <p className="text-sm font-semibold text-text-main">Chưa có sinh viên phân công phản biện</p>
+          <p className="text-xs text-text-muted mt-1">Hệ thống sẽ cập nhật khi Giáo vụ / TBM hoàn tất phân công.</p>
         </div>
       ) : (
         <div className="bg-white border border-border-color rounded shadow-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse" style={{minWidth:'800px'}}>
+            <table className="academic-table" style={{minWidth:'800px'}}>
               <thead>
-                <tr className="bg-surface-container-low">
-                  {['Sinh viên','Thành phần hội đồng','Điểm phản biện','Thao tác'].map((h, i) => (
-                    <th key={i} className={`px-6 py-4 text-[11px] font-black uppercase tracking-widest text-on-surface-variant ${i===2?'text-center':''}`}>{h}</th>
-                  ))}
+                <tr>
+                  <th>Sinh viên</th>
+                  <th>Thành phần hội đồng</th>
+                  <th style={{textAlign:'center'}}>Điểm phản biện</th>
+                  <th style={{textAlign:'center'}}>Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/10">
+              <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan="4" className="px-6 py-12 text-center text-sm text-on-surface-variant">Không tìm thấy</td></tr>
+                  <tr><td colSpan="4" className="text-center py-6 text-text-muted">Không tìm thấy sinh viên</td></tr>
                 ) : filtered.map(sv => (
-                  <tr key={sv.maSo} className="hover:bg-surface-container-low/30 transition-colors">
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <Av name={sv.studentName} cls="w-10 h-10 flex-shrink-0"/>
-                        <div>
-                          <p className="font-bold text-sm text-on-surface">{sv.studentName}</p>
-                          <p className="text-xs text-on-surface-variant">{sv.maSo} • {sv.studentEmail}</p>
-                        </div>
+                  <tr key={sv.maSo}>
+                    <td>
+                      <p className="font-semibold text-text-main">{sv.studentName}</p>
+                      <p className="text-sm text-text-muted">{sv.maSo} • {sv.studentEmail}</p>
+                    </td>
+                    <td>
+                      <div className="space-y-1 text-xs text-text-muted">
+                        {sv.truongHD    && <p><span className="font-semibold text-text-main w-14 inline-block">Chủ tịch:</span> {sv.truongHD}</p>}
+                        {sv.thuKy       && <p><span className="font-semibold text-text-main w-14 inline-block">Thư ký:</span> {sv.thuKy}</p>}
+                        {sv.thanhVien1  && <p><span className="font-semibold text-text-main w-14 inline-block">UV1:</span> {sv.thanhVien1}</p>}
+                        {sv.thanhVien2  && <p><span className="font-semibold text-text-main w-14 inline-block">UV2:</span> {sv.thanhVien2}</p>}
+                        {sv.thanhVien3  && <p><span className="font-semibold text-text-main w-14 inline-block">UV3:</span> {sv.thanhVien3}</p>}
                       </div>
                     </td>
-                    <td className="px-6 py-5">
-                      <div className="space-y-1 text-xs">
-                        {sv.truongHD    && <p><span className="font-bold text-primary">Chủ tịch:</span> {sv.truongHD}</p>}
-                        {sv.thanhVien1  && <p><span className="text-on-surface-variant">TV1:</span> {sv.thanhVien1}</p>}
-                        {sv.thanhVien2  && <p><span className="text-on-surface-variant">TV2:</span> {sv.thanhVien2}</p>}
-                        {sv.thanhVien3  && <p><span className="text-on-surface-variant">TV3:</span> {sv.thanhVien3}</p>}
-                        {sv.thuKy       && <p><span className="text-on-surface-variant">Thư ký:</span> {sv.thuKy}</p>}
-                      </div>
-                    </td>
-                    <td className="px-4 py-5">
+                    <td className="text-center">
                       <div className="flex justify-center items-center gap-2">
                         <input type="number" min="0" max="10" step="0.1" placeholder="0.0"
                           value={pbGrades[sv.maSo] || ''}
                           onChange={e => setPbGrades(prev => ({ ...prev, [sv.maSo]: e.target.value }))}
-                          className="w-16 h-10 text-center bg-surface-container border-none rounded-lg font-bold text-primary focus:ring-2 focus:ring-primary/40 outline-none"/>
+                          className="w-20 text-center py-1 border border-gray-300 rounded text-sm font-bold focus:border-primary outline-none"/>
                         <button onClick={() => handleSavePbGrade(sv.maSo, sv.studentEmail)}
                           disabled={!!saving[sv.maSo]}
-                          className="p-1.5 bg-primary text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity">
-                          {saving[sv.maSo]
-                            ? <span className="material-symbols-outlined text-[16px] anim-spin">refresh</span>
-                            : <span className="material-symbols-outlined text-[16px]">save</span>}
+                          className="px-3 py-1.5 bg-primary text-white rounded text-xs font-semibold hover:bg-primary-hover disabled:opacity-50 transition-colors">
+                          {saving[sv.maSo] ? 'Đang lưu...' : 'Lưu điểm'}
                         </button>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
-                      <button onClick={() => toast.show('Tính năng đang phát triển!', 'warn')}
-                        className="p-2 text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded-lg transition-all">
-                        <span className="material-symbols-outlined">edit_square</span>
+                    <td className="text-center">
+                      <button onClick={() => toast.show('Chức năng nhập phiếu đang cập nhật!', 'warn')}
+                        className="px-2 py-1 border border-gray-300 rounded text-xs font-semibold text-text-main hover:bg-gray-100 flex items-center gap-1 mx-auto">
+                        <span className="material-symbols-outlined text-[16px]">edit_document</span> Nhập phiếu
                       </button>
                     </td>
                   </tr>
@@ -1669,15 +1543,14 @@ function TabPhanBien({toast}) {
               </tbody>
             </table>
           </div>
-          <div className="px-6 py-3 bg-surface-container-low border-t border-outline-variant/10">
-            <p className="text-xs text-on-surface-variant">Hiển thị {filtered.length} / {students.length} sinh viên phản biện</p>
+          <div className="px-4 py-3 bg-gray-50 border-t border-border-color">
+            <p className="text-sm text-text-muted font-medium">Hiển thị <span className="font-bold text-primary">{filtered.length}</span> sinh viên phản biện</p>
           </div>
         </div>
       )}
     </div>
   );
 }
-
 // ── TAB 4: HỘI ĐỒNG ──────────────────────────────────────────────────────────
 function TabHoiDong({toast}) {
   const [hdList,   setHdList]   = React.useState([]);
