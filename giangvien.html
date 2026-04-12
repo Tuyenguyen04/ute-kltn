@@ -1164,6 +1164,10 @@ function TabThongTinChung({toast}) {
   const [rejectTarget, setRejectTarget] = React.useState(null);
   const [editTopicTarget, setEditTopicTarget] = React.useState(null);
 
+  // Thêm State cho tính năng Duyệt hàng loạt
+  const [selectedPending, setSelectedPending] = React.useState([]);
+  const [isBatchApproving, setIsBatchApproving] = React.useState(false);
+
   React.useEffect(() => { loadData(); }, []);
 
   async function loadData() {
@@ -1176,23 +1180,81 @@ function TabThongTinChung({toast}) {
       const bcttPending = bcttData.pendingList.map(r => ({...r, type: 'bctt'}));
       setPendingList([...bcttPending, ...kltnData.pendingTopic]);
       setApprovedList(bcttData.approvedList);
+      setSelectedPending([]); // Reset lựa chọn khi tải lại
     } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
     setLoading(false);
   }
 
+  // Hàm duyệt 1 sinh viên (Cũ)
   async function handleApprove(req) {
     setProcessingId(req.studentEmail);
     try {
       let res;
       if (req.type === 'kltn') res = await apiPost({ action: 'approveKLTNTopic', studentEmail: req.studentEmail });
       else res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'approved' });
+      
       if (res.success) {
         toast.show(`Đã duyệt đề tài của ${req.studentName}!`, 'success');
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
         if (req.type === 'bctt') setApprovedList(prev => [{ ...req, status: 'approved' }, ...prev]);
+        // Xóa khỏi danh sách đang chọn nếu có
+        setSelectedPending(prev => prev.filter(email => email !== req.studentEmail));
       } else toast.show(res.message || 'Duyệt thất bại.', 'error');
     } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
     setProcessingId(null);
+  }
+
+  // THÊM MỚI: Hàm duyệt hàng loạt
+  async function handleBatchApprove() {
+    if (selectedPending.length === 0) return;
+    setIsBatchApproving(true);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    // Lấy chi tiết các sinh viên đã chọn
+    const itemsToApprove = pendingList.filter(r => selectedPending.includes(r.studentEmail));
+
+    // Gọi API tuần tự cho từng sinh viên
+    for (const req of itemsToApprove) {
+      try {
+        let res;
+        if (req.type === 'kltn') res = await apiPost({ action: 'approveKLTNTopic', studentEmail: req.studentEmail });
+        else res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'approved' });
+        
+        if (res.success) successCount++;
+        else failCount++;
+      } catch(e) { failCount++; }
+    }
+
+    setIsBatchApproving(false);
+    
+    // Thông báo kết quả
+    if (successCount > 0) {
+      toast.show(`✅ Đã duyệt thành công ${successCount} đề tài!`, 'success');
+    }
+    if (failCount > 0) {
+      toast.show(`❌ Có ${failCount} đề tài duyệt thất bại.`, 'error');
+    }
+
+    // Load lại data để đồng bộ với Sheet
+    loadData();
+  }
+
+  // Hàm xử lý Checkbox "Chọn tất cả"
+  const isAllSelected = pendingList.length > 0 && selectedPending.length === pendingList.length;
+  function handleSelectAll() {
+    if (isAllSelected) setSelectedPending([]);
+    else setSelectedPending(pendingList.map(r => r.studentEmail));
+  }
+
+  // Hàm xử lý Checkbox từng dòng
+  function handleSelectOne(email) {
+    if (selectedPending.includes(email)) {
+      setSelectedPending(prev => prev.filter(e => e !== email));
+    } else {
+      setSelectedPending(prev => [...prev, email]);
+    }
   }
 
   async function handleReject(req, reason) {
@@ -1204,6 +1266,7 @@ function TabThongTinChung({toast}) {
       if (res.success) {
         toast.show(`Đã từ chối đề tài của ${req.studentName}.`, 'warn');
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
+        setSelectedPending(prev => prev.filter(email => email !== req.studentEmail));
       } else toast.show(res.message || 'Từ chối thất bại.', 'error');
     } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
     setProcessingId(null); setRejectTarget(null);
@@ -1244,7 +1307,7 @@ function TabThongTinChung({toast}) {
             <span className="material-symbols-outlined text-base">school</span>
             {SESSION.nganh || 'Khoa học máy tính'} • {SESSION.maGV}
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 justify-center md:justify-start">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-alt rounded-md text-sm"><span className="material-symbols-outlined text-base text-primary">calendar_today</span>HK2 - 2024-2025</span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-alt rounded-md text-sm"><span className="material-symbols-outlined text-base text-primary">mail</span>{SESSION.email}</span>
           </div>
@@ -1261,30 +1324,65 @@ function TabThongTinChung({toast}) {
       </div>
 
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-semibold text-lg flex items-center gap-2"><span className="material-symbols-outlined text-warning">pending_actions</span>Yêu cầu chờ duyệt{!loading && pendingList.length > 0 && <span className="badge bg-warning/10 text-warning">{pendingList.length}</span>}</h3>
-          <button onClick={loadData} className="p-2 hover:bg-surface-alt rounded-md"><span className={`material-symbols-outlined text-text-muted ${loading?'anim-spin':''}`}>refresh</span></button>
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
+          <h3 className="font-display font-semibold text-lg flex items-center gap-2">
+            <span className="material-symbols-outlined text-warning">pending_actions</span>Yêu cầu chờ duyệt
+            {!loading && pendingList.length > 0 && <span className="badge bg-warning/10 text-warning">{pendingList.length}</span>}
+          </h3>
+          
+          <div className="flex items-center gap-3">
+            {/* Thanh công cụ duyệt hàng loạt */}
+            {!loading && pendingList.length > 0 && (
+              <div className="flex items-center gap-3 bg-surface-alt px-3 py-1.5 rounded-lg">
+                <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                  <input type="checkbox" checked={isAllSelected} onChange={handleSelectAll} className="w-4 h-4 rounded text-primary"/>
+                  Chọn tất cả
+                </label>
+                {selectedPending.length > 0 && (
+                  <button onClick={handleBatchApprove} disabled={isBatchApproving} className="btn btn-success py-1 px-3 text-xs">
+                    {isBatchApproving ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">checklist</span>}
+                    Duyệt {selectedPending.length} đề tài
+                  </button>
+                )}
+              </div>
+            )}
+            <button onClick={loadData} className="p-2 hover:bg-surface-alt rounded-md"><span className={`material-symbols-outlined text-text-muted ${loading?'anim-spin':''}`}>refresh</span></button>
+          </div>
         </div>
+
         {loading ? <Spinner/> : pendingList.length === 0 ? (
           <div className="card p-8 text-center text-text-muted"><span className="material-symbols-outlined text-4xl opacity-15 mb-2">inbox</span><p>Không có yêu cầu nào</p></div>
         ) : (
           <div className="space-y-3">
             {pendingList.map(r => {
               const isKltn = r.type === 'kltn';
+              const isChecked = selectedPending.includes(r.studentEmail);
+              
               return (
-                <div key={r.studentEmail} className="card p-5">
+                <div key={r.studentEmail} className={`card p-5 transition-colors ${isChecked ? 'border-primary bg-primary/5' : ''}`}>
                   <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1"><h4 className="font-semibold mb-1 line-clamp-1">{r.topic}</h4><p className="text-sm text-text-muted"><span className="font-medium">{r.studentName}</span> • MSSV: {r.maSo}</p></div>
+                    <div className="flex gap-3">
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked} 
+                        onChange={() => handleSelectOne(r.studentEmail)} 
+                        className="w-5 h-5 mt-0.5 rounded text-primary border-border cursor-pointer"
+                      />
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-1 line-clamp-1 cursor-pointer hover:text-primary" onClick={() => handleSelectOne(r.studentEmail)}>{r.topic}</h4>
+                        <p className="text-sm text-text-muted"><span className="font-medium">{r.studentName}</span> • MSSV: {r.maSo}</p>
+                      </div>
+                    </div>
                     <span className={`badge ${isKltn ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>{isKltn ? 'KLTN' : 'BCTT'}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 p-3 bg-surface-alt rounded-lg mb-3 text-sm">
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-white/50 border border-border-light rounded-lg mb-3 text-sm ml-8">
                     <div><p className="text-xs font-semibold text-text-muted">Học kỳ</p><p>{r.term || '--'}</p></div>
                     <div><p className="text-xs font-semibold text-text-muted">{isKltn ? 'Ngành' : 'Đơn vị TT'}</p><p>{isKltn ? r.nganh : r.company || '--'}</p></div>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => handleApprove(r)} disabled={processingId === r.studentEmail} className="flex-1 btn" style={{background:isKltn?'#1a5c3a':'#1a3a5c',color:'white'}}>{processingId === r.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : 'Duyệt'}</button>
-                    <button onClick={() => setEditTopicTarget(r)} disabled={processingId === r.studentEmail} className="flex-1 btn btn-outline">Chỉnh sửa</button>
-                    <button onClick={() => setRejectTarget(r)} disabled={processingId === r.studentEmail} className="flex-1 btn btn-outline text-error border-error">Từ chối</button>
+                  <div className="flex gap-2 ml-8">
+                    <button onClick={() => handleApprove(r)} disabled={processingId === r.studentEmail || isBatchApproving} className="flex-1 btn" style={{background:isKltn?'#1a5c3a':'#1a3a5c',color:'white'}}>{processingId === r.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : 'Duyệt'}</button>
+                    <button onClick={() => setEditTopicTarget(r)} disabled={processingId === r.studentEmail || isBatchApproving} className="flex-1 btn btn-outline">Chỉnh sửa</button>
+                    <button onClick={() => setRejectTarget(r)} disabled={processingId === r.studentEmail || isBatchApproving} className="flex-1 btn btn-outline text-error border-error">Từ chối</button>
                   </div>
                 </div>
               );
@@ -1311,7 +1409,6 @@ function TabThongTinChung({toast}) {
     </div>
   );
 }
-
 // ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
 function TabSinhVienHuongDan({toast}) {
   const [search, setSearch] = React.useState('');
