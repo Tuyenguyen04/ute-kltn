@@ -50,6 +50,12 @@ borderRadius:{"sm":"0.25rem","DEFAULT":"0.5rem","md":"0.75rem","lg":"1rem","xl":
   .btn-secondary:hover{background:#f8f9fa;border-color:#1a3a5c}
   .btn-outline{background:transparent;color:#495057;border-color:#dee2e6}
   .btn-outline:hover{background:#f8f9fa;border-color:#1a3a5c}
+  .btn-success{background:#1a5c3a;color:#fff;border-color:#1a5c3a}
+  .btn-success:hover{background:#2a8c5a}
+  .btn-warning{background:#e8a800;color:#fff;border-color:#e8a800}
+  .btn-warning:hover{background:#f5b800}
+  .btn-error{background:#c41e3a;color:#fff;border-color:#c41e3a}
+  .btn-error:hover{background:#d42e4a}
   .table-header{background:#f8f9fa;border-bottom:2px solid #dee2e6}
   .table-row{border-bottom:1px solid #e9ecef}
   .table-row:hover{background:#fafbfc}
@@ -57,6 +63,10 @@ borderRadius:{"sm":"0.25rem","DEFAULT":"0.5rem","md":"0.75rem","lg":"1rem","xl":
   .sidebar-link:hover{background:#f1f3f5;color:#1a3a5c}
   .sidebar-link.active{background:#1a3a5c;color:#ffffff}
   .sidebar-link.active .material-symbols-outlined{color:#ffffff}
+  .form-input{width:100%;padding:0.625rem 0.875rem;background:#ffffff;border:1px solid #dee2e6;border-radius:0.5rem;font-size:0.875rem;transition:all .15s}
+  .form-input:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 3px rgba(26,58,92,0.1)}
+  .form-select{width:100%;padding:0.625rem 2rem 0.625rem 0.875rem;background:#ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23495057' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E") no-repeat right 0.5rem center;background-size:1.25rem;border:1px solid #dee2e6;border-radius:0.5rem;font-size:0.875rem;appearance:none}
+  .form-select:focus{outline:none;border-color:#1a3a5c;box-shadow:0 0 0 3px rgba(26,58,92,0.1)}
 </style>
 </head>
 <body>
@@ -549,18 +559,60 @@ function RejectModal({request, onConfirm, onClose}) {
           <textarea
             value={reason} onChange={e => setReason(e.target.value)}
             rows={4} autoFocus
-            className="w-full bg-surface-alt rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-text-primary placeholder:text-text-muted resize-none text-sm border border-border"
+            className="form-input resize-none"
             placeholder="VD: Đề tài chưa đủ tính ứng dụng, cần bổ sung thêm phần phân tích..."/>
         </div>
         <div className="flex gap-3">
-          <button onClick={onClose} disabled={submitting}
-            className="flex-1 btn btn-outline">
-            Hủy bỏ
-          </button>
-          <button onClick={handleConfirm} disabled={!reason.trim() || submitting}
-            className="flex-1 btn btn-primary bg-error border-error text-white">
-            {submitting ? <><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang gửi...</> : 'Xác nhận từ chối'}
-          </button>
+          <button onClick={onClose} disabled={submitting} className="flex-1 btn btn-outline">Hủy bỏ</button>
+          <button onClick={handleConfirm} disabled={!reason.trim() || submitting} className="flex-1 btn btn-error">Xác nhận từ chối</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL TỪ CHỐI ĐỀ CƯƠNG KLTN ─────────────────────────────────────────────
+function RejectOutlineModal({request, onConfirm, onClose}) {
+  const [reason, setReason] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleConfirm() {
+    if (!reason.trim()) return;
+    setSubmitting(true);
+    await onConfirm(request, reason.trim());
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/30 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl anim-slide">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-error">description_off</span>
+          </div>
+          <div>
+            <h2 className="font-display font-bold text-lg text-text-primary">Từ chối đề cương KLTN</h2>
+            <p className="text-xs text-text-muted">Sinh viên sẽ nhận thông báo kèm lý do cụ thể</p>
+          </div>
+        </div>
+        <div className="bg-surface-alt rounded-lg p-4 mb-4">
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wide mb-1">Đề tài KLTN</p>
+          <p className="font-medium text-text-primary text-sm">{request.topic}</p>
+          <p className="text-xs text-text-muted mt-1">{request.studentName} • {request.maSo}</p>
+        </div>
+        <div className="mb-4">
+          <label className="text-sm font-medium text-text-secondary block mb-2">
+            Lý do từ chối đề cương <span className="text-error">*</span>
+          </label>
+          <textarea
+            value={reason} onChange={e => setReason(e.target.value)}
+            rows={4} autoFocus
+            className="form-input resize-none"
+            placeholder="VD: Đề cương chưa đủ cơ sở lý thuyết, cần bổ sung phần phân tích..."/>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={submitting} className="flex-1 btn btn-outline">Hủy</button>
+          <button onClick={handleConfirm} disabled={!reason.trim() || submitting} className="flex-1 btn btn-error">Xác nhận từ chối</button>
         </div>
       </div>
     </div>
@@ -598,17 +650,11 @@ function EditTopicModal({request, onConfirm, onClose}) {
           <textarea
             value={newTopic} onChange={e => setNewTopic(e.target.value)}
             rows={4} autoFocus
-            className="w-full bg-surface-alt rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 text-text-primary placeholder:text-text-muted resize-none text-sm border border-border"/>
+            className="form-input resize-none"/>
         </div>
         <div className="flex gap-3">
-          <button onClick={onClose} disabled={submitting}
-            className="flex-1 btn btn-outline">
-            Hủy
-          </button>
-          <button onClick={handleConfirm} disabled={!newTopic.trim() || submitting}
-            className="flex-1 btn btn-primary">
-            {submitting ? <><span className="material-symbols-outlined anim-spin text-sm">refresh</span>Đang lưu...</> : 'Lưu thay đổi'}
-          </button>
+          <button onClick={onClose} disabled={submitting} className="flex-1 btn btn-outline">Hủy</button>
+          <button onClick={handleConfirm} disabled={!newTopic.trim() || submitting} className="flex-1 btn btn-primary">Lưu thay đổi</button>
         </div>
       </div>
     </div>
@@ -676,6 +722,439 @@ function FileViewerModal({ url, studentName, fileName, isPlagiarism, isXNTT, onC
   );
 }
 
+// ── MODAL CHẤM ĐIỂM KLTN (GVHD) ───────────────────────────────────────────────
+function KLTNGradingModal({ student, onSave, onClose, processing }) {
+  const [scores, setScores] = React.useState({ nd: '', td: '', cv: '', th: '' });
+  const [baoVe, setBaoVe] = React.useState(true);
+
+  const totalScore = (parseFloat(scores.nd)||0) + (parseFloat(scores.td)||0) + (parseFloat(scores.cv)||0) + (parseFloat(scores.th)||0);
+
+  const handleComplete = () => {
+    if (scores.nd === '' || scores.td === '' || scores.cv === '' || scores.th === '') {
+      alert("Vui lòng nhập đầy đủ điểm cho cả 4 tiêu chí!");
+      return;
+    }
+    if (totalScore > 10 || totalScore < 0) {
+      alert("Tổng điểm bị sai lệch, vui lòng kiểm tra lại!");
+      return;
+    }
+    const nhanXet = baoVe ? "Kết luận: Cho phép SV bảo vệ trước hội đồng" : "Kết luận: KHÔNG cho SV bảo vệ trước hội đồng";
+    onSave(totalScore, nhanXet);
+  };
+
+  const handleInput = (key, val, max) => {
+    let num = parseFloat(val);
+    if (val !== '' && (num < 0 || num > max)) return;
+    setScores(prev => ({ ...prev, [key]: val }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl anim-slide flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">edit_square</span>
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-lg text-text-primary">Chấm điểm KLTN</h2>
+              <p className="text-xs text-text-muted">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-alt">
+            <span className="material-symbols-outlined text-text-muted">close</span>
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto">
+          <table className="w-full text-left border-collapse border border-border rounded-lg overflow-hidden">
+            <thead>
+              <tr className="bg-surface-alt">
+                <th className="p-3 border border-border font-semibold text-sm">Tiêu chí đánh giá</th>
+                <th className="p-3 border border-border font-semibold text-sm text-center w-20">Tối đa</th>
+                <th className="p-3 border border-border font-semibold text-sm text-center w-28">Điểm chấm</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td className="p-3 border border-border"><p className="font-medium text-sm">1. Nội dung</p><p className="text-xs text-text-muted mt-1">Sự liên kết các chương, mục tiêu, phân tích nhận định có cơ sở mạch lạc...</p></td><td className="p-3 border border-border text-center font-semibold text-primary">5.0</td><td className="p-3 border border-border"><input type="number" step="0.1" min="0" max="5" value={scores.nd} onChange={e => handleInput('nd', e.target.value, 5)} className="form-input text-center" placeholder="0 - 5"/></td></tr>
+              <tr><td className="p-3 border border-border"><p className="font-medium text-sm">2. Trích dẫn và tài liệu</p><p className="text-xs text-text-muted mt-1">Tài liệu phong phú, bảng biểu được đặt tên, đánh số, ghi nguồn đầy đủ...</p></td><td className="p-3 border border-border text-center font-semibold text-primary">1.5</td><td className="p-3 border border-border"><input type="number" step="0.1" min="0" max="1.5" value={scores.td} onChange={e => handleInput('td', e.target.value, 1.5)} className="form-input text-center" placeholder="0 - 1.5"/></td></tr>
+              <tr><td className="p-3 border border-border"><p className="font-medium text-sm">3. Câu văn và từ ngữ</p><p className="text-xs text-text-muted mt-1">Sử dụng từ ngữ phù hợp, câu văn mạch lạc, không có lỗi chính tả...</p></td><td className="p-3 border border-border text-center font-semibold text-primary">2.0</td><td className="p-3 border border-border"><input type="number" step="0.1" min="0" max="2" value={scores.cv} onChange={e => handleInput('cv', e.target.value, 2)} className="form-input text-center" placeholder="0 - 2.0"/></td></tr>
+              <tr><td className="p-3 border border-border"><p className="font-medium text-sm">4. Thái độ</p><p className="text-xs text-text-muted mt-1">Tần suất liên lạc với GV để duyệt bài...</p></td><td className="p-3 border border-border text-center font-semibold text-primary">1.5</td><td className="p-3 border border-border"><input type="number" step="0.1" min="0" max="1.5" value={scores.th} onChange={e => handleInput('th', e.target.value, 1.5)} className="form-input text-center" placeholder="0 - 1.5"/></td></tr>
+              <tr className="bg-surface-alt"><td colSpan="2" className="p-3 border border-border text-right font-bold text-text-primary">TỔNG ĐIỂM:</td><td className="p-3 border border-border text-center font-bold text-xl text-primary">{totalScore.toFixed(1)}</td></tr>
+            </tbody>
+          </table>
+          <div className="mt-4 p-3 bg-surface-alt rounded-lg flex items-center gap-3 cursor-pointer" onClick={() => setBaoVe(!baoVe)}>
+            <input type="checkbox" checked={baoVe} readOnly className="w-4 h-4 rounded text-primary"/>
+            <span className="text-sm font-medium text-text-primary">Kết luận: Cho phép SV bảo vệ trước hội đồng</span>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+          <button onClick={onClose} disabled={processing} className="btn btn-outline">Hủy bỏ</button>
+          <button onClick={handleComplete} disabled={processing} className="btn btn-primary">{processing ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">check_circle</span>}Lưu & Hoàn tất</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL NHẬN XÉT GVHD ──────────────────────────────────────────────────────
+function GVHDFeedbackModal({ student, onSave, onClose, processing }) {
+  const getOld = () => {
+    const m = (student.nhanXet || '').match(/\[GV HƯỚNG DẪN\]\n([\s\S]*?)(?=\n\s*\[GV PHẢN BIỆN\]|\n\s*\[HỘI ĐỒNG\]|$)/);
+    return m ? m[1] : (student.nhanXet?.includes('[GV PHẢN BIỆN]') ? '' : student.nhanXet || '');
+  };
+  const [text, setText] = React.useState(getOld());
+
+  const handleSave = () => {
+    let full = student.nhanXet || '';
+    const newBlock = `[GV HƯỚNG DẪN]\n${text.trim()}`;
+    if (full.includes('[GV HƯỚNG DẪN]')) {
+       full = full.replace(/\[GV HƯỚNG DẪN\]\n([\s\S]*?)(?=\n\s*\[GV PHẢN BIỆN\]|\n\s*\[HỘI ĐỒNG\]|$)/, newBlock);
+    } else {
+       full = full ? `${newBlock}\n\n${full.trim()}` : newBlock;
+    }
+    onSave(full);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-xl rounded-xl shadow-xl anim-slide flex flex-col">
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">rate_review</span>
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-lg text-text-primary">Nhận xét của GV Hướng Dẫn</h2>
+              <p className="text-xs text-text-muted">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-alt">
+            <span className="material-symbols-outlined text-text-muted">close</span>
+          </button>
+        </div>
+        <div className="p-6">
+          <textarea value={text} onChange={e => setText(e.target.value)} rows={6} autoFocus className="form-input resize-none" placeholder="VD: Sinh viên có thái độ tốt, nộp bài đúng hạn..."/>
+        </div>
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+          <button onClick={onClose} disabled={processing} className="btn btn-outline">Hủy</button>
+          <button onClick={handleSave} disabled={processing} className="btn btn-primary">Lưu nhận xét</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL CHẤM ĐIỂM PHẢN BIỆN ─────────────────────────────────────────────────
+function PBGradingModal({ student, onSave, onClose, processing }) {
+  const [scores, setScores] = React.useState({ ct: '', nd: '', td: '', cv: '' });
+  const [baoVe, setBaoVe] = React.useState(true);
+
+  const totalScore = (parseFloat(scores.ct)||0) + (parseFloat(scores.nd)||0) + (parseFloat(scores.td)||0) + (parseFloat(scores.cv)||0);
+
+  const handleComplete = () => {
+    if (scores.ct === '' || scores.nd === '' || scores.td === '' || scores.cv === '') {
+      alert("Vui lòng nhập đầy đủ điểm!");
+      return;
+    }
+    if (totalScore > 10 || totalScore < 0) {
+      alert("Tổng điểm sai lệch!");
+      return;
+    }
+    const nhanXet = baoVe ? "Kết luận: Cho SV bảo vệ" : "Kết luận: KHÔNG cho SV bảo vệ";
+    onSave(totalScore, nhanXet);
+  };
+
+  const handleInput = (key, val, max) => {
+    let num = parseFloat(val);
+    if (val !== '' && (num < 0 || num > max)) return;
+    setScores(prev => ({ ...prev, [key]: val }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl anim-slide flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">edit_square</span>
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-lg text-text-primary">Chấm điểm Phản biện</h2>
+              <p className="text-xs text-text-muted">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-alt">
+            <span className="material-symbols-outlined text-text-muted">close</span>
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto">
+          <table className="w-full border-collapse border border-border rounded-lg overflow-hidden">
+            <thead>
+              <tr className="bg-surface-alt"><th className="p-3 border border-border font-semibold">Tiêu chí</th><th className="p-3 border border-border font-semibold text-center w-20">Tối đa</th><th className="p-3 border border-border font-semibold text-center w-28">Điểm</th></tr>
+            </thead>
+            <tbody>
+              <tr><td className="p-3 border border-border"><p className="font-medium">1. Cấu trúc</p></td><td className="p-3 border border-border text-center">1.5</td><td className="p-3 border border-border"><input type="number" step="0.1" min="0" max="1.5" value={scores.ct} onChange={e => handleInput('ct', e.target.value, 1.5)} className="form-input text-center" placeholder="0-1.5"/></td></tr>
+              <tr><td className="p-3 border border-border"><p className="font-medium">2. Nội dung</p></td><td className="p-3 border border-border text-center">5.0</td><td className="p-3 border border-border"><input type="number" step="0.1" min="0" max="5" value={scores.nd} onChange={e => handleInput('nd', e.target.value, 5)} className="form-input text-center" placeholder="0-5"/></td></tr>
+              <tr><td className="p-3 border border-border"><p className="font-medium">3. Trích dẫn</p></td><td className="p-3 border border-border text-center">1.5</td><td className="p-3 border border-border"><input type="number" step="0.1" min="0" max="1.5" value={scores.td} onChange={e => handleInput('td', e.target.value, 1.5)} className="form-input text-center" placeholder="0-1.5"/></td></tr>
+              <tr><td className="p-3 border border-border"><p className="font-medium">4. Câu văn</p></td><td className="p-3 border border-border text-center">2.0</td><td className="p-3 border border-border"><input type="number" step="0.1" min="0" max="2" value={scores.cv} onChange={e => handleInput('cv', e.target.value, 2)} className="form-input text-center" placeholder="0-2"/></td></tr>
+              <tr className="bg-surface-alt"><td colSpan="2" className="p-3 border border-border text-right font-bold">TỔNG:</td><td className="p-3 border border-border text-center font-bold text-xl text-primary">{totalScore.toFixed(1)}</td></tr>
+            </tbody>
+          </table>
+          <div className="mt-4 p-3 bg-surface-alt rounded-lg flex items-center gap-3 cursor-pointer" onClick={() => setBaoVe(!baoVe)}>
+            <input type="checkbox" checked={baoVe} readOnly className="w-4 h-4 rounded"/>
+            <span className="text-sm">Cho phép SV bảo vệ</span>
+          </div>
+        </div>
+
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+          <button onClick={onClose} disabled={processing} className="btn btn-outline">Hủy</button>
+          <button onClick={handleComplete} disabled={processing} className="btn btn-primary">Lưu điểm</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL FEEDBACK PHẢN BIỆN ──────────────────────────────────────────────────
+function FeedbackModal({ student, onSave, onClose, processing }) {
+  let initYeuCau = '';
+  let initCauHoi = '';
+  const pbMatch = (student.nhanXet || '').match(/\[GV PHẢN BIỆN\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[HỘI ĐỒNG\]|$)/);
+  const pbText = pbMatch ? pbMatch[1] : '';
+
+  if (pbText) {
+    if (pbText.includes('[CÂU HỎI]')) {
+      const parts = pbText.split('[CÂU HỎI]');
+      initYeuCau = parts[0].replace('[YÊU CẦU CHỈNH SỬA]\n', '').trim();
+      initCauHoi = parts[1] ? parts[1].trim() : '';
+    } else {
+      initYeuCau = pbText;
+    }
+  }
+
+  const [yeuCau, setYeuCau] = React.useState(initYeuCau);
+  const [cauHoi, setCauHoi] = React.useState(initCauHoi);
+
+  const handleSave = () => {
+    const pbCombined = `[GV PHẢN BIỆN]\n[YÊU CẦU CHỈNH SỬA]\n${yeuCau.trim()}\n\n[CÂU HỎI]\n${cauHoi.trim()}`;
+    let full = student.nhanXet || '';
+    if (full.includes('[GV PHẢN BIỆN]')) {
+       full = full.replace(/\[GV PHẢN BIỆN\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[HỘI ĐỒNG\]|$)/, pbCombined);
+    } else {
+       full = full ? `${full.trim()}\n\n${pbCombined}` : pbCombined;
+    }
+    onSave(full);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl anim-slide flex flex-col max-h-[95vh]">
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">assignment_add</span>
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-lg">Yêu cầu chỉnh sửa & Câu hỏi</h2>
+              <p className="text-xs text-text-muted">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-alt">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div className="p-6 overflow-y-auto space-y-4">
+          <div>
+            <label className="font-medium text-text-primary mb-2 block">Yêu cầu SV chỉnh sửa:</label>
+            <textarea value={yeuCau} onChange={e => setYeuCau(e.target.value)} rows={4} className="form-input resize-none"/>
+          </div>
+          <div>
+            <label className="font-medium text-text-primary mb-2 block">Câu hỏi (tối thiểu 2 câu):</label>
+            <textarea value={cauHoi} onChange={e => setCauHoi(e.target.value)} rows={4} className="form-input resize-none"/>
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+          <button onClick={onClose} disabled={processing} className="btn btn-outline">Hủy</button>
+          <button onClick={handleSave} disabled={processing || (!yeuCau.trim() && !cauHoi.trim())} className="btn btn-primary">Lưu yêu cầu</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL CHẤM ĐIỂM HỘI ĐỒNG ──────────────────────────────────────────────────
+function HDGradingModal({ student, onSave, onClose, processing }) {
+  const [scores, setScores] = React.useState({ tb: '', nd: '', sp: '', tl: '' });
+  const totalScore = (parseFloat(scores.tb)||0) + (parseFloat(scores.nd)||0) + (parseFloat(scores.sp)||0) + (parseFloat(scores.tl)||0);
+
+  const handleComplete = () => {
+    if (scores.tb === '' || scores.nd === '' || scores.sp === '' || scores.tl === '') {
+      alert("Vui lòng nhập đầy đủ điểm!");
+      return;
+    }
+    if (totalScore > 10 || totalScore < 0) {
+      alert("Tổng điểm sai lệch!");
+      return;
+    }
+    onSave(totalScore, '');
+  };
+
+  const handleInput = (key, val, max) => {
+    let num = parseFloat(val);
+    if (val !== '' && (num < 0 || num > max)) return;
+    setScores(prev => ({ ...prev, [key]: val }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-2xl rounded-xl shadow-xl anim-slide flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">gavel</span>
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-lg">Chấm điểm Hội đồng</h2>
+              <p className="text-xs text-text-muted">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-alt">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="p-6 overflow-y-auto">
+          <table className="w-full border-collapse border border-border rounded-lg overflow-hidden">
+            <thead><tr className="bg-surface-alt"><th className="p-3 border">Tiêu chí</th><th className="p-3 border text-center w-20">Tối đa</th><th className="p-3 border text-center w-28">Điểm</th></tr></thead>
+            <tbody>
+              <tr><td className="p-3 border">1. Hình thức và Trình bày</td><td className="p-3 border text-center">2.0</td><td className="p-3 border"><input type="number" step="0.1" min="0" max="2" value={scores.tb} onChange={e => handleInput('tb', e.target.value, 2)} className="form-input text-center"/></td></tr>
+              <tr><td className="p-3 border">2. Nội dung KLTN</td><td className="p-3 border text-center">4.0</td><td className="p-3 border"><input type="number" step="0.1" min="0" max="4" value={scores.nd} onChange={e => handleInput('nd', e.target.value, 4)} className="form-input text-center"/></td></tr>
+              <tr><td className="p-3 border">3. Chất lượng Sản phẩm</td><td className="p-3 border text-center">2.0</td><td className="p-3 border"><input type="number" step="0.1" min="0" max="2" value={scores.sp} onChange={e => handleInput('sp', e.target.value, 2)} className="form-input text-center"/></td></tr>
+              <tr><td className="p-3 border">4. Trả lời câu hỏi</td><td className="p-3 border text-center">2.0</td><td className="p-3 border"><input type="number" step="0.1" min="0" max="2" value={scores.tl} onChange={e => handleInput('tl', e.target.value, 2)} className="form-input text-center"/></td></tr>
+              <tr className="bg-surface-alt"><td colSpan="2" className="p-3 border text-right font-bold">TỔNG:</td><td className="p-3 border text-center font-bold text-xl text-primary">{totalScore.toFixed(1)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+          <button onClick={onClose} disabled={processing} className="btn btn-outline">Hủy</button>
+          <button onClick={handleComplete} disabled={processing} className="btn btn-primary">Lưu điểm HĐ</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL NHẬN XÉT HỘI ĐỒNG ───────────────────────────────────────────────────
+function HoiDongFeedbackModal({ student, onSave, onClose, processing }) {
+  const getOld = () => {
+    const m = (student.nhanXet || '').match(/\[HỘI ĐỒNG\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[GV PHẢN BIỆN\]|$)/);
+    return m ? m[1] : '';
+  };
+  const [text, setText] = React.useState(getOld());
+
+  const handleSave = () => {
+    let full = student.nhanXet || '';
+    const newBlock = `[HỘI ĐỒNG]\n${text.trim()}`;
+    if (full.includes('[HỘI ĐỒNG]')) {
+       full = full.replace(/\[HỘI ĐỒNG\]\n([\s\S]*?)(?=\n\s*\[GV HƯỚNG DẪN\]|\n\s*\[GV PHẢN BIỆN\]|$)/, newBlock);
+    } else {
+       full = full ? `${full.trim()}\n\n${newBlock}` : newBlock;
+    }
+    onSave(full);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-xl rounded-xl shadow-xl anim-slide flex flex-col">
+        <div className="px-6 py-4 border-b border-border flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined">chat_bubble</span>
+            </div>
+            <div>
+              <h2 className="font-display font-bold text-lg">Nhận xét của Hội đồng</h2>
+              <p className="text-xs text-text-muted">{student.studentName} • {student.maSo}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-surface-alt">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div className="p-6">
+          <textarea value={text} onChange={e => setText(e.target.value)} rows={6} autoFocus className="form-input resize-none" placeholder="Nhập nhận xét của Hội đồng..."/>
+        </div>
+        <div className="px-6 py-4 border-t border-border flex justify-end gap-3">
+          <button onClick={onClose} disabled={processing} className="btn btn-outline">Hủy</button>
+          <button onClick={handleSave} disabled={processing} className="btn btn-primary">Lưu nhận xét</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MODAL GVHD DUYỆT SAU BẢO VỆ ───────────────────────────────────────────────
+function GVHDApproveModal({ student, onConfirm, onClose }) {
+  const [decision, setDecision] = React.useState('');
+  const [note, setNote] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+
+  async function handleSubmit() {
+    if (!decision) return;
+    setSubmitting(true);
+    await onConfirm(student, decision === 'yes', note.trim());
+    setSubmitting(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] flex items-center justify-center p-6 bg-black/30 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-md rounded-xl p-6 shadow-xl anim-slide">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-primary">how_to_reg</span>
+          </div>
+          <div>
+            <h2 className="font-display font-bold text-lg">Duyệt bản chỉnh sửa</h2>
+            <p className="text-xs text-text-muted">Xem xét bài chỉnh sửa sau bảo vệ</p>
+          </div>
+        </div>
+
+        <div className="bg-surface-alt rounded-lg p-4 mb-4">
+          <p className="font-medium text-text-primary text-sm">{student.studentName}</p>
+          <p className="text-xs text-text-muted">{student.maSo}</p>
+          {student.baiChinhSuaUrl && (
+            <a href={student.baiChinhSuaUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline">
+              <span className="material-symbols-outlined text-sm">open_in_new</span>Xem bài chỉnh sửa
+            </a>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <p className="text-sm font-medium text-text-secondary mb-3">Quyết định <span className="text-error">*</span></p>
+          <div className="flex gap-3">
+            <button onClick={() => setDecision('yes')} className={`flex-1 py-2.5 rounded-lg border-2 font-medium text-sm ${decision === 'yes' ? 'border-success bg-success/10 text-success' : 'border-border'}`}>Đồng ý</button>
+            <button onClick={() => setDecision('no')} className={`flex-1 py-2.5 rounded-lg border-2 font-medium text-sm ${decision === 'no' ? 'border-error bg-error/10 text-error' : 'border-border'}`}>Không đồng ý</button>
+          </div>
+        </div>
+
+        {decision === 'no' && (
+          <div className="mb-4">
+            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} className="form-input resize-none" placeholder="Lý do không đồng ý..."/>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} disabled={submitting} className="flex-1 btn btn-outline">Hủy</button>
+          <button onClick={handleSubmit} disabled={!decision || (decision === 'no' && !note.trim()) || submitting} className={`flex-1 btn ${decision === 'no' ? 'btn-error' : 'btn-success'}`}>Xác nhận</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── TAB 1: THÔNG TIN CHUNG ────────────────────────────────────────────────────
 function TabThongTinChung({toast}) {
   const [pendingList,  setPendingList]  = React.useState([]);
@@ -694,13 +1173,10 @@ function TabThongTinChung({toast}) {
         fetchDangKyByGV(SESSION.email),
         fetchKLTNByGV(SESSION.email)
       ]);
-      
       const bcttPending = bcttData.pendingList.map(r => ({...r, type: 'bctt'}));
       setPendingList([...bcttPending, ...kltnData.pendingTopic]);
       setApprovedList(bcttData.approvedList);
-    } catch(e) {
-      toast.show('Không tải được dữ liệu từ Sheet.', 'error');
-    }
+    } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
     setLoading(false);
   }
 
@@ -708,21 +1184,13 @@ function TabThongTinChung({toast}) {
     setProcessingId(req.studentEmail);
     try {
       let res;
-      if (req.type === 'kltn') {
-        res = await apiPost({ action: 'approveKLTNTopic', studentEmail: req.studentEmail });
-      } else {
-        res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'approved' });
-      }
-
+      if (req.type === 'kltn') res = await apiPost({ action: 'approveKLTNTopic', studentEmail: req.studentEmail });
+      else res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'approved' });
       if (res.success) {
         toast.show(`Đã duyệt đề tài của ${req.studentName}!`, 'success');
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
-        if (req.type === 'bctt') {
-          setApprovedList(prev => [{ ...req, status: 'approved' }, ...prev]);
-        }
-      } else {
-        toast.show(res.message || 'Duyệt thất bại.', 'error');
-      }
+        if (req.type === 'bctt') setApprovedList(prev => [{ ...req, status: 'approved' }, ...prev]);
+      } else toast.show(res.message || 'Duyệt thất bại.', 'error');
     } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
     setProcessingId(null);
   }
@@ -731,46 +1199,31 @@ function TabThongTinChung({toast}) {
     setProcessingId(req.studentEmail);
     try {
       let res;
-      if (req.type === 'kltn') {
-        res = await apiPost({ action: 'rejectKLTNTopic', studentEmail: req.studentEmail, reason: reason });
-      } else {
-        res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'rejected', reason: reason });
-      }
-
+      if (req.type === 'kltn') res = await apiPost({ action: 'rejectKLTNTopic', studentEmail: req.studentEmail, reason });
+      else res = await apiPost({ action: 'updateStatus', studentEmail: req.studentEmail, status: 'rejected', reason });
       if (res.success) {
         toast.show(`Đã từ chối đề tài của ${req.studentName}.`, 'warn');
         setPendingList(prev => prev.filter(r => r.studentEmail !== req.studentEmail));
-      } else {
-        toast.show(res.message || 'Từ chối thất bại.', 'error');
-      }
+      } else toast.show(res.message || 'Từ chối thất bại.', 'error');
     } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
-    setProcessingId(null);
-    setRejectTarget(null);
+    setProcessingId(null); setRejectTarget(null);
   }
 
   async function handleEditTopic(req, newTopic) {
     setProcessingId(req.studentEmail);
     try {
-      const res = await apiPost({
-        action: 'updateTopic',
-        type: req.type,
-        studentEmail: req.studentEmail,
-        newTopic: newTopic
-      });
+      const res = await apiPost({ action: 'updateTopic', type: req.type, studentEmail: req.studentEmail, newTopic });
       if (res.success) {
-        toast.show('Đã cập nhật tên đề tài thành công!', 'success');
-        setPendingList(prev => prev.map(r => r.studentEmail === req.studentEmail ? { ...r, topic: newTopic } : r));
-      } else {
-        toast.show(res.message || 'Cập nhật thất bại.', 'error');
-      }
+        toast.show('Đã cập nhật tên đề tài!', 'success');
+        setPendingList(prev => prev.map(r => r.studentEmail === req.studentEmail ? {...r, topic: newTopic} : r));
+      } else toast.show(res.message || 'Cập nhật thất bại.', 'error');
     } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
-    setProcessingId(null);
-    setEditTopicTarget(null);
+    setProcessingId(null); setEditTopicTarget(null);
   }
 
   const stats = [
-    { label:'Sinh viên hướng dẫn', value: approvedList.length.toString(), icon:'school', color:'#1a3a5c' },
-    { label:'Chờ duyệt', value: pendingList.length.toString(), icon:'pending_actions', color:'#e8a800' },
+    { label:'Sinh viên hướng dẫn', value: approvedList.length, icon:'school', color:'#1a3a5c' },
+    { label:'Chờ duyệt', value: pendingList.length, icon:'pending_actions', color:'#e8a800' },
   ];
 
   return (
@@ -778,115 +1231,60 @@ function TabThongTinChung({toast}) {
       {rejectTarget && <RejectModal request={rejectTarget} onConfirm={handleReject} onClose={() => setRejectTarget(null)}/>}
       {editTopicTarget && <EditTopicModal request={editTopicTarget} onConfirm={handleEditTopic} onClose={() => setEditTopicTarget(null)}/>}
 
-      {/* Welcome Card */}
       <div className="card p-6 flex flex-col md:flex-row gap-6 items-center">
-        <div className="w-20 h-20 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-3xl shadow-sm">
+        <div className="w-20 h-20 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-3xl">
           {SESSION.name.trim().split(' ').filter(Boolean).slice(-1)[0]?.[0]?.toUpperCase() || 'G'}
         </div>
         <div className="flex-1 text-center md:text-left">
           <div className="flex flex-col md:flex-row md:items-end gap-2 mb-1">
-            <h2 className="text-xl font-display font-bold text-text-primary">{SESSION.name}</h2>
+            <h2 className="text-xl font-display font-bold">{SESSION.name}</h2>
             <span className="badge bg-primary/10 text-primary">Giảng viên</span>
           </div>
           <p className="text-text-muted text-sm mb-3 flex items-center justify-center md:justify-start gap-2">
             <span className="material-symbols-outlined text-base">school</span>
             {SESSION.nganh || 'Khoa học máy tính'} • {SESSION.maGV}
           </p>
-          <div className="flex flex-wrap justify-center md:justify-start gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-alt rounded-md text-sm">
-              <span className="material-symbols-outlined text-base text-primary">calendar_today</span>
-              HK2 - 2024-2025
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-alt rounded-md text-sm">
-              <span className="material-symbols-outlined text-base text-primary">mail</span>
-              {SESSION.email}
-            </span>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-alt rounded-md text-sm"><span className="material-symbols-outlined text-base text-primary">calendar_today</span>HK2 - 2024-2025</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-alt rounded-md text-sm"><span className="material-symbols-outlined text-base text-primary">mail</span>{SESSION.email}</span>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {stats.map((s, i) => (
           <div key={i} className="stat-card flex justify-between items-center">
-            <div>
-              <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">{s.label}</p>
-              <h3 className="text-2xl font-display font-bold text-text-primary mt-1">{loading ? '...' : s.value}</h3>
-            </div>
+            <div><p className="text-xs font-semibold text-text-muted uppercase">{s.label}</p><h3 className="text-2xl font-bold mt-1">{loading ? '...' : s.value}</h3></div>
             <span className="material-symbols-outlined text-3xl opacity-15" style={{color:s.color}}>{s.icon}</span>
           </div>
         ))}
       </div>
 
-      {/* Pending Requests */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display font-semibold text-lg text-text-primary flex items-center gap-2">
-            <span className="material-symbols-outlined text-warning">pending_actions</span>
-            Yêu cầu chờ duyệt
-            {!loading && pendingList.length > 0 && (
-              <span className="badge bg-warning/10 text-warning">{pendingList.length}</span>
-            )}
-          </h3>
-          <button onClick={loadData} className="p-2 hover:bg-surface-alt rounded-md transition-colors" title="Làm mới">
-            <span className={`material-symbols-outlined text-text-muted text-base ${loading?'anim-spin':''}`}>refresh</span>
-          </button>
+          <h3 className="font-display font-semibold text-lg flex items-center gap-2"><span className="material-symbols-outlined text-warning">pending_actions</span>Yêu cầu chờ duyệt{!loading && pendingList.length > 0 && <span className="badge bg-warning/10 text-warning">{pendingList.length}</span>}</h3>
+          <button onClick={loadData} className="p-2 hover:bg-surface-alt rounded-md"><span className={`material-symbols-outlined text-text-muted ${loading?'anim-spin':''}`}>refresh</span></button>
         </div>
-
-        {loading ? (
-          <Spinner text="Đang tải dữ liệu..."/>
-        ) : pendingList.length === 0 ? (
-          <div className="card p-8 text-center text-text-muted">
-            <span className="material-symbols-outlined text-4xl opacity-15 mb-2">inbox</span>
-            <p>Không có yêu cầu nào đang chờ duyệt</p>
-          </div>
+        {loading ? <Spinner/> : pendingList.length === 0 ? (
+          <div className="card p-8 text-center text-text-muted"><span className="material-symbols-outlined text-4xl opacity-15 mb-2">inbox</span><p>Không có yêu cầu nào</p></div>
         ) : (
           <div className="space-y-3">
-            {pendingList.map((r) => {
+            {pendingList.map(r => {
               const isKltn = r.type === 'kltn';
-              const badgeClass = isKltn ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary';
-              
               return (
                 <div key={r.studentEmail} className="card p-5">
                   <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-text-primary mb-1 line-clamp-1">{r.topic}</h4>
-                      <p className="text-sm text-text-muted">
-                        <span className="font-medium">{r.studentName}</span> • MSSV: {r.maSo}
-                      </p>
-                    </div>
-                    <span className={`badge ${badgeClass}`}>
-                      {isKltn ? 'KLTN' : 'BCTT'}
-                    </span>
+                    <div className="flex-1"><h4 className="font-semibold mb-1 line-clamp-1">{r.topic}</h4><p className="text-sm text-text-muted"><span className="font-medium">{r.studentName}</span> • MSSV: {r.maSo}</p></div>
+                    <span className={`badge ${isKltn ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>{isKltn ? 'KLTN' : 'BCTT'}</span>
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-3 p-3 bg-surface-alt rounded-lg mb-3 text-sm">
-                    <div>
-                      <p className="text-xs font-semibold text-text-muted uppercase">Học kỳ</p>
-                      <p className="text-text-primary">{r.term || '--'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold text-text-muted uppercase">{isKltn ? 'Ngành' : 'Đơn vị TT'}</p>
-                      <p className="text-text-primary">{isKltn ? r.nganh : r.company || '--'}</p>
-                    </div>
+                    <div><p className="text-xs font-semibold text-text-muted">Học kỳ</p><p>{r.term || '--'}</p></div>
+                    <div><p className="text-xs font-semibold text-text-muted">{isKltn ? 'Ngành' : 'Đơn vị TT'}</p><p>{isKltn ? r.nganh : r.company || '--'}</p></div>
                   </div>
-                  
                   <div className="flex gap-2">
-                    <button onClick={() => handleApprove(r)} disabled={processingId === r.studentEmail}
-                      className="flex-1 btn btn-primary text-sm" style={{background: isKltn ? '#1a5c3a' : '#1a3a5c', borderColor: isKltn ? '#1a5c3a' : '#1a3a5c'}}>
-                      {processingId === r.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : <span className="material-symbols-outlined text-sm">check_circle</span>}
-                      Duyệt
-                    </button>
-                    <button onClick={() => setEditTopicTarget(r)} disabled={processingId === r.studentEmail}
-                      className="flex-1 btn btn-outline text-sm">
-                      <span className="material-symbols-outlined text-sm">edit_document</span>
-                      Chỉnh sửa
-                    </button>
-                    <button onClick={() => setRejectTarget(r)} disabled={processingId === r.studentEmail}
-                      className="flex-1 btn btn-outline text-sm text-error border-error hover:bg-error/5">
-                      <span className="material-symbols-outlined text-sm">cancel</span>
-                      Từ chối
-                    </button>
+                    <button onClick={() => handleApprove(r)} disabled={processingId === r.studentEmail} className="flex-1 btn" style={{background:isKltn?'#1a5c3a':'#1a3a5c',color:'white'}}>{processingId === r.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : 'Duyệt'}</button>
+                    <button onClick={() => setEditTopicTarget(r)} disabled={processingId === r.studentEmail} className="flex-1 btn btn-outline">Chỉnh sửa</button>
+                    <button onClick={() => setRejectTarget(r)} disabled={processingId === r.studentEmail} className="flex-1 btn btn-outline text-error border-error">Từ chối</button>
                   </div>
                 </div>
               );
@@ -895,45 +1293,16 @@ function TabThongTinChung({toast}) {
         )}
       </section>
 
-      {/* Approved BCTT */}
       <section>
-        <h3 className="font-display font-semibold text-lg text-text-primary flex items-center gap-2 mb-4">
-          <span className="material-symbols-outlined text-primary">group</span>
-          Sinh viên BCTT đang hướng dẫn
-        </h3>
+        <h3 className="font-display font-semibold text-lg flex items-center gap-2 mb-4"><span className="material-symbols-outlined text-primary">group</span>Sinh viên BCTT đang hướng dẫn</h3>
         {!loading && approvedList.length === 0 ? (
-          <div className="card p-8 text-center text-text-muted">
-            <span className="material-symbols-outlined text-4xl opacity-15 mb-2">school</span>
-            <p>Chưa có sinh viên nào được duyệt</p>
-          </div>
+          <div className="card p-8 text-center text-text-muted"><span className="material-symbols-outlined text-4xl opacity-15 mb-2">school</span><p>Chưa có sinh viên nào</p></div>
         ) : (
           <div className="card overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="table-header">
-                  <tr>
-                    {['Sinh viên','Đề tài','Đơn vị TT','Điểm'].map(h => (
-                      <th key={h} className="px-5 py-3 text-xs font-semibold text-text-muted uppercase tracking-wide">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr><td colSpan="4" className="px-5 py-8 text-center text-text-muted">Đang tải...</td></tr>
-                  ) : approvedList.map((sv) => (
-                    <tr key={sv.maSo} className="table-row">
-                      <td className="px-5 py-3">
-                        <p className="font-medium text-text-primary text-sm">{sv.studentName}</p>
-                        <p className="text-xs text-text-muted">{sv.maSo}</p>
-                      </td>
-                      <td className="px-5 py-3"><p className="text-sm text-text-primary line-clamp-2">{sv.topic}</p></td>
-                      <td className="px-5 py-3 text-sm text-text-muted">{sv.company || '--'}</td>
-                      <td className="px-5 py-3">
-                        {sv.grade != null ? <span className="font-semibold text-primary">{sv.grade.toFixed(1)}</span> : <span className="text-xs text-text-muted italic">Chưa có</span>}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                <thead className="table-header"><tr>{['Sinh viên','Đề tài','Đơn vị TT','Điểm'].map(h=><th key={h} className="px-5 py-3 text-xs font-semibold text-text-muted uppercase">{h}</th>)}</tr></thead>
+                <tbody>{approvedList.map(sv=><tr key={sv.maSo} className="table-row"><td className="px-5 py-3"><p className="font-medium">{sv.studentName}</p><p className="text-xs text-text-muted">{sv.maSo}</p></td><td className="px-5 py-3"><p className="text-sm line-clamp-2">{sv.topic}</p></td><td className="px-5 py-3 text-sm text-text-muted">{sv.company||'--'}</td><td className="px-5 py-3">{sv.grade!=null?<span className="font-semibold text-primary">{sv.grade.toFixed(1)}</span>:<span className="text-xs text-text-muted italic">Chưa có</span>}</td></tr>)}</tbody>
               </table>
             </div>
           </div>
@@ -943,16 +1312,658 @@ function TabThongTinChung({toast}) {
   );
 }
 
+// ── TAB 2: SINH VIÊN HƯỚNG DẪN ───────────────────────────────────────────────
+function TabSinhVienHuongDan({toast}) {
+  const [search, setSearch] = React.useState('');
+  const [students, setStudents] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [grades, setGrades] = React.useState({});
+  const [saving, setSaving] = React.useState({});
+  const [viewerFile, setViewerFile] = React.useState(null);
+  const [kltnPending, setKltnPending] = React.useState([]);
+  const [kltnActive, setKltnActive] = React.useState([]);
+  const [kltnProcessing, setKltnProcessing] = React.useState(null);
+  const [rejectOutlineTarget, setRejectOutlineTarget] = React.useState(null);
+  const [editOutlineTarget, setEditOutlineTarget] = React.useState(null);
+  const [gradingKLTNTarget, setGradingKLTNTarget] = React.useState(null);
+  const [feedbackTarget, setFeedbackTarget] = React.useState(null);
+  const [uploadingDaoVan, setUploadingDaoVan] = React.useState({});
+  const [uploadingKLTN, setUploadingKLTN] = React.useState({});
+  const [kltnInput, setKltnInput] = React.useState({});
+
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const [{ approvedList }, { pendingTopic, activeList }] = await Promise.all([fetchDangKyByGV(SESSION.email), fetchKLTNByGV(SESSION.email)]);
+        setStudents(approvedList);
+        const init = {};
+        approvedList.forEach(sv => { init[sv.maSo] = sv.grade != null ? String(sv.grade) : ''; });
+        setGrades(init);
+        setKltnPending(pendingTopic);
+        setKltnActive(activeList);
+      } catch(e) { toast.show('Không tải được danh sách.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
+
+  async function handleEditOutlineTopic(sv, newTopic) {
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'updateTopic', type: 'kltn', studentEmail: sv.studentEmail, newTopic });
+      if (res.success) { toast.show('Đã cập nhật!', 'success'); setKltnPending(prev => prev.map(r => r.studentEmail === sv.studentEmail ? {...r, topic: newTopic} : r)); }
+      else toast.show(res.message || 'Cập nhật thất bại.', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setKltnProcessing(null); setEditOutlineTarget(null);
+  }
+
+  async function handleSaveKLTNFromModal(totalGrade, nhanXetStr) {
+    const sv = gradingKLTNTarget;
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const pct = kltnInput[sv.maSo]?.daoVanPct !== undefined ? kltnInput[sv.maSo].daoVanPct : sv.daoVanPct;
+      let res = await apiPost({ action: 'saveKLTNGrade', studentEmail: sv.studentEmail, grade: totalGrade, nhanXet: nhanXetStr, daoVanPct: pct });
+      if (!res.success && (res.message || '').toLowerCase().includes('unknown')) res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'graded', note: nhanXetStr, grade: totalGrade });
+      if (res.success) { toast.show('Đã lưu điểm!', 'success'); setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, grade: parseFloat(totalGrade), nhanXet: nhanXetStr, status: 'graded', daoVanPct: pct} : s)); setGradingKLTNTarget(null); }
+      else toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setKltnProcessing(null);
+  }
+
+  async function handleSaveFeedback(text) {
+    const sv = feedbackTarget;
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: text });
+      if (res.success) { toast.show('Đã lưu nhận xét!', 'success'); setKltnActive(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXet: text} : s)); setFeedbackTarget(null); }
+      else toast.show(res.message || 'Lỗi', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setKltnProcessing(null);
+  }
+
+  async function handleApproveOutline(sv) {
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'approved', step: 2 });
+      if (res.success) { toast.show(`Đã duyệt đề cương!`, 'success'); setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail)); setKltnActive(prev => [{ ...sv, step: 2, status: 'approved' }, ...prev]); }
+      else toast.show(res.message || 'Duyệt thất bại.', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setKltnProcessing(null);
+  }
+
+  async function handleRejectOutline(sv, reason) {
+    setKltnProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'updateKLTNStatus', studentEmail: sv.studentEmail, status: 'rejected', note: reason || '' });
+      if (res.success) { toast.show(`Đã từ chối!`, 'warn'); setKltnPending(prev => prev.filter(r => r.studentEmail !== sv.studentEmail)); }
+      else toast.show(res.message || 'Từ chối thất bại.', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setKltnProcessing(null); setRejectOutlineTarget(null);
+  }
+
+  async function handleSaveGrade(maSo, studentEmail) {
+    const g = grades[maSo];
+    if (g === '' || g === undefined) { toast.show('Vui lòng nhập điểm!', 'warn'); return; }
+    const num = parseFloat(g);
+    if (isNaN(num) || num < 0 || num > 10) { toast.show('Điểm phải từ 0 đến 10!', 'error'); return; }
+    setSaving(prev => ({...prev, [maSo]: true}));
+    try {
+      const res = await apiPost({ action:'updateStatus', studentEmail, status:'graded', grade: num });
+      if (res.success) { toast.show(`Đã lưu điểm ${num.toFixed(1)}!`, 'success'); setStudents(prev => prev.map(sv => sv.maSo === maSo ? {...sv, grade: num, status: 'graded'} : sv)); }
+      else toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+    } catch(e) { toast.show('Lỗi!', 'error'); }
+    setSaving(prev => ({...prev, [maSo]: false}));
+  }
+
+  const filtered = students.filter(s => s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search));
+
+  if (loading) return <Spinner text="Đang tải danh sách sinh viên..."/>;
+
+  return (
+    <div className="space-y-6 anim-fade">
+      {rejectOutlineTarget && <RejectOutlineModal request={rejectOutlineTarget} onConfirm={handleRejectOutline} onClose={() => setRejectOutlineTarget(null)}/>}
+      {editOutlineTarget && <EditTopicModal request={editOutlineTarget} onConfirm={handleEditOutlineTopic} onClose={() => setEditOutlineTarget(null)}/>}
+      {viewerFile && <FileViewerModal {...viewerFile} onClose={() => setViewerFile(null)}/>}
+      {gradingKLTNTarget && <KLTNGradingModal student={gradingKLTNTarget} processing={kltnProcessing === gradingKLTNTarget.studentEmail} onSave={handleSaveKLTNFromModal} onClose={() => setGradingKLTNTarget(null)}/>}
+      {feedbackTarget && <GVHDFeedbackModal student={feedbackTarget} processing={kltnProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)}/>}
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div><h2 className="text-2xl font-display font-bold">Sinh viên hướng dẫn</h2><p className="text-text-muted mt-1">Quản lý BCTT và KLTN</p></div>
+        <div className="relative w-full md:w-80">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">search</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} className="form-input pl-10" placeholder="Tìm tên hoặc MSSV..."/>
+        </div>
+      </div>
+
+      {kltnPending.length > 0 && (
+        <section>
+          <h3 className="font-display font-semibold text-lg flex items-center gap-2 mb-4"><span className="material-symbols-outlined text-warning">pending_actions</span>KLTN chờ duyệt đề tài<span className="badge bg-warning/10 text-warning">{kltnPending.length}</span></h3>
+          <div className="space-y-3">
+            {kltnPending.map(sv => (
+              <div key={sv.maSo} className="card p-5">
+                <div className="flex items-start gap-3 mb-3"><Av name={sv.studentName} cls="w-10 h-10"/><div className="flex-1"><h4 className="font-semibold line-clamp-1">{sv.topic}</h4><p className="text-sm text-text-muted"><span className="font-medium">{sv.studentName}</span> • MSSV: {sv.maSo}</p></div><span className="badge bg-accent/10 text-accent">KLTN</span></div>
+                <div className="grid grid-cols-2 gap-3 p-3 bg-surface-alt rounded-lg mb-3 text-sm"><div><p className="text-xs text-text-muted">Ngành</p><p>{sv.nganh||'--'}</p></div><div><p className="text-xs text-text-muted">Học kỳ</p><p>{sv.term||'--'}</p></div></div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleApproveOutline(sv)} disabled={kltnProcessing === sv.studentEmail} className="flex-1 btn btn-success">{kltnProcessing === sv.studentEmail ? <span className="material-symbols-outlined anim-spin text-sm">refresh</span> : 'Duyệt đề tài'}</button>
+                  <button onClick={() => setRejectOutlineTarget(sv)} disabled={kltnProcessing === sv.studentEmail} className="flex-1 btn btn-outline text-error border-error">Từ chối</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {kltnActive.length > 0 && (
+        <section>
+          <h3 className="font-display font-semibold text-lg flex items-center gap-2 mb-4"><span className="material-symbols-outlined text-accent">school</span>Khóa luận tốt nghiệp</h3>
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="table-header"><tr><th className="px-4 py-3 text-xs">Sinh viên</th><th className="px-4 py-3 text-xs">Đề tài</th><th className="px-4 py-3 text-xs text-center">KLTN</th><th className="px-4 py-3 text-xs text-center">Đạo văn</th><th className="px-4 py-3 text-xs text-center">Điểm</th><th className="px-2 py-3"></th></tr></thead>
+                <tbody>
+                  {kltnActive.map(sv => {
+                    const id = sv.maSo;
+                    return (
+                      <tr key={id} className="table-row">
+                        <td className="px-4 py-3"><div className="flex items-center gap-2"><Av name={sv.studentName} cls="w-8 h-8"/><div><p className="font-medium text-sm">{sv.studentName}</p><p className="text-xs text-text-muted">{sv.maSo}</p></div></div></td>
+                        <td className="px-4 py-3"><p className="text-sm line-clamp-2 max-w-[200px]">{sv.topic}</p></td>
+                        <td className="px-4 py-3 text-center">{sv.kltnUrl ? <button onClick={() => setViewerFile({url:sv.kltnUrl, studentName:sv.studentName, fileName:'Khóa Luận'})} className="text-primary text-xs font-medium">Xem</button> : <span className="text-text-muted text-xs">Chưa nộp</span>}</td>
+                        <td className="px-4 py-3 text-center">{sv.daoVanUrl ? <button onClick={() => setViewerFile({url:sv.daoVanUrl, studentName:sv.studentName, fileName:'Đạo văn', isPlagiarism:true})} className="text-accent text-xs font-medium">Xem</button> : <span className="text-text-muted text-xs">Chưa có</span>}</td>
+                        <td className="px-4 py-3 text-center">
+                          {sv.status === 'graded' ? <span className="font-bold text-primary">{Number(sv.grade).toFixed(1)}</span> :
+                            <div className="flex flex-col gap-1"><button onClick={() => setGradingKLTNTarget(sv)} className="text-xs btn btn-outline py-1">{sv.grade != null ? 'Sửa' : 'Chấm'}</button></div>}
+                        </td>
+                        <td className="px-2 py-3"><button onClick={() => setFeedbackTarget(sv)} className="p-2 hover:bg-surface-alt rounded-md"><span className="material-symbols-outlined text-text-muted">chat_bubble</span></button></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
+      <section>
+        <h3 className="font-display font-semibold text-lg flex items-center gap-2 mb-4"><span className="material-symbols-outlined text-primary">assignment</span>Báo cáo thực tập (BCTT)</h3>
+        {students.length === 0 ? <div className="card p-8 text-center text-text-muted">Chưa có sinh viên nào</div> : (
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="table-header"><tr><th className="px-4 py-3 text-xs">Sinh viên</th><th className="px-4 py-3 text-xs">Đề tài</th><th className="px-4 py-3 text-xs">Đơn vị</th><th className="px-4 py-3 text-xs text-center">File BC</th><th className="px-4 py-3 text-xs text-center">Điểm</th></tr></thead>
+                <tbody>{filtered.map(sv => <tr key={sv.maSo} className="table-row"><td className="px-4 py-3"><div className="flex items-center gap-2"><Av name={sv.studentName} cls="w-8 h-8"/><div><p className="font-medium text-sm">{sv.studentName}</p><p className="text-xs text-text-muted">{sv.maSo}</p></div></div></td><td className="px-4 py-3"><p className="text-sm line-clamp-2 max-w-[200px]">{sv.topic}</p></td><td className="px-4 py-3 text-sm text-text-muted">{sv.company||'--'}</td><td className="px-4 py-3 text-center">{sv.reportSubmitted && sv.reportDriveUrl ? <button onClick={() => setViewerFile({url:sv.reportDriveUrl, studentName:sv.studentName})} className="text-primary text-xs">Xem</button> : <span className="text-text-muted text-xs">Chưa nộp</span>}</td><td className="px-4 py-3 text-center">{sv.grade != null ? <span className="font-bold text-primary">{sv.grade.toFixed(1)}</span> : sv.reportSubmitted ? <div className="flex gap-1"><input type="number" min="0" max="10" step="0.1" value={grades[sv.maSo]??''} onChange={e => setGrades(prev=>({...prev,[sv.maSo]:e.target.value}))} className="form-input w-16 text-center text-sm py-1"/><button onClick={() => handleSaveGrade(sv.maSo, sv.studentEmail)} disabled={saving[sv.maSo]} className="btn btn-primary text-xs py-1">Lưu</button></div> : <span className="text-text-muted text-xs">Chờ nộp</span>}</td></tr>)}</tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+// ── TAB 3: SINH VIÊN PHẢN BIỆN ───────────────────────────────────────────────
+function TabPhanBien({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [search, setSearch] = React.useState('');
+  const [viewerFile, setViewerFile] = React.useState(null);
+  const [feedbackTarget, setFeedbackTarget] = React.useState(null);
+  const [pbProcessing, setPbProcessing] = React.useState(null);
+  const [gradingPBTarget, setGradingPBTarget] = React.useState(null);
+
+  async function handleSavePbFromModal(totalGrade, nhanXetStr) {
+    const sv = gradingPBTarget;
+    setPbProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action:'saveGrade', type:'pb', studentEmail: sv.studentEmail, grade: totalGrade });
+      if (nhanXetStr) await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: nhanXetStr });
+      if (res.success) { toast.show('Đã cập nhật điểm!', 'success'); setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemPB: totalGrade, nhanXet: nhanXetStr} : s)); setGradingPBTarget(null); }
+      else toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setPbProcessing(null);
+  }
+
+  async function handleSaveFeedback(text) {
+    const sv = feedbackTarget;
+    setPbProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: text });
+      if (res.success) { toast.show('Đã lưu nhận xét!', 'success'); setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXet: text} : s)); setFeedbackTarget(null); }
+      else toast.show(res.message || 'Lỗi', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setPbProcessing(null);
+  }
+
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const [hdRows, kltnRows] = await Promise.all([fetchSheetCSV(SHEET_HOIDONG_TAB), fetchSheetCSV(SHEET_KLTN_TAB)]);
+        const kltnMap = {};
+        kltnRows.forEach(r => { kltnMap[r[3]] = { topic: r[5] || '', kltnUrl: r[16] || '', daoVanUrl: r[17] || '', nhanXet: r[19] || '', diemGVHD: r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null }; });
+        const email = SESSION.email.toLowerCase().trim();
+        const pbList = hdRows.filter(r => (r[4]||'').toLowerCase().trim() === email).map(r => {
+          const maSo = r[1] || '';
+          const kData = kltnMap[maSo] || {};
+          return { studentEmail: r[0] || '', maSo, studentName: r[2] || '', gvPBName: r[3] || '', truongHD: r[5] || '', thanhVien1: r[6] || '', thanhVien2: r[7] || '', thuKy: r[8] || '', ...kData, diemPB: (r[10] !== '' && !isNaN(parseFloat(String(r[10]).replace(',','.')))) ? parseFloat(String(r[10]).replace(',','.')) : null };
+        });
+        setStudents(pbList);
+      } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtered = students.filter(s => s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search));
+
+  if (loading) return <Spinner text="Đang tải danh sách phản biện..."/>;
+
+  return (
+    <div className="space-y-6 anim-fade">
+      {viewerFile && <FileViewerModal {...viewerFile} onClose={() => setViewerFile(null)}/>}
+      {feedbackTarget && <FeedbackModal student={feedbackTarget} processing={pbProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)}/>}
+      {gradingPBTarget && <PBGradingModal student={gradingPBTarget} processing={pbProcessing === gradingPBTarget.studentEmail} onSave={handleSavePbFromModal} onClose={() => setGradingPBTarget(null)}/>}
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div><h2 className="text-2xl font-display font-bold">Danh sách Phản biện</h2><p className="text-text-muted mt-1">Sinh viên được phân công phản biện</p></div>
+        <div className="relative w-full md:w-80"><span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">search</span><input value={search} onChange={e => setSearch(e.target.value)} className="form-input pl-10" placeholder="Tìm tên hoặc MSSV..."/></div>
+      </div>
+
+      {students.length === 0 ? <div className="card p-8 text-center text-text-muted">Chưa có sinh viên phản biện nào</div> : (
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="table-header"><tr><th className="px-4 py-3 text-xs">Sinh viên</th><th className="px-4 py-3 text-xs">Đề tài</th><th className="px-4 py-3 text-xs text-center">KLTN</th><th className="px-4 py-3 text-xs text-center">Đạo văn</th><th className="px-4 py-3 text-xs text-center">Điểm PB</th><th className="px-2 py-3"></th></tr></thead>
+              <tbody>{filtered.map(sv => <tr key={sv.maSo} className="table-row"><td className="px-4 py-3"><div className="flex items-center gap-2"><Av name={sv.studentName} cls="w-8 h-8"/><div><p className="font-medium text-sm">{sv.studentName}</p><p className="text-xs text-text-muted">{sv.maSo}</p></div></div></td><td className="px-4 py-3"><p className="text-sm line-clamp-2 max-w-[180px]">{sv.topic||'--'}</p></td><td className="px-4 py-3 text-center">{sv.kltnUrl ? <button onClick={() => setViewerFile({url:sv.kltnUrl, studentName:sv.studentName, fileName:'Khóa Luận'})} className="text-primary text-xs">Xem</button> : <span className="text-text-muted text-xs">Chưa nộp</span>}</td><td className="px-4 py-3 text-center">{sv.daoVanUrl ? <button onClick={() => setViewerFile({url:sv.daoVanUrl, studentName:sv.studentName, fileName:'Đạo văn', isPlagiarism:true})} className="text-accent text-xs">Xem</button> : <span className="text-text-muted text-xs">Chưa có</span>}</td><td className="px-4 py-3 text-center">{sv.diemPB !== null ? <span className="font-bold text-primary cursor-pointer" onClick={() => setGradingPBTarget(sv)}>{Number(sv.diemPB).toFixed(1)}</span> : <button onClick={() => setGradingPBTarget(sv)} className="btn btn-outline text-xs py-1">Chấm</button>}</td><td className="px-2 py-3"><button onClick={() => setFeedbackTarget(sv)} className="p-2 hover:bg-surface-alt rounded-md"><span className="material-symbols-outlined text-text-muted">chat_bubble</span></button></td></tr>)}</tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TAB 4: HỘI ĐỒNG ──────────────────────────────────────────────────────────
+function TabHoiDong({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [search, setSearch] = React.useState('');
+  const [viewerFile, setViewerFile] = React.useState(null);
+  const [feedbackTarget, setFeedbackTarget] = React.useState(null);
+  const [hdProcessing, setHdProcessing] = React.useState(null);
+  const [gradingHDTarget, setGradingHDTarget] = React.useState(null);
+
+  async function handleSaveHdFromModal(totalGrade) {
+    const sv = gradingHDTarget;
+    setHdProcessing(sv.studentEmail);
+    try {
+      const gvName = SESSION.name.toLowerCase().trim();
+      let roleType = 'tv1';
+      if ((sv.truongHD||'').toLowerCase().includes(gvName)) roleType = 'ct';
+      else if ((sv.thanhVien2||'').toLowerCase().includes(gvName)) roleType = 'tv2';
+      const res = await apiPost({ action:'saveGrade', type: roleType, studentEmail: sv.studentEmail, grade: totalGrade });
+      if (res.success) { toast.show('Đã lưu điểm!', 'success'); setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemHD: totalGrade} : s)); setGradingHDTarget(null); }
+      else toast.show(res.message || 'Lưu điểm thất bại!', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setHdProcessing(null);
+  }
+
+  async function handleSaveFeedback(text) {
+    const sv = feedbackTarget;
+    setHdProcessing(sv.studentEmail);
+    try {
+      const res = await apiPost({ action: 'teacherUpdateKLTN', studentEmail: sv.studentEmail, nhanXet: text });
+      if (res.success) { toast.show('Đã lưu nhận xét!', 'success'); setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, nhanXet: text} : s)); setFeedbackTarget(null); }
+      else toast.show(res.message || 'Lỗi', 'error');
+    } catch(e) { toast.show('Lỗi kết nối.', 'error'); }
+    setHdProcessing(null);
+  }
+
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const [hdRows, kltnRows] = await Promise.all([fetchSheetCSV(SHEET_HOIDONG_TAB), fetchSheetCSV(SHEET_KLTN_TAB)]);
+        const kltnMap = {};
+        kltnRows.forEach(r => { kltnMap[r[3]] = { topic: r[5] || '', kltnUrl: r[16] || '', daoVanUrl: r[17] || '', nhanXet: r[19] || '', diemGVHD: r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null }; });
+        const email = SESSION.email.toLowerCase().trim();
+        const gvName = SESSION.name.toLowerCase().trim();
+        const hdList = hdRows.filter(r => (r[4]||'').toLowerCase().trim() === email || (r[5]||'').toLowerCase().includes(gvName) || (r[6]||'').toLowerCase().includes(gvName) || (r[7]||'').toLowerCase().includes(gvName) || (r[9]||'').toLowerCase().includes(gvName)).map(r => {
+          const maSo = r[1] || '';
+          const kData = kltnMap[maSo] || {};
+          return { studentEmail: r[0] || '', maSo, studentName: r[2] || '', gvPhanBienName: r[3] || '', gvPhanBienEmail: r[4] || '', truongHD: r[5] || '', thanhVien1: r[6] || '', thanhVien2: r[7] || '', thuKy: r[9] || '', diemPB: (r[10]!==''&&!isNaN(parseFloat(String(r[10]).replace(',','.'))))?parseFloat(String(r[10]).replace(',','.')):null, diemCTHD: (r[11]!==''&&!isNaN(parseFloat(String(r[11]).replace(',','.'))))?parseFloat(String(r[11]).replace(',','.')):null, diemTV1: (r[12]!==''&&!isNaN(parseFloat(String(r[12]).replace(',','.'))))?parseFloat(String(r[12]).replace(',','.')):null, diemTV2: (r[13]!==''&&!isNaN(parseFloat(String(r[13]).replace(',','.'))))?parseFloat(String(r[13]).replace(',','.')):null, diemHD: (r[15]!==''&&!isNaN(parseFloat(String(r[15]).replace(',','.'))))?parseFloat(String(r[15]).replace(',','.')):null, phongBaoVe: r[16]||'', ngayBaoVe: r[17]||'', gioBaoVe: r[18]||'', nhanXetHD: r[19]||'', bienBanUrl: r[20]||'', ...kData };
+        });
+        setStudents(hdList);
+      } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtered = students.filter(s => s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search));
+
+  function getRoleInfo(sv) {
+    const email = SESSION.email.toLowerCase().trim();
+    const gvName = SESSION.name.toLowerCase().trim();
+    let badges = [], isCouncilMember = false;
+    if ((sv.gvPhanBienEmail||'').toLowerCase().trim() === email) badges.push({ label:'Phản biện', color:'bg-secondary/10 text-secondary' });
+    if ((sv.truongHD||'').toLowerCase().includes(gvName)) { badges.push({ label:'Chủ tịch', color:'bg-primary text-white' }); isCouncilMember = true; }
+    if ((sv.thuKy||'').toLowerCase().includes(gvName)) { badges.push({ label:'Thư ký', color:'bg-accent/10 text-accent' }); isCouncilMember = true; }
+    if ((sv.thanhVien1||'').toLowerCase().includes(gvName)) { badges.push({ label:'Ủy viên 1', color:'bg-surface-alt text-text-secondary' }); isCouncilMember = true; }
+    if ((sv.thanhVien2||'').toLowerCase().includes(gvName)) { badges.push({ label:'Ủy viên 2', color:'bg-surface-alt text-text-secondary' }); isCouncilMember = true; }
+    return { badges, isCouncilMember };
+  }
+
+  if (loading) return <Spinner text="Đang tải danh sách Hội đồng..."/>;
+
+  return (
+    <div className="space-y-6 anim-fade">
+      {viewerFile && <FileViewerModal {...viewerFile} onClose={() => setViewerFile(null)}/>}
+      {feedbackTarget && <HoiDongFeedbackModal student={feedbackTarget} processing={hdProcessing === feedbackTarget.studentEmail} onSave={handleSaveFeedback} onClose={() => setFeedbackTarget(null)}/>}
+      {gradingHDTarget && <HDGradingModal student={gradingHDTarget} processing={hdProcessing === gradingHDTarget.studentEmail} onSave={handleSaveHdFromModal} onClose={() => setGradingHDTarget(null)}/>}
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div><h2 className="text-2xl font-display font-bold">Hội đồng KLTN</h2><p className="text-text-muted mt-1">Danh sách sinh viên bảo vệ</p></div>
+        <div className="relative w-full md:w-80"><span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">search</span><input value={search} onChange={e => setSearch(e.target.value)} className="form-input pl-10" placeholder="Tìm tên hoặc MSSV..."/></div>
+      </div>
+
+      {students.length === 0 ? <div className="card p-8 text-center text-text-muted">Chưa có sinh viên bảo vệ</div> : (
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="table-header"><tr><th className="px-4 py-3 text-xs">Sinh viên & Đề tài</th><th className="px-4 py-3 text-xs">Hội đồng & Lịch</th><th className="px-4 py-3 text-xs text-center">KLTN</th><th className="px-4 py-3 text-xs text-center">Đạo văn</th><th className="px-4 py-3 text-xs text-center">Điểm HĐ</th><th className="px-2 py-3"></th></tr></thead>
+              <tbody>{filtered.map(sv => {
+                const { badges, isCouncilMember } = getRoleInfo(sv);
+                return (
+                  <tr key={sv.maSo} className="table-row">
+                    <td className="px-4 py-3"><div className="flex gap-2"><Av name={sv.studentName} cls="w-8 h-8"/><div><p className="font-medium text-sm">{sv.studentName}</p><p className="text-xs text-text-muted">{sv.maSo}</p><div className="flex gap-1 mt-1 flex-wrap">{badges.map((b,i)=><span key={i} className={`badge ${b.color}`}>{b.label}</span>)}</div><p className="text-xs text-text-muted mt-1 line-clamp-2">{sv.topic||'--'}</p></div></div></td>
+                    <td className="px-4 py-3 text-xs">{(sv.ngayBaoVe||sv.gioBaoVe||sv.phongBaoVe) && <div className="mb-2 p-2 bg-surface-alt rounded"><p className="font-medium">{sv.ngayBaoVe||'Chưa xếp lịch'}</p><p className="text-text-muted">{sv.gioBaoVe||'--'} • Phòng {sv.phongBaoVe||'--'}</p></div>}{sv.truongHD&&<p><span className="font-medium">CT:</span> {sv.truongHD}</p>}{sv.thanhVien1&&<p>TV1: {sv.thanhVien1}</p>}{sv.thanhVien2&&<p>TV2: {sv.thanhVien2}</p>}{sv.thuKy&&<p>TK: {sv.thuKy}</p>}</td>
+                    <td className="px-4 py-3 text-center">{sv.kltnUrl ? <button onClick={() => setViewerFile({url:sv.kltnUrl, studentName:sv.studentName})} className="text-primary text-xs">Xem</button> : <span className="text-text-muted text-xs">Chưa nộp</span>}</td>
+                    <td className="px-4 py-3 text-center">{sv.daoVanUrl ? <button onClick={() => setViewerFile({url:sv.daoVanUrl, studentName:sv.studentName, isPlagiarism:true})} className="text-accent text-xs">Xem</button> : <span className="text-text-muted text-xs">Chưa có</span>}</td>
+                    <td className="px-4 py-3 text-center">
+                      {isCouncilMember ? (
+                        sv.diemHD !== null ? <span className="font-bold text-primary cursor-pointer" onClick={() => setGradingHDTarget(sv)}>{Number(sv.diemHD).toFixed(1)}</span> : <button onClick={() => setGradingHDTarget(sv)} className="btn btn-outline text-xs py-1">Chấm</button>
+                      ) : <span className="text-text-muted text-xs">—</span>}
+                    </td>
+                    <td className="px-2 py-3">{isCouncilMember && <button onClick={() => setFeedbackTarget(sv)} className="p-2 hover:bg-surface-alt rounded-md"><span className="material-symbols-outlined text-text-muted">chat_bubble</span></button>}</td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TAB 5: SAU BẢO VỆ ────────────────────────────────────────────────────────
+function TabSauBaoVe({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [search, setSearch] = React.useState('');
+  const [processing, setProcessing] = React.useState(null);
+  const [viewerFile, setViewerFile] = React.useState(null);
+  const [approveTarget, setApproveTarget] = React.useState(null);
+
+  React.useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const [kltnRows, hdRows] = await Promise.all([fetchSheetCSV(SHEET_KLTN_TAB), fetchSheetCSV(SHEET_HOIDONG_TAB)]);
+        const email = SESSION.email.toLowerCase().trim();
+        const gvName = SESSION.name.toLowerCase().trim();
+        const hdMap = {};
+        hdRows.forEach(r => { const sEmail = (r[0]||'').toLowerCase().trim(); hdMap[sEmail] = { truongHD: r[5] || '' }; });
+        const kltnMap = {};
+        kltnRows.forEach(r => { const sEmail = (r[1]||'').toLowerCase().trim(); kltnMap[sEmail] = { bienBanUrl: r[20]||'', bienBanGiaiTrinhUrl: r[21]||'', baiChinhSuaUrl: r[22]||'', gvhdDuyetSauBv: r[23]||'', chuTichDuyetSauBv: r[24]||'' }; });
+        const list = kltnRows.filter(r => { const gvhdEmail = (r[7]||'').toLowerCase().trim(); const sEmail = (r[1]||'').toLowerCase().trim(); const truongHDName = (hdMap[sEmail]?.truongHD||'').toLowerCase(); return gvhdEmail === email || truongHDName.includes(gvName); }).map(r => {
+          const sEmail = (r[1]||'').toLowerCase().trim();
+          const kl = kltnMap[sEmail] || {};
+          const truongHDName = (hdMap[sEmail]?.truongHD) || '';
+          const isGVHD = (r[7]||'').toLowerCase().trim() === email;
+          const isChuTich = truongHDName.toLowerCase().includes(gvName);
+          return { studentEmail: r[1]||'', maSo: r[3]||'', studentName: r[2]||'', topic: r[5]||'', isGVHD, isChuTich, truongHD: truongHDName, ...kl };
+        });
+        setStudents(list);
+      } catch(e) { toast.show('Không tải được dữ liệu.', 'error'); }
+      setLoading(false);
+    })();
+  }, []);
+
+  async function handleGVHDDuyet(sv, isApproved, note) {
+    setProcessing(sv.studentEmail);
+    const status = isApproved ? 'Yes' : 'No';
+    try {
+      const res = await apiPost({ action: 'gvhdApprovePostDefense', studentEmail: sv.studentEmail, gvhdDuyetSauBv: status, ...(note ? { note } : {}) });
+      if (res.success) { toast.show(`Đã ${isApproved ? 'đồng ý' : 'không đồng ý'}!`, isApproved ? 'success' : 'warn'); setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, gvhdDuyetSauBv: status} : s)); }
+      else toast.show(res.message || 'Lỗi', 'error');
+    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+    setProcessing(null); setApproveTarget(null);
+  }
+
+  async function handleChuTichDuyet(sv, isApproved) {
+    if (!sv.isChuTich) { toast.show('Không có quyền!', 'error'); return; }
+    if (sv.gvhdDuyetSauBv !== 'Yes') { toast.show('GVHD phải đồng ý trước!', 'warn'); return; }
+    setProcessing(sv.studentEmail);
+    const status = isApproved ? 'Yes' : 'No';
+    try {
+      const res = await apiPost({ action: 'presidentApprovePostDefense', studentEmail: sv.studentEmail, chuTichDuyetSauBv: status });
+      if (res.success) { toast.show(`Chủ tịch đã ${isApproved ? 'duyệt' : 'từ chối'}!`, isApproved ? 'success' : 'warn'); setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, chuTichDuyetSauBv: status} : s)); }
+      else toast.show(res.message || 'Lỗi', 'error');
+    } catch(e) { toast.show('Lỗi kết nối', 'error'); }
+    setProcessing(null);
+  }
+
+  const filtered = students.filter(s => s.studentName.toLowerCase().includes(search.toLowerCase()) || s.maSo.includes(search));
+
+  if (loading) return <Spinner text="Đang tải dữ liệu..."/>;
+
+  return (
+    <div className="space-y-6 anim-fade">
+      {viewerFile && <FileViewerModal {...viewerFile} onClose={() => setViewerFile(null)}/>}
+      {approveTarget && <GVHDApproveModal student={approveTarget} onConfirm={handleGVHDDuyet} onClose={() => setApproveTarget(null)}/>}
+
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div><h2 className="text-2xl font-display font-bold">Sau Bảo Vệ</h2><p className="text-text-muted mt-1">Duyệt bản chỉnh sửa sau bảo vệ</p></div>
+        <div className="relative w-full md:w-80"><span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">search</span><input value={search} onChange={e => setSearch(e.target.value)} className="form-input pl-10" placeholder="Tìm tên hoặc MSSV..."/></div>
+      </div>
+
+      {filtered.length === 0 ? <div className="card p-8 text-center text-text-muted">Chưa có sinh viên cần duyệt</div> : (
+        <div className="card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="table-header"><tr><th className="px-4 py-3 text-xs">Sinh viên</th><th className="px-4 py-3 text-xs text-center">Biên bản HĐ</th><th className="px-4 py-3 text-xs text-center">Bài chỉnh sửa</th><th className="px-4 py-3 text-xs text-center">GVHD duyệt</th><th className="px-4 py-3 text-xs text-center">CTHĐ duyệt</th><th className="px-4 py-3 text-xs text-center">Trạng thái</th></tr></thead>
+              <tbody>{filtered.map(sv => {
+                const gvhdOk = sv.gvhdDuyetSauBv === 'Yes';
+                const ctOk = sv.chuTichDuyetSauBv === 'Yes';
+                let status = ctOk ? { label:'Hoàn thành', color:'bg-success/10 text-success' } : gvhdOk ? { label:'Chờ CT duyệt', color:'bg-warning/10 text-warning' } : { label:'Chờ GVHD duyệt', color:'bg-surface-alt text-text-muted' };
+                return (
+                  <tr key={sv.maSo} className="table-row">
+                    <td className="px-4 py-3"><div className="flex gap-2"><Av name={sv.studentName} cls="w-8 h-8"/><div><p className="font-medium text-sm">{sv.studentName}</p><p className="text-xs text-text-muted">{sv.maSo}</p><div className="flex gap-1 mt-1">{sv.isGVHD && <span className="badge bg-primary/10 text-primary">GVHD</span>}{sv.isChuTich && <span className="badge bg-secondary/10 text-secondary">CTHĐ</span>}</div></div></div></td>
+                    <td className="px-4 py-3 text-center">{sv.bienBanUrl ? <button onClick={() => setViewerFile({url:sv.bienBanUrl, studentName:sv.studentName})} className="text-primary text-xs">Xem</button> : <span className="text-text-muted text-xs">—</span>}</td>
+                    <td className="px-4 py-3 text-center">{sv.baiChinhSuaUrl ? <button onClick={() => setViewerFile({url:sv.baiChinhSuaUrl, studentName:sv.studentName})} className="text-primary text-xs">Xem</button> : <span className="text-text-muted text-xs">Chưa nộp</span>}</td>
+                    <td className="px-4 py-3 text-center">{gvhdOk ? <span className="badge bg-success/10 text-success">Đã đồng ý</span> : sv.gvhdDuyetSauBv === 'No' ? <span className="badge bg-error/10 text-error">Từ chối</span> : sv.isGVHD && sv.baiChinhSuaUrl ? <button onClick={() => setApproveTarget(sv)} className="btn btn-outline text-xs py-1">Xét duyệt</button> : <span className="text-text-muted text-xs">—</span>}</td>
+                    <td className="px-4 py-3 text-center">{ctOk ? <span className="badge bg-success/10 text-success">Đã duyệt</span> : sv.chuTichDuyetSauBv === 'No' ? <span className="badge bg-error/10 text-error">Từ chối</span> : !gvhdOk ? <span className="text-text-muted text-xs">Chờ GVHD</span> : sv.isChuTich ? <div className="flex gap-1 justify-center"><button onClick={() => handleChuTichDuyet(sv, true)} className="btn btn-success text-xs py-1">Duyệt</button><button onClick={() => handleChuTichDuyet(sv, false)} className="btn btn-error text-xs py-1">Từ chối</button></div> : <span className="text-text-muted text-xs">—</span>}</td>
+                    <td className="px-4 py-3 text-center"><span className={`badge ${status.color}`}>{status.label}</span></td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TAB PHÂN CÔNG PHẢN BIỆN (TBM) ─────────────────────────────────────────────
+function TabPhanCongPhanBien({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [initialStudents, setInitialStudents] = React.useState([]);
+  const [teachers, setTeachers] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [isBatchSaving, setIsBatchSaving] = React.useState(false);
+
+  React.useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const kltnRows = await fetchSheetCSV(SHEET_KLTN_TAB);
+      const kltnList = kltnRows.filter(r => r[11] === 'approved' || parseInt(r[14]) >= 1).map(r => ({ studentEmail: r[1], studentName: r[2], maSo: r[3], topic: r[5], gvhd: r[6], term: r[9] || 'Kỳ 2 - 24/25' }));
+      let hdMap = {};
+      try { const hdRows = await fetchSheetCSV(SHEET_HOIDONG_TAB); hdRows.forEach(r => { hdMap[r[0]] = { gvPhanBienEmail: r[4], gvPhanBienName: r[3] }; }); } catch(e) {}
+      const formattedData = kltnList.map(sv => ({ ...sv, pbEmail: hdMap[sv.studentEmail]?.gvPhanBienEmail || '', pbName: hdMap[sv.studentEmail]?.gvPhanBienName || '' }));
+      setStudents(formattedData);
+      setInitialStudents(JSON.parse(JSON.stringify(formattedData)));
+      const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
+      setTeachers(userRows.filter(r => r[2] === 'giangvien' || r[2] === 'truongbomon').map(r => ({ email: r[0], name: r[3] })));
+    } catch(e) { toast.show('Lỗi tải dữ liệu!', 'error'); }
+    setLoading(false);
+  }
+
+  async function handleBatchSave() {
+    const changes = students.filter(s => { const init = initialStudents.find(i => i.maSo === s.maSo); return init && init.pbEmail !== s.pbEmail && s.pbEmail !== ''; });
+    if (changes.length === 0) { toast.show('Không có thay đổi!', 'warn'); return; }
+    setIsBatchSaving(true);
+    let success = 0;
+    for (const sv of changes) {
+      try {
+        const pbName = teachers.find(t => t.email === sv.pbEmail)?.name || '';
+        const res = await apiPost({ action: 'assignCouncil', studentEmail: sv.studentEmail, maSo: sv.maSo, studentName: sv.studentName, gvPhanBienEmail: sv.pbEmail, gvPhanBienName: pbName });
+        if (res.success) success++;
+      } catch(e) {}
+    }
+    setIsBatchSaving(false);
+    if (success > 0) { toast.show(`Đã phân công ${success} sinh viên!`, 'success'); setInitialStudents(JSON.parse(JSON.stringify(students))); }
+  }
+
+  if (loading) return <Spinner text="Đang tải dữ liệu..."/>;
+
+  return (
+    <div className="space-y-6 anim-fade">
+      <div className="flex justify-between items-center">
+        <div><h2 className="text-2xl font-display font-bold">Phân công Phản biện</h2><p className="text-text-muted">Phân công giảng viên phản biện cho KLTN</p></div>
+        <button onClick={handleBatchSave} disabled={isBatchSaving} className="btn btn-primary">{isBatchSaving ? <span className="material-symbols-outlined anim-spin">refresh</span> : 'Lưu phân công'}</button>
+      </div>
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="table-header"><tr><th className="px-4 py-3 text-xs">Sinh viên</th><th className="px-4 py-3 text-xs">MSSV</th><th className="px-4 py-3 text-xs">Đề tài</th><th className="px-4 py-3 text-xs">GV Hướng dẫn</th><th className="px-4 py-3 text-xs">Phân công Phản biện</th></tr></thead>
+            <tbody>{students.map(sv => {
+              const isChanged = initialStudents.find(i => i.maSo === sv.maSo)?.pbEmail !== sv.pbEmail;
+              return (
+                <tr key={sv.maSo} className="table-row">
+                  <td className="px-4 py-3"><div className="flex items-center gap-2"><Av name={sv.studentName} cls="w-8 h-8"/><span className="font-medium">{sv.studentName}</span></div></td>
+                  <td className="px-4 py-3 text-sm text-text-muted">{sv.maSo}</td>
+                  <td className="px-4 py-3"><p className="text-sm line-clamp-1 max-w-[200px]">{sv.topic}</p></td>
+                  <td className="px-4 py-3 text-sm text-text-muted">{sv.gvhd}</td>
+                  <td className="px-4 py-3">
+                    <select value={sv.pbEmail} onChange={e => setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, pbEmail: e.target.value} : s))} className={`form-select ${isChanged ? 'border-warning' : ''}`}>
+                      <option value="">-- Chọn giảng viên --</option>
+                      {teachers.filter(t => t.name !== sv.gvhd).map(t => <option key={t.email} value={t.email}>{t.name}</option>)}
+                    </select>
+                  </td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TAB PHÂN CÔNG HỘI ĐỒNG (TBM) ─────────────────────────────────────────────
+function TabPhanCongHoiDong({toast}) {
+  const [students, setStudents] = React.useState([]);
+  const [initialStudents, setInitialStudents] = React.useState([]);
+  const [teachers, setTeachers] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState({});
+  const [isBatchSaving, setIsBatchSaving] = React.useState(false);
+
+  React.useEffect(() => { loadData(); }, []);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      const kltnRows = await fetchSheetCSV(SHEET_KLTN_TAB);
+      const kltnList = kltnRows.filter(r => r[11] === 'approved').map(r => ({ studentEmail: r[1], studentName: r[2], maSo: r[3], topic: r[5], gvhd: r[6] }));
+      let hdMap = {};
+      try { const hdRows = await fetchSheetCSV(SHEET_HOIDONG_TAB); hdRows.forEach(r => { hdMap[r[0]] = { truongHD: r[5], thanhVien1: r[6], thanhVien2: r[7], thuKy: r[9] }; }); } catch(e) {}
+      const formattedData = kltnList.map(sv => ({ ...sv, truongHD: hdMap[sv.studentEmail]?.truongHD || '', thanhVien1: hdMap[sv.studentEmail]?.thanhVien1 || '', thanhVien2: hdMap[sv.studentEmail]?.thanhVien2 || '', thuKy: hdMap[sv.studentEmail]?.thuKy || '' }));
+      setStudents(formattedData);
+      setInitialStudents(JSON.parse(JSON.stringify(formattedData)));
+      const userRows = await fetchSheetCSV(SHEET_USERS_TAB);
+      setTeachers(userRows.filter(r => r[2] === 'giangvien' || r[2] === 'truongbomon').map(r => ({ email: r[0], name: r[3] })));
+    } catch(e) { toast.show('Lỗi tải dữ liệu!', 'error'); }
+    setLoading(false);
+  }
+
+  async function handleBatchSave() {
+    const changes = students.filter(s => { const init = initialStudents.find(i => i.maSo === s.maSo); return init && (init.truongHD !== s.truongHD || init.thuKy !== s.thuKy || init.thanhVien1 !== s.thanhVien1 || init.thanhVien2 !== s.thanhVien2); });
+    if (changes.length === 0) { toast.show('Không có thay đổi!', 'warn'); return; }
+    setIsBatchSaving(true);
+    let success = 0;
+    for (const sv of changes) {
+      try {
+        const res = await apiPost({ action: 'assignCouncil', studentEmail: sv.studentEmail, maSo: sv.maSo, studentName: sv.studentName, truongHD: sv.truongHD, thanhVien1: sv.thanhVien1, thanhVien2: sv.thanhVien2, thuKy: sv.thuKy });
+        if (res.success) success++;
+      } catch(e) {}
+    }
+    setIsBatchSaving(false);
+    if (success > 0) { toast.show(`Đã lưu ${success} hội đồng!`, 'success'); setInitialStudents(JSON.parse(JSON.stringify(students))); }
+  }
+
+  if (loading) return <Spinner text="Đang tải dữ liệu..."/>;
+
+  return (
+    <div className="space-y-6 anim-fade">
+      <div className="flex justify-between items-center">
+        <div><h2 className="text-2xl font-display font-bold">Phân công Hội đồng</h2><p className="text-text-muted">Thiết lập Chủ tịch, Thư ký, Ủy viên</p></div>
+        <button onClick={handleBatchSave} disabled={isBatchSaving} className="btn btn-primary">{isBatchSaving ? <span className="material-symbols-outlined anim-spin">refresh</span> : 'Lưu phân công'}</button>
+      </div>
+      <div className="card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead className="table-header"><tr><th className="px-4 py-3 text-xs">Sinh viên</th><th className="px-4 py-3 text-xs">Đề tài</th><th className="px-4 py-3 text-xs">Chủ tịch</th><th className="px-4 py-3 text-xs">Thư ký</th><th className="px-4 py-3 text-xs">Ủy viên 1</th><th className="px-4 py-3 text-xs">Ủy viên 2</th></tr></thead>
+            <tbody>{students.map(sv => (
+              <tr key={sv.maSo} className="table-row">
+                <td className="px-4 py-3"><div><p className="font-medium">{sv.studentName}</p><p className="text-xs text-text-muted">{sv.maSo}</p></div></td>
+                <td className="px-4 py-3"><p className="text-sm line-clamp-1 max-w-[150px]">{sv.topic}</p></td>
+                <td className="px-2 py-3"><select value={sv.truongHD} onChange={e => setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, truongHD: e.target.value} : s))} className="form-select text-sm"><option value="">--</option>{teachers.map(t => <option key={t.email} value={t.name}>{t.name}</option>)}</select></td>
+                <td className="px-2 py-3"><select value={sv.thuKy} onChange={e => setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, thuKy: e.target.value} : s))} className="form-select text-sm"><option value="">--</option>{teachers.map(t => <option key={t.email} value={t.name}>{t.name}</option>)}</select></td>
+                <td className="px-2 py-3"><select value={sv.thanhVien1} onChange={e => setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, thanhVien1: e.target.value} : s))} className="form-select text-sm"><option value="">--</option>{teachers.map(t => <option key={t.email} value={t.name}>{t.name}</option>)}</select></td>
+                <td className="px-2 py-3"><select value={sv.thanhVien2} onChange={e => setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, thanhVien2: e.target.value} : s))} className="form-select text-sm"><option value="">--</option>{teachers.map(t => <option key={t.email} value={t.name}>{t.name}</option>)}</select></td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── TAB THỐNG KÊ (TBM) ───────────────────────────────────────────────────────
+function TabThongKe({toast}) {
+  return (
+    <div className="space-y-6 anim-fade">
+      <div><h2 className="text-2xl font-display font-bold">Thống kê dữ liệu</h2><p className="text-text-muted mt-1">Theo dõi tiến độ và điểm số</p></div>
+      <div className="card p-12 text-center text-text-muted"><span className="material-symbols-outlined text-5xl opacity-15 mb-3">bar_chart</span><p className="font-medium">Giao diện Thống kê</p><p className="text-sm mt-1">Đang chờ kết nối Google Apps Script...</p></div>
+    </div>
+  );
+}
+
 // ── APP ROOT ──────────────────────────────────────────────────────────────────
 function App() {
   React.useEffect(() => {
-    const role  = localStorage.getItem('ute_role');
+    const role = localStorage.getItem('ute_role');
     const email = localStorage.getItem('ute_email');
     if (!role || !email) { window.location.href = 'login.html'; return; }
-    if (role === 'sinhvien') { window.location.href = 'trangchusinhvien.html'; return; } 
+    if (role === 'sinhvien') { window.location.href = 'trangchusinhvien.html'; return; }
   }, []);
-  const [tab,  setTab]  = React.useState('dashboard');
-  const toast            = useToast();
+  const [tab, setTab] = React.useState('dashboard');
+  const toast = useToast();
   const [notifications, setNotifications] = React.useState([]);
 
   React.useEffect(() => {
@@ -963,47 +1974,36 @@ function App() {
   }, []);
 
   const baseNavMobile = [
-    {id:'dashboard', icon:'dashboard',   l:'Tổng quan'},
-    {id:'sinhvien',  icon:'group',        l:'Hướng dẫn'},
-    {id:'phanbien',  icon:'rate_review',  l:'Phản biện'},
-    {id:'hoidong',   icon:'gavel',        l:'Hội đồng'},
-    {id:'sau_bao_ve',icon:'task_alt',     l:'Sau BV'},
+    {id:'dashboard', icon:'dashboard', l:'Tổng quan'}, {id:'sinhvien', icon:'group', l:'Hướng dẫn'}, {id:'phanbien', icon:'rate_review', l:'Phản biện'},
+    {id:'hoidong', icon:'gavel', l:'Hội đồng'}, {id:'sau_bao_ve', icon:'task_alt', l:'Sau BV'},
   ];
   const tbmNavMobile = [
-    {id:'phancong_pb', icon:'assignment_ind',  l:'PC.PB'},
-    {id:'phancong_hd', icon:'manage_accounts', l:'PC.HĐ'},
-    {id:'thongke',     icon:'bar_chart',       l:'Thống kê'},
+    {id:'phancong_pb', icon:'assignment_ind', l:'PC.PB'}, {id:'phancong_hd', icon:'manage_accounts', l:'PC.HĐ'}, {id:'thongke', icon:'bar_chart', l:'Thống kê'},
   ];
   const navMobile = SESSION.role === 'truongbomon' ? [...baseNavMobile, ...tbmNavMobile] : baseNavMobile;
 
   return (
     <div className="min-h-screen bg-background">
       {toast.toast && <Toast {...toast.toast} onClose={toast.hide}/>}
-
-      <Sidebar tab={tab} setTab={setTab} role={SESSION.role}
-        logout={() => { localStorage.clear(); window.location.href = 'login.html'; }}/>
-
+      <Sidebar tab={tab} setTab={setTab} role={SESSION.role} logout={() => { localStorage.clear(); window.location.href = 'login.html'; }}/>
       <Header notifications={notifications}/>
-
       <main className="pt-16 pb-20 md:pb-10 px-6 min-h-screen" style={{marginLeft:'16rem'}}>
         <div className="max-w-6xl mx-auto">
-          {tab === 'dashboard'   && <TabThongTinChung toast={toast}/>}
-          {tab !== 'dashboard' && (
-            <div className="card p-8 text-center text-text-muted">
-              <span className="material-symbols-outlined text-4xl opacity-15 mb-2">construction</span>
-              <p className="font-medium">Tab đang được phát triển</p>
-              <p className="text-sm mt-1">Vui lòng quay lại sau</p>
-            </div>
-          )}
+          {tab === 'dashboard' && <TabThongTinChung toast={toast}/>}
+          {tab === 'sinhvien' && <TabSinhVienHuongDan toast={toast}/>}
+          {tab === 'phanbien' && <TabPhanBien toast={toast}/>}
+          {tab === 'hoidong' && <TabHoiDong toast={toast}/>}
+          {tab === 'sau_bao_ve' && <TabSauBaoVe toast={toast}/>}
+          {SESSION.role === 'truongbomon' && tab === 'phancong_pb' && <TabPhanCongPhanBien toast={toast}/>}
+          {SESSION.role === 'truongbomon' && tab === 'phancong_hd' && <TabPhanCongHoiDong toast={toast}/>}
+          {SESSION.role === 'truongbomon' && tab === 'thongke' && <TabThongKe toast={toast}/>}
         </div>
       </main>
-
       <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 pb-4 pt-2 bg-white/95 backdrop-blur-sm border-t border-border">
         {navMobile.map(it => (
-          <button key={it.id} onClick={() => setTab(it.id)}
-            className={`flex flex-col items-center justify-center min-w-[70px] px-2 py-2 rounded-md transition-all ${tab===it.id?'text-primary':'text-text-muted'}`}>
+          <button key={it.id} onClick={() => setTab(it.id)} className={`flex flex-col items-center min-w-[70px] py-1 rounded-md ${tab===it.id?'text-primary':'text-text-muted'}`}>
             <span className="material-symbols-outlined text-2xl">{it.icon}</span>
-            <span className="text-[10px] font-medium mt-1">{it.l}</span>
+            <span className="text-[10px] font-medium mt-0.5">{it.l}</span>
           </button>
         ))}
       </nav>
@@ -1012,7 +2012,6 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-
 </script>
 </body>
 </html>
