@@ -489,7 +489,7 @@ async function fetchHoiDongByGV(gvEmail) {
     (r[5]||'').toLowerCase().includes(email)  ||
     (r[6]||'').toLowerCase().includes(email)  ||
     (r[7]||'').toLowerCase().includes(email)  ||
-    (r[8]||'').toLowerCase().includes(email)
+    (r[9]||'').toLowerCase().includes(email)   // r[9] = Thư ký (J)
   ).map(r => ({
     studentEmail   : r[0] || '',
     maSo           : r[1] || '',
@@ -499,7 +499,8 @@ async function fetchHoiDongByGV(gvEmail) {
     truongHD       : r[5] || '',
     thanhVien1     : r[6] || '',
     thanhVien2     : r[7] || '',
-    thuKy          : r[8] || '',
+    // r[8] = TV3 đã bỏ
+    thuKy          : r[9] || '',  // J(9) = Thư ký
   }));
 }
 
@@ -2438,9 +2439,10 @@ function BienBanHDModal({ student, onSave, onClose, processing }) {
 }
 // ── MODAL XEM CHI TIẾT ĐIỂM (DÀNH CHO THƯ KÝ) ─────────────────────────────────
 function ScoreDetailModal({ student, onClose, onCalculateAndSave, processing }) {
-  // Tính điểm trung bình (Không cộng điểm của Thư ký vì TK không chấm)
-  const scoresToAvg = [student.diemGVHD, student.diemPB, student.diemCT, student.diemTV].filter(s => s !== null && s !== undefined && !isNaN(s));
-  const avgScore = scoresToAvg.length > 0 ? (scoresToAvg.reduce((a,b)=>a+b,0) / scoresToAvg.length).toFixed(1) : null;
+  // Tính điểm trung bình từ 4 cột: PB, CTHD, TV1, TV2 (theo GS v3.5, đã bỏ TV3)
+  const scoresToAvg = [student.diemPB, student.diemCTHD, student.diemTV1, student.diemTV2]
+    .filter(s => s !== null && s !== undefined && !isNaN(Number(s)));
+  const avgScore = scoresToAvg.length > 0 ? (scoresToAvg.reduce((a,b)=>a+Number(b),0) / scoresToAvg.length).toFixed(2) : null;
 
   return (
     <div className="fixed inset-0 z-[400] flex items-center justify-center p-4 bg-on-surface/60 backdrop-blur-sm" onClick={onClose}>
@@ -2449,23 +2451,25 @@ function ScoreDetailModal({ student, onClose, onCalculateAndSave, processing }) 
         <p className="text-center text-xs text-on-surface-variant mb-6">{student.studentName} • {student.maSo}</p>
         
         <div className="space-y-3">
-          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Hướng dẫn</span><span className="font-black text-primary">{student.diemGVHD ?? '--'}</span></div>
-          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Phản biện</span><span className="font-black text-secondary">{student.diemPB ?? '--'}</span></div>
-          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Chủ tịch Hội đồng</span><span className="font-black text-tertiary">{student.diemCT ?? '--'}</span></div>
-          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Ủy viên Hội đồng</span><span className="font-black text-on-surface">{student.diemTV ?? '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Hướng dẫn</span><span className="font-black text-primary">{student.diemGVHD != null ? Number(student.diemGVHD).toFixed(1) : '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">GV Phản biện</span><span className="font-black text-secondary">{student.diemPB != null ? Number(student.diemPB).toFixed(1) : '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Chủ tịch HĐ</span><span className="font-black text-tertiary">{student.diemCTHD != null ? Number(student.diemCTHD).toFixed(1) : '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Ủy viên 1</span><span className="font-black text-on-surface">{student.diemTV1 != null ? Number(student.diemTV1).toFixed(1) : '--'}</span></div>
+          <div className="flex justify-between items-center p-3 bg-surface-container-low rounded-xl"><span className="text-sm font-semibold text-on-surface-variant">Ủy viên 2</span><span className="font-black text-on-surface">{student.diemTV2 != null ? Number(student.diemTV2).toFixed(1) : '--'}</span></div>
         </div>
         
-        <div className="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center px-3 mb-6">
-          <span className="text-base font-black uppercase text-on-surface">ĐIỂM FINAL (TRUNG BÌNH)</span>
-          <span className="text-3xl font-black text-error">{avgScore ?? '--'}</span>
+        <div className="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center px-3 mb-1">
+          <span className="text-base font-black uppercase text-on-surface">ĐIỂM HĐ (TRUNG BÌNH)</span>
+          <span className="text-3xl font-black text-error">{student.diemHD != null ? Number(student.diemHD).toFixed(2) : (avgScore ?? '--')}</span>
         </div>
+        <p className="text-[10px] text-on-surface-variant/60 px-3 mb-5">* Trung bình từ PB + CTHD + TV1 + TV2. GS tự tính và tô đỏ khi có đủ điểm.</p>
         
         <div className="flex gap-3">
           <button onClick={onClose} disabled={processing} className="flex-1 py-3 rounded-xl bg-surface-container font-bold text-on-surface hover:bg-surface-container-high transition-colors">Đóng</button>
           {avgScore && (
             <button onClick={() => onCalculateAndSave(avgScore)} disabled={processing} className="flex-1 py-3 rounded-xl bg-error text-white font-bold hover:opacity-90 transition-colors flex items-center justify-center gap-2 shadow-md">
               {processing ? <span className="material-symbols-outlined anim-spin text-[18px]">refresh</span> : <span className="material-symbols-outlined text-[18px]">save</span>}
-              Lưu Điểm
+              Chốt Điểm
             </button>
           )}
         </div>
@@ -2590,13 +2594,17 @@ async function handleSaveHdFromModal(totalGrade, nhanXetStr) {
     const sv = gradingHDTarget;
     setHdProcessing(sv.studentEmail); 
     try {
-      // Xác định quyền để lưu đúng cột
-      let roleType = 'tv'; // Mặc định là Ủy viên
-      if ((sv.truongHD || '').toLowerCase().includes(SESSION.name.toLowerCase().trim())) roleType = 'ct';
+      // Xác định quyền để lưu đúng cột theo GS v3.5
+      // ct=L(12), tv1=M(13), tv2=N(14)
+      const gvName = SESSION.name.toLowerCase().trim();
+      let roleType = 'tv1'; // Mặc định là TV1 nếu không xác định được
+      if ((sv.truongHD   || '').toLowerCase().includes(gvName)) roleType = 'ct';
+      else if ((sv.thanhVien2 || '').toLowerCase().includes(gvName)) roleType = 'tv2';
+      else if ((sv.thanhVien1 || '').toLowerCase().includes(gvName)) roleType = 'tv1';
 
       const res = await apiPost({ action:'saveGrade', type: roleType, studentEmail: sv.studentEmail, grade: totalGrade });
       if (res.success) {
-        toast.show('Đã cập nhật điểm Hội đồng thành công!', 'success');
+        toast.show('Đã lưu điểm Hội đồng thành công!', 'success');
         setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemHD: totalGrade} : s));
         setGradingHDTarget(null);
       } else {
@@ -2609,7 +2617,7 @@ async function handleSaveHdFromModal(totalGrade, nhanXetStr) {
   async function handleSaveFinalScore(sv, finalScore) {
     setHdProcessing(sv.studentEmail); 
     try {
-      const res = await apiPost({ action:'saveGrade', type:'hd', studentEmail: sv.studentEmail, grade: finalScore });
+      const res = await apiPost({ action:'saveGrade', type:'final_hd', studentEmail: sv.studentEmail, grade: finalScore });
       if (res.success) {
         toast.show('Đã chốt điểm tổng hợp Hội đồng thành công!', 'success');
         setStudents(prev => prev.map(s => s.maSo === sv.maSo ? {...s, diemHD: parseFloat(finalScore)} : s));
@@ -2646,15 +2654,20 @@ async function handleSaveHdFromModal(totalGrade, nhanXetStr) {
         const kltnMap = {};
         kltnRows.forEach(r => {
            kltnMap[r[3]] = { 
-             topic: r[5] || '',
-             kltnUrl: r[16] || '',
-             daoVanUrl: r[17] || '',
-             nhanXet: r[19] || '',
-             diemGVHD: r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null 
+             topic      : r[5]  || '',
+             kltnUrl    : r[16] || '',
+             daoVanUrl  : r[17] || '',
+             nhanXet    : r[19] || '',
+             diemGVHD   : r[12] !== '' ? parseFloat(String(r[12]).replace(',', '.')) : null,
+             // Dữ liệu sau bảo vệ (cột V, W, X, Y)
+             bienBanGiaiTrinhUrl: r[21] || '',
+             baiChinhSuaUrl     : r[22] || '',
+             gvhdDuyetSauBv     : r[23] || '',
+             chuTichDuyetSauBv  : r[24] || '',
            };
         });
 
-const email = SESSION.email.toLowerCase().trim();
+        const email = SESSION.email.toLowerCase().trim();
         const gvName = SESSION.name.toLowerCase().trim();
         
         const hdList = hdRows
@@ -2663,42 +2676,45 @@ const email = SESSION.email.toLowerCase().trim();
             (r[5]||'').toLowerCase().includes(gvName) || 
             (r[6]||'').toLowerCase().includes(gvName) || 
             (r[7]||'').toLowerCase().includes(gvName) || 
-            (r[8]||'').toLowerCase().includes(gvName) || // Cột Ủy viên 3
+            (r[8]||'').toLowerCase().includes(gvName) || // Cột Ủy viên 2 (TV2)
             (r[9]||'').toLowerCase().includes(gvName)    // Cột Thư ký (THÊM DÒNG NÀY ĐỂ NHẬN DIỆN THƯ KÝ)
           ))
           .map(r => {
             const maSo = r[1] || '';
             const kData = kltnMap[maSo] || {};
             return {
-              studentEmail : r[0] || '',
-              maSo         : maSo,
-              studentName  : r[2] || '',
-              gvPhanBienName: r[3] || '',
+              studentEmail   : r[0] || '',
+              maSo           : maSo,
+              studentName    : r[2] || '',
+              gvPhanBienName : r[3] || '',
               gvPhanBienEmail: r[4] || '',
-              truongHD     : r[5] || '',
-              thanhVien1   : r[6] || '',
-              thanhVien2   : r[7] || '',
-              thanhVien3   : r[8] || '', // Ủy viên 3
-              thuKy        : r[9] || '', // ĐÃ SỬA THÀNH r[9] (THƯ KÝ CHUẨN)
+              truongHD       : r[5] || '',
+              thanhVien1     : r[6] || '',
+              thanhVien2     : r[7] || '',
+              // r[8] = TV3 đã bỏ
+              thuKy          : r[9] || '',   // J(9) = Thư ký
               
-              // Sẵn tiện sửa luôn cho đúng thứ tự Phòng, Ngày, Giờ theo Code.gs v3.3
-              phongBaoVe   : r[12] || '', 
-              ngayBaoVe    : r[13] || '', 
-              gioBaoVe     : r[14] || '',
+              // Điểm theo GS v3.5: K(10)=PB L(11)=CTHD M(12)=TV1 N(13)=TV2 P(15)=DiemHD(avg đỏ)
+              diemPB    : (r[10] !== '' && !isNaN(parseFloat(String(r[10]).replace(',','.')))) ? parseFloat(String(r[10]).replace(',','.')) : null,
+              diemCTHD  : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',','.')))) ? parseFloat(String(r[11]).replace(',','.')) : null,
+              diemTV1   : (r[12] !== '' && !isNaN(parseFloat(String(r[12]).replace(',','.')))) ? parseFloat(String(r[12]).replace(',','.')) : null,
+              diemTV2   : (r[13] !== '' && !isNaN(parseFloat(String(r[13]).replace(',','.')))) ? parseFloat(String(r[13]).replace(',','.')) : null,
+              diemHD    : (r[15] !== '' && !isNaN(parseFloat(String(r[15]).replace(',','.')))) ? parseFloat(String(r[15]).replace(',','.')) : null, // P(15) = Điểm HĐ (avg, tô đỏ)
               
-              diemHD       : (r[11] !== '' && !isNaN(parseFloat(String(r[11]).replace(',', '.')))) ? parseFloat(String(r[11]).replace(',', '.')) : null,
-              diemPB       : (r[10] !== '') ? parseFloat(String(r[10]).replace(',', '.')) : null,
-              diemGVHD     : kData.diemGVHD, 
-              nhanXetPB    : r[15] || kData.nhanXet || '', 
-              nhanXetHD    : r[16] || '',
-              bienBanUrl   : r[17] || '',
-              diemCT       : (r[18] !== '') ? parseFloat(String(r[18]).replace(',', '.')) : null,
-              diemTK       : (r[19] !== '') ? parseFloat(String(r[19]).replace(',', '.')) : null,
-              diemTV       : (r[20] !== '') ? parseFloat(String(r[20]).replace(',', '.')) : null,
-              bienBanGiaiTrinhUrl: r[21] || '',  // Cột V — Biên bản giải trình
-              baiChinhSuaUrl: r[22] || '',        // Cột W — KLTN sau chỉnh sửa
-              gvhdDuyetSauBv: r[23] || '',        // Cột X — GVHD duyệt
-              chuTichDuyetSauBv: r[24] || '',     // Cột Y — CTHD duyệt
+              // Lịch bảo vệ: Q(16)=Phòng R(17)=Ngày S(18)=Giờ
+              phongBaoVe : r[16] || '',
+              ngayBaoVe  : r[17] || '',
+              gioBaoVe   : r[18] || '',
+              
+              // Biên bản & nhận xét: T(19)=NhanXetHD U(20)=BienBanUrl
+              nhanXetHD  : r[19] || '',
+              bienBanUrl : r[20] || '',
+              
+              // Từ DangKyKLTN (kltnMap theo maSo)
+              bienBanGiaiTrinhUrl: kData.bienBanGiaiTrinhUrl || '',
+              baiChinhSuaUrl     : kData.baiChinhSuaUrl      || '',
+              gvhdDuyetSauBv     : kData.gvhdDuyetSauBv      || '',
+              chuTichDuyetSauBv  : kData.chuTichDuyetSauBv   || '',
               ...kData
             };
           });
@@ -2733,8 +2749,12 @@ function getRoleInfo(sv) {
         badges.push({ label:'Thư ký', color:'bg-tertiary-fixed text-on-tertiary-fixed' });
         isCouncilMember = true;
     }
-    if ((sv.thanhVien1||'').toLowerCase().includes(gvName) || (sv.thanhVien2||'').toLowerCase().includes(gvName)) {
-        badges.push({ label:'Ủy viên', color:'bg-surface-container-highest text-on-surface-variant' });
+    if ((sv.thanhVien1||'').toLowerCase().includes(gvName)) {
+        badges.push({ label:'Ủy viên 1', color:'bg-surface-container-highest text-on-surface-variant' });
+        isCouncilMember = true;
+    }
+    if ((sv.thanhVien2||'').toLowerCase().includes(gvName)) {
+        badges.push({ label:'Ủy viên 2', color:'bg-surface-container-highest text-on-surface-variant' });
         isCouncilMember = true;
     }
     
